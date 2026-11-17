@@ -456,19 +456,37 @@
       return entry === undefined ? status : t(entry[0], entry[1]);
     }
 
+            /** Panel/tab glyph: the black monitor mark from icon.svg with its pink cursor. */
     function Icon(props: any): any {
       const size = typeof props.size === 'number' ? props.size : 18;
-      const active = props.active === true;
-      return h('svg', { width: size, height: size, viewBox: '0 0 36 36', role: 'img', 'aria-label': 'KVMFlow' },
-        h('rect', { x: 4.5, y: 7, width: 22, height: 16, rx: 2.4, fill: active ? 'var(--dsw-alias-brand-primary)' : 'var(--dsw-alias-label-secondary)' }),
-        h('rect', { x: 7, y: 9.5, width: 17, height: 11, rx: 1.2, fill: 'var(--dsw-alias-bg-base)' }),
-        h('path', { d: 'M12 26.5h10', stroke: active ? 'var(--dsw-alias-brand-primary)' : 'var(--dsw-alias-label-secondary)', strokeWidth: 2, strokeLinecap: 'round' }),
-        h('path', { d: 'M17 23v3.5', stroke: active ? 'var(--dsw-alias-brand-primary)' : 'var(--dsw-alias-label-secondary)', strokeWidth: 2, strokeLinecap: 'round' }),
-        h('path', { d: 'M22.6 12.7l6.2 3.6-2.8 1.1-1.1 2.8-2.3-7.5z', fill: 'var(--dsw-alias-state-warn-primary)' }),
+      // label-primary is black on the light theme and white on the dark one, so a
+      // black line drawing stays legible in both instead of vanishing on dark.
+      const stroke = 'var(--dsw-alias-label-primary)';
+      return h('svg', {
+        width: size,
+        height: size,
+        viewBox: '0 0 36 36',
+        role: 'img',
+        'aria-label': 'KVMFlow',
+        focusable: 'false',
+        fill: 'none',
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+      },
+        h('g', { stroke, strokeWidth: 2 },
+          h('rect', { x: 4.5, y: 6.3, width: 27, height: 18.4, rx: 2.8 }),
+          h('path', { d: 'M18 24.7L18 28.5' }),
+          h('path', { d: 'M11.6 29.7L24.4 29.7' }),
+        ),
+        h('path', {
+          d: 'M14.8 11.92L15.17 11.9L21.35 15.25L21.22 15.92L18.04 16.25L16.36 19.1L15.71 18.98L14.65 12.27Z',
+          stroke: '#ec4899',
+          strokeWidth: 1.4,
+        }),
       );
     }
 
-    /** Outline glyph: corners point outward for the wide layout. */
+/** Outline glyph: corners point outward for the wide layout. */
     function IconExpand(props: any): any {
       const size = typeof props.size === 'number' ? props.size : 15;
       return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true },
