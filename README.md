@@ -16,18 +16,19 @@ KVMFlow 是 DeepSeek Harness（DSH）原生插件：通过 IP-KVM 控制真实�
 
 ## 安装与打开
 
-插件包已在工作区构建完成。可在 DSH 的 **插件** 页面点击 **添加插件** 并选择本目录，或由当前会话执行：
-
 ```text
-plugin_manager install_bundle target=/absolute/path/to/KVMFlow
+git clone https://github.com/KawaiiHachimi/dsh-kvmflow.git
+plugin_manager install_bundle target=/absolute/path/to/dsh-kvmflow
 ```
+
+仓库里已带上构建好的 `dist/`，克隆后可以直接安装。也可以在 DSH 的 **插件** 页面点击 **添加插件** 并选择该目录。
 
 安装后有两种打开方式，功能相同（右侧为紧凑布局）：
 
 - 左侧栏的 **KVMFlow** 图标 → 主栏全宽面板；
 - 右侧栏的 **+**（新建标签页）→ 选择 **KVMFlow** → 停靠在对话右侧，可边对话边操作目标机。
 
-修改 `src/` 后运行 `npm run build`，重新安装一次插件即可让 Host 侧加载新代码；客户端 bundle 在刷新页面后生效。
+改源码后执行 `npm install && npm run build`，再重新安装一次插件：Host 侧会加载新的 `dist/`，客户端 bundle 刷新页面后生效。
 
 ## 首次连接 Radxa Linkr
 
@@ -178,6 +179,11 @@ steps:
 - `image` 验证按 JPEG 字节哈希/粗粒度字节差比较，适合静态画面；动态界面应使用 `vision` 或 `change`。
 - `vision` 验证调用当前默认模型；模型不支持图像或调用失败时该步骤暂停，不会静默通过。
 - Linkr `text` 事件只接受可打印 ASCII、Tab、Enter；中文输入请使用目标机输入法或键盘事件。
-- 设备访问令牌与 Web 密码都保存在 `devices.json`（权限 0600），尚未接入 DSH 凭据存储；请勿把该文件提交到版本库。
+- 设备访问令牌与 Web 密码都保存在 `devices.json`（权限 0600，已被 `.gitignore` 忽略），尚未接入 DSH 凭据存储；请勿把该文件提交到版本库。
+- 仓库内的示例地址（`192.168.1.100`）与令牌前缀（`radxa_linkr_...`）都是占位符，不含任何真实凭据。
+
+## 致谢
+
+KVMFlow 完全建立在 DeepSeek Harness 的插件体系之上（Host 服务 / Client Slots / 原生 Tool Registry）。
 
 [![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
