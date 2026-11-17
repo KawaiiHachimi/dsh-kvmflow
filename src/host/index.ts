@@ -1,0 +1,138 @@
+/** KVMFlow Host plugin: IP-KVM control, recording, workflows, verified runs, and agent tools. */
+import { LinkrClient } from './linkr.js';
+import { Store, type StoreConfig } from './store.js';
+import { Recorder } from './recorder.js';
+import { Runner } from './runner.js';
+import { registerTools } from './tools.js';
+import { handleRpc } from './rpc.js';
+import { LinkrWebSession } from './session.js';
+import type { DeviceRecord } from './types.js';
+
+export const name = 'kvmflow';
+
+/** Host services required before KVMFlow can activate. */
+export const inject = ['tools', 'connection', 'webServer'];
+
+export interface Config extends StoreConfig {}
+
+const PROMPT_TEXT = [
+  'KVMFlow controls a real computer through an IP-KVM. Its tools are kvmflow_* (device list/add, snapshot, keyboard, mouse, text, control, verify, record, workflow, run).',
+  'Operating loop: take kvmflow_snapshot before deciding an action; act in small steps; take another snapshot or call kvmflow_verify after each action. Never assume a click or keypress changed the screen.',
+  'UI coordinates are normalized: (0,0) top-left, (1,1) bottom-right. Keyboard keys use KeyboardEvent.code (F2, Escape, Enter, KeyA); shortcuts pass an ordered keys array.',
+  'Recording: start a recording, let the human drive the target or drive it yourself, mark each human-meaningful step with a name and description, stop, then read the recording with kvmflow_record_get. Generate a workflow with kvmflow_workflow_generate or write YAML and save it with kvmflow_workflow_save.',
+  'A workflow step needs a name, an action, and usually a verify condition. Prefer verify.mode "vision" with a concrete visual prompt, or "change" when any visible transition is enough. Use onFailure strategy pause for risky steps.',
+  'BIOS: a workflow with a bios prelude taps the hotkey before power-on, waits for the first video signal, and then runs the steps. Ask the human to press the target power button only after the run reports armed/waiting for power.',
+  'Runs are deterministic and pause for human intervention. Use kvmflow_run_status to inspect the failing step and kvmflow_run_control to retry, skip, continue, confirm BIOS, or abort. Do not start a second run while one is active.',
+  'The KVM token is a credential: do not print it in messages, logs, or workflow files.',
+].join('\n');
+
+function clientKey(device: DeviceRecord, minIntervalMs: number): string {
+  return `${device.id}|${device.baseUrl}|${device.token}|${minIntervalMs}`;
+}
+
+/**
+ * Activate KVMFlow in the Host composition.
+ * @param ctx - plugin context.
+ * @param config - data directory and default device options.
+ */
+export function apply(ctx: any, config: Config = {}): void {
+  const store = new Store(config);
+  store.initSync();
+  const clientCache = new Map<string, LinkrClient>();
+  const clientFor = (device: DeviceRecord): LinkrClient => {
+    const key = clientKey(device, config.linkrMinIntervalMs ?? 230);
+    const cached = clientCache.get(key);
+    if (cached !== undefined) return cached;
+    const client = new LinkrClient(device.baseUrl, device.token, {
+      minIntervalMs: Math.max(120, config.linkrMinIntervalMs ?? 230),
+    });
+    clientCache.set(key, client);
+    // A small cache: configuration changes produce a new key and the old
+    // client stays until the plugin reloads.
+    if (clientCache.size > 16) {
+      const first = clientCache.keys().next().value;
+      if (first !== undefined) clientCache.delete(first);
+    }
+    return client;
+  };
+
+  // Web sessions outlive one RPC call so a burst of signaling reuses the token.
+  const sessionCache = new Map<string, LinkrWebSession>();
+  const sessionFor = (device: DeviceRecord): LinkrWebSession => {
+    const key = `${device.id}|${device.baseUrl}|${device.username ?? ''}|${device.password ?? ''}`;
+    const cached = sessionCache.get(key);
+    if (cached !== undefined) return cached;
+    const session = new LinkrWebSession(device.baseUrl, device.username ?? '', device.password ?? '');
+    sessionCache.set(key, session);
+    if (sessionCache.size > 16) {
+      const first = sessionCache.keys().next().value;
+      if (first !== undefined) sessionCache.delete(first);
+    }
+    return session;
+  };
+
+  const recorder = new Recorder({ store, clientFor });
+  void recorder.recover().catch(error => {
+    console.error('[kvmflow] recorder recovery failed:', error);
+  });
+  const runner = new Runner({ ctx, store, clientFor });
+  registerTools({ ctx, store, recorder, runner, clientFor });
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'prefix',
+    path: '/kvmflow',
+    handler: async (req: any, res: any) => {
+      const url = new URL(req.url ?? '/', 'http://localhost');
+      if (req.method !== 'POST' || url.pathname !== '/kvmflow/rpc') {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('not found');
+        return;
+      }
+      const rejection = ctx.connection.requestRejection({ headers: req.headers });
+      if (rejection !== undefined) {
+        res.writeHead(rejection, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end(rejection === 401 ? 'unauthorized' : 'forbidden');
+        return;
+      }
+      let body = '';
+      for await (const chunk of req) {
+        body += chunk;
+        if (body.length > 4_000_000) {
+          res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: { code: 'kvmflow/TOO_LARGE', message: 'request body too large', details: {} } }));
+          return;
+        }
+      }
+      let envelope: any;
+      try {
+        envelope = JSON.parse(body);
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: { code: 'kvmflow/BAD_REQUEST', message: 'body is not JSON', details: {} } }));
+        return;
+      }
+      if (typeof envelope?.method !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: { code: 'kvmflow/BAD_REQUEST', message: 'method is required', details: {} } }));
+        return;
+      }
+      const result = await handleRpc({ store, recorder, runner, clientFor, sessionFor }, envelope.method, envelope.params);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify(result));
+    },
+  }), 'kvmflow: http rpc');
+
+  const systemPrompt = ctx.get('systemPrompt');
+  if (systemPrompt !== undefined && typeof systemPrompt.section === 'function') {
+    ctx.effect(() => systemPrompt.section({
+      name: 'kvmflow',
+      order: 60,
+      text: PROMPT_TEXT,
+    }), 'kvmflow: prompt guidance');
+  }
+
+  ctx.effect(() => () => {
+    recorder.dispose();
+    runner.dispose();
+  }, 'kvmflow: teardown');
+}

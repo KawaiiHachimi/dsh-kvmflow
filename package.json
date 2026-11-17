@@ -1,0 +1,63 @@
+{
+  "name": "dsh-kvmflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KVMFlow: IP-KVM control, recording, AI-authored YAML workflows, and verified playback as a native DeepSeek Harness plugin",
+  "type": "module",
+  "main": "dist/host/index.js",
+  "exports": {
+    ".": "./dist/host/index.js",
+    "./client": "./dist/client/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json",
+    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "@types/node": "^24.19.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KawaiiHachimi/dsh-kvmflow.git"
+  },
+  "homepage": "https://github.com/KawaiiHachimi/dsh-kvmflow#readme",
+  "bugs": {
+    "url": "https://github.com/KawaiiHachimi/dsh-kvmflow/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "kvm",
+    "ip-kvm",
+    "radxa-linkr",
+    "webrtc",
+    "automation",
+    "bios"
+  ]
+}
