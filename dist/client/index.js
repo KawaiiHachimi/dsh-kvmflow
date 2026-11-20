@@ -1,21 +1,637 @@
-/**
- * KVMFlow browser half: a native DSH main panel plus sidebar entry.
- *
- * The module is intentionally self-contained so the DSH client module loader
- * can evaluate it without a bundler. React comes from the browser module
- * table; Host operations go through the authenticated `/kvmflow` RPC channel.
- */
-window.__ModuleLoader__.load({
-    id: 'dsh-kvmflow',
-    factory(requireModule) {
-        const React = requireModule('react');
-        const h = React.createElement;
-        const useState = React.useState;
-        const useEffect = React.useEffect;
-        const useMemo = React.useMemo;
-        const useCallback = React.useCallback;
-        const useRef = React.useRef;
-        const CSS = `
+/* dsh-kvmflow 0.1.0 — built by scripts/build-client.mjs; do not edit. */
+(function () {
+  window.__ModuleLoader__.load({
+    id: "dsh-kvmflow",
+    factory(require) {
+      var module = { exports: {} };
+      var exports = module.exports;
+      (function (require, module, exports) {
+var Vc=Object.create;var xo=Object.defineProperty;var Bc=Object.getOwnPropertyDescriptor;var Wc=Object.getOwnPropertyNames;var Yc=Object.getPrototypeOf,Xc=Object.prototype.hasOwnProperty;var ko=(e,t)=>()=>{try{return t||e((t={exports:{}}).exports,t),t.exports}catch(o){throw t=0,o}},qc=(e,t)=>{for(var o in t)xo(e,o,{get:t[o],enumerable:!0})},na=(e,t,o,n)=>{if(t&&typeof t=="object"||typeof t=="function")for(let r of Wc(t))!Xc.call(e,r)&&r!==o&&xo(e,r,{get:()=>t[r],enumerable:!(n=Bc(t,r))||n.enumerable});return e};var $r=(e,t,o)=>(o=e!=null?Vc(Yc(e)):{},na(t||!e||!e.__esModule?xo(o,"default",{value:e,enumerable:!0}):o,e)),Kc=e=>na(xo({},"__esModule",{value:!0}),e);var el=ko(Js=>{"use strict";var Mn=require("react");function um(e,t){return e===t&&(e!==0||1/e===1/t)||e!==e&&t!==t}var fm=typeof Object.is=="function"?Object.is:um,pm=Mn.useState,mm=Mn.useEffect,hm=Mn.useLayoutEffect,gm=Mn.useDebugValue;function wm(e,t){var o=t(),n=pm({inst:{value:o,getSnapshot:t}}),r=n[0].inst,i=n[1];return hm(function(){r.value=o,r.getSnapshot=t,Wi(r)&&i({inst:r})},[e,o,t]),mm(function(){return Wi(r)&&i({inst:r}),e(function(){Wi(r)&&i({inst:r})})},[e]),gm(o),o}function Wi(e){var t=e.getSnapshot;e=e.value;try{var o=t();return!fm(e,o)}catch{return!0}}function vm(e,t){return t()}var ym=typeof window>"u"||typeof window.document>"u"||typeof window.document.createElement>"u"?vm:wm;Js.useSyncExternalStore=Mn.useSyncExternalStore!==void 0?Mn.useSyncExternalStore:ym});var nl=ko((gv,tl)=>{"use strict";tl.exports=el()});var rl=ko(ol=>{"use strict";var cr=require("react"),bm=nl();function xm(e,t){return e===t&&(e!==0||1/e===1/t)||e!==e&&t!==t}var km=typeof Object.is=="function"?Object.is:xm,Nm=bm.useSyncExternalStore,Sm=cr.useRef,Cm=cr.useEffect,_m=cr.useMemo,Em=cr.useDebugValue;ol.useSyncExternalStoreWithSelector=function(e,t,o,n,r){var i=Sm(null);if(i.current===null){var a={hasValue:!1,value:null};i.current=a}else a=i.current;i=_m(function(){function l(m){if(!c){if(c=!0,d=m,m=n(m),r!==void 0&&a.hasValue){var h=a.value;if(r(h,m))return f=h}return f=m}if(h=f,km(d,m))return h;var x=n(m);return r!==void 0&&r(h,x)?(d=m,h):(d=m,f=x)}var c=!1,d,f,u=o===void 0?null:o;return[function(){return l(t())},u===null?void 0:function(){return l(u())}]},[t,o,n,r]);var s=Nm(e,i[0],i[1]);return Cm(function(){a.hasValue=!0,a.value=s},[s]),Em(s),s}});var al=ko((vv,il)=>{"use strict";il.exports=rl()});var cw={};qc(cw,{plugin:()=>lw});module.exports=Kc(cw);var sw=$r(require("react"),1);var oa=`/* this gets exported as style.css and can be used for the default theming */
+/* these are the necessary styles for React/Svelte Flow, they get used by base.css and style.css */
+.react-flow {
+  direction: ltr;
+
+  --xy-edge-stroke-default: #b1b1b7;
+  --xy-edge-stroke-width-default: 1;
+  --xy-edge-stroke-selected-default: #555;
+
+  --xy-connectionline-stroke-default: #b1b1b7;
+  --xy-connectionline-stroke-width-default: 1;
+
+  --xy-attribution-background-color-default: rgba(255, 255, 255, 0.5);
+
+  --xy-minimap-background-color-default: #fff;
+  --xy-minimap-mask-background-color-default: rgba(240, 240, 240, 0.6);
+  --xy-minimap-mask-stroke-color-default: transparent;
+  --xy-minimap-mask-stroke-width-default: 1;
+  --xy-minimap-node-background-color-default: #e2e2e2;
+  --xy-minimap-node-stroke-color-default: transparent;
+  --xy-minimap-node-stroke-width-default: 2;
+
+  --xy-background-color-default: transparent;
+  --xy-background-pattern-dots-color-default: #91919a;
+  --xy-background-pattern-lines-color-default: #eee;
+  --xy-background-pattern-cross-color-default: #e2e2e2;
+  background-color: var(--xy-background-color, var(--xy-background-color-default));
+  --xy-node-color-default: inherit;
+  --xy-node-border-default: 1px solid #1a192b;
+  --xy-node-background-color-default: #fff;
+  --xy-node-group-background-color-default: rgba(240, 240, 240, 0.25);
+  --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(0, 0, 0, 0.08);
+  --xy-node-boxshadow-selected-default: 0 0 0 0.5px #1a192b;
+  --xy-node-border-radius-default: 3px;
+
+  --xy-handle-background-color-default: #1a192b;
+  --xy-handle-border-color-default: #fff;
+
+  --xy-selection-background-color-default: rgba(0, 89, 220, 0.08);
+  --xy-selection-border-default: 1px dotted rgba(0, 89, 220, 0.8);
+
+  --xy-controls-button-background-color-default: #fefefe;
+  --xy-controls-button-background-color-hover-default: #f4f4f4;
+  --xy-controls-button-color-default: inherit;
+  --xy-controls-button-color-hover-default: inherit;
+  --xy-controls-button-border-color-default: #eee;
+  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.08);
+
+  --xy-edge-label-background-color-default: #ffffff;
+  --xy-edge-label-color-default: inherit;
+  --xy-resize-background-color-default: #3367d9;
+}
+.react-flow.dark {
+  --xy-edge-stroke-default: #3e3e3e;
+  --xy-edge-stroke-width-default: 1;
+  --xy-edge-stroke-selected-default: #727272;
+
+  --xy-connectionline-stroke-default: #b1b1b7;
+  --xy-connectionline-stroke-width-default: 1;
+
+  --xy-attribution-background-color-default: rgba(150, 150, 150, 0.25);
+
+  --xy-minimap-background-color-default: #141414;
+  --xy-minimap-mask-background-color-default: rgba(60, 60, 60, 0.6);
+  --xy-minimap-mask-stroke-color-default: transparent;
+  --xy-minimap-mask-stroke-width-default: 1;
+  --xy-minimap-node-background-color-default: #2b2b2b;
+  --xy-minimap-node-stroke-color-default: transparent;
+  --xy-minimap-node-stroke-width-default: 2;
+
+  --xy-background-color-default: #141414;
+  --xy-background-pattern-dots-color-default: #555;
+  --xy-background-pattern-lines-color-default: #333;
+  --xy-background-pattern-cross-color-default: #333;
+  --xy-node-color-default: #f8f8f8;
+  --xy-node-border-default: 1px solid #3c3c3c;
+  --xy-node-background-color-default: #1e1e1e;
+  --xy-node-group-background-color-default: rgba(240, 240, 240, 0.25);
+  --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(255, 255, 255, 0.08);
+  --xy-node-boxshadow-selected-default: 0 0 0 0.5px #999;
+
+  --xy-handle-background-color-default: #bebebe;
+  --xy-handle-border-color-default: #1e1e1e;
+
+  --xy-selection-background-color-default: rgba(200, 200, 220, 0.08);
+  --xy-selection-border-default: 1px dotted rgba(200, 200, 220, 0.8);
+
+  --xy-controls-button-background-color-default: #2b2b2b;
+  --xy-controls-button-background-color-hover-default: #3e3e3e;
+  --xy-controls-button-color-default: #f8f8f8;
+  --xy-controls-button-color-hover-default: #fff;
+  --xy-controls-button-border-color-default: #5b5b5b;
+  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.08);
+
+  --xy-edge-label-background-color-default: #141414;
+  --xy-edge-label-color-default: #f8f8f8;
+}
+.react-flow__background {
+  background-color: var(--xy-background-color-props, var(--xy-background-color, var(--xy-background-color-default)));
+  pointer-events: none;
+  z-index: -1;
+}
+.react-flow__container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+.react-flow__pane {
+  z-index: 1;
+  touch-action: none;
+}
+.react-flow__pane.draggable {
+    cursor: grab;
+  }
+.react-flow__pane.dragging {
+    cursor: grabbing;
+  }
+.react-flow__pane.selection {
+    cursor: pointer;
+  }
+.react-flow__viewport {
+  transform-origin: 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.react-flow__renderer {
+  z-index: 4;
+}
+.react-flow__selection {
+  z-index: 6;
+}
+.react-flow__nodesselection-rect:focus,
+.react-flow__nodesselection-rect:focus-visible {
+  outline: none;
+}
+.react-flow__edge-path {
+  stroke: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+  stroke-width: var(--xy-edge-stroke-width, var(--xy-edge-stroke-width-default));
+  fill: none;
+}
+.react-flow__connection-path {
+  stroke: var(--xy-connectionline-stroke, var(--xy-connectionline-stroke-default));
+  stroke-width: var(--xy-connectionline-stroke-width, var(--xy-connectionline-stroke-width-default));
+  fill: none;
+}
+.react-flow .react-flow__edges {
+  position: absolute;
+}
+.react-flow .react-flow__edges svg {
+    overflow: visible;
+    position: absolute;
+    pointer-events: none;
+  }
+.react-flow__edge {
+  pointer-events: visibleStroke;
+}
+.react-flow__edge.selectable {
+    cursor: pointer;
+  }
+.react-flow__edge.animated path {
+    stroke-dasharray: 5;
+    animation: dashdraw 0.5s linear infinite;
+  }
+.react-flow__edge.animated path.react-flow__edge-interaction {
+    stroke-dasharray: none;
+    animation: none;
+  }
+.react-flow__edge.inactive {
+    pointer-events: none;
+  }
+.react-flow__edge.selected,
+  .react-flow__edge:focus,
+  .react-flow__edge:focus-visible {
+    outline: none;
+  }
+.react-flow__edge.selected .react-flow__edge-path,
+  .react-flow__edge.selectable:focus .react-flow__edge-path,
+  .react-flow__edge.selectable:focus-visible .react-flow__edge-path {
+    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
+  }
+.react-flow__edge-textwrapper {
+    pointer-events: all;
+  }
+.react-flow__edge .react-flow__edge-text {
+    pointer-events: none;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+            user-select: none;
+  }
+/* Arrowhead marker styles - use CSS custom properties as default */
+.react-flow__arrowhead polyline {
+  stroke: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+}
+.react-flow__arrowhead polyline.arrowclosed {
+  fill: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+}
+.react-flow__connection {
+  pointer-events: none;
+}
+.react-flow__connection .animated {
+    stroke-dasharray: 5;
+    animation: dashdraw 0.5s linear infinite;
+  }
+svg.react-flow__connectionline {
+  z-index: 1001;
+  overflow: visible;
+  position: absolute;
+}
+.react-flow__nodes {
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+.react-flow__node {
+  position: absolute;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  pointer-events: all;
+  transform-origin: 0 0;
+  box-sizing: border-box;
+  cursor: default;
+}
+.react-flow__node.selectable {
+    cursor: pointer;
+  }
+.react-flow__node.draggable {
+    cursor: grab;
+    pointer-events: all;
+  }
+.react-flow__node.draggable.dragging {
+      cursor: grabbing;
+    }
+.react-flow__nodesselection {
+  z-index: 3;
+  transform-origin: left top;
+  pointer-events: none;
+}
+.react-flow__nodesselection-rect {
+    position: absolute;
+    pointer-events: all;
+    cursor: grab;
+  }
+.react-flow__handle {
+  position: absolute;
+  pointer-events: none;
+  min-width: 5px;
+  min-height: 5px;
+  width: 6px;
+  height: 6px;
+  background-color: var(--xy-handle-background-color, var(--xy-handle-background-color-default));
+  border: 1px solid var(--xy-handle-border-color, var(--xy-handle-border-color-default));
+  border-radius: 100%;
+}
+.react-flow__handle.connectingfrom {
+    pointer-events: all;
+  }
+.react-flow__handle.connectionindicator {
+    pointer-events: all;
+    cursor: crosshair;
+  }
+.react-flow__handle-bottom {
+    top: auto;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 50%);
+  }
+.react-flow__handle-top {
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+.react-flow__handle-left {
+    top: 50%;
+    left: 0;
+    transform: translate(-50%, -50%);
+  }
+.react-flow__handle-right {
+    top: 50%;
+    right: 0;
+    transform: translate(50%, -50%);
+  }
+.react-flow__edgeupdater {
+  cursor: move;
+  pointer-events: all;
+}
+.react-flow__pane.selection .react-flow__panel {
+  pointer-events: none;
+}
+.react-flow__panel {
+  position: absolute;
+  z-index: 5;
+  margin: 15px;
+}
+.react-flow__panel.top {
+    top: 0;
+  }
+.react-flow__panel.bottom {
+    bottom: 0;
+  }
+.react-flow__panel.top.center, .react-flow__panel.bottom.center {
+      left: 50%;
+      transform: translateX(-15px) translateX(-50%);
+    }
+.react-flow__panel.left {
+    left: 0;
+  }
+.react-flow__panel.right {
+    right: 0;
+  }
+.react-flow__panel.left.center, .react-flow__panel.right.center {
+      top: 50%;
+      transform: translateY(-15px) translateY(-50%);
+    }
+.react-flow__attribution {
+  font-size: 10px;
+  background: var(--xy-attribution-background-color, var(--xy-attribution-background-color-default));
+  padding: 2px 3px;
+  margin: 0;
+}
+.react-flow__attribution a {
+    text-decoration: none;
+    color: #999;
+  }
+@keyframes dashdraw {
+  from {
+    stroke-dashoffset: 10;
+  }
+}
+.react-flow__edgelabel-renderer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  left: 0;
+  top: 0;
+}
+.react-flow__viewport-portal {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+.react-flow__minimap {
+  background: var(
+    --xy-minimap-background-color-props,
+    var(--xy-minimap-background-color, var(--xy-minimap-background-color-default))
+  );
+}
+.react-flow__minimap-svg {
+    display: block;
+  }
+.react-flow__minimap-mask {
+    fill: var(
+      --xy-minimap-mask-background-color-props,
+      var(--xy-minimap-mask-background-color, var(--xy-minimap-mask-background-color-default))
+    );
+    stroke: var(
+      --xy-minimap-mask-stroke-color-props,
+      var(--xy-minimap-mask-stroke-color, var(--xy-minimap-mask-stroke-color-default))
+    );
+    stroke-width: var(
+      --xy-minimap-mask-stroke-width-props,
+      var(--xy-minimap-mask-stroke-width, var(--xy-minimap-mask-stroke-width-default))
+    );
+  }
+.react-flow__minimap-node {
+    fill: var(
+      --xy-minimap-node-background-color-props,
+      var(--xy-minimap-node-background-color, var(--xy-minimap-node-background-color-default))
+    );
+    stroke: var(
+      --xy-minimap-node-stroke-color-props,
+      var(--xy-minimap-node-stroke-color, var(--xy-minimap-node-stroke-color-default))
+    );
+    stroke-width: var(
+      --xy-minimap-node-stroke-width-props,
+      var(--xy-minimap-node-stroke-width, var(--xy-minimap-node-stroke-width-default))
+    );
+  }
+.react-flow__background-pattern.dots {
+    fill: var(
+      --xy-background-pattern-color-props,
+      var(--xy-background-pattern-color, var(--xy-background-pattern-dots-color-default))
+    );
+  }
+.react-flow__background-pattern.lines {
+    stroke: var(
+      --xy-background-pattern-color-props,
+      var(--xy-background-pattern-color, var(--xy-background-pattern-lines-color-default))
+    );
+  }
+.react-flow__background-pattern.cross {
+    stroke: var(
+      --xy-background-pattern-color-props,
+      var(--xy-background-pattern-color, var(--xy-background-pattern-cross-color-default))
+    );
+  }
+.react-flow__controls {
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--xy-controls-box-shadow, var(--xy-controls-box-shadow-default));
+}
+.react-flow__controls.horizontal {
+    flex-direction: row;
+  }
+.react-flow__controls-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 26px;
+    width: 26px;
+    padding: 4px;
+    border: none;
+    background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default));
+    border-bottom: 1px solid
+      var(
+        --xy-controls-button-border-color-props,
+        var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default))
+      );
+    color: var(
+      --xy-controls-button-color-props,
+      var(--xy-controls-button-color, var(--xy-controls-button-color-default))
+    );
+    cursor: pointer;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+            user-select: none;
+  }
+.react-flow__controls-button svg {
+      width: 100%;
+      max-width: 12px;
+      max-height: 12px;
+      fill: currentColor;
+    }
+.react-flow__edge.updating .react-flow__edge-path {
+      stroke: #777;
+    }
+.react-flow__edge-text {
+    font-size: 10px;
+  }
+.react-flow__node.selectable:focus,
+  .react-flow__node.selectable:focus-visible {
+    outline: none;
+  }
+.react-flow__node-input,
+.react-flow__node-default,
+.react-flow__node-output,
+.react-flow__node-group {
+  padding: 10px;
+  border-radius: var(--xy-node-border-radius, var(--xy-node-border-radius-default));
+  width: 150px;
+  font-size: 12px;
+  color: var(--xy-node-color, var(--xy-node-color-default));
+  text-align: center;
+  border: var(--xy-node-border, var(--xy-node-border-default));
+  background-color: var(--xy-node-background-color, var(--xy-node-background-color-default));
+}
+.react-flow__node-input.selectable:hover, .react-flow__node-default.selectable:hover, .react-flow__node-output.selectable:hover, .react-flow__node-group.selectable:hover {
+      box-shadow: var(--xy-node-boxshadow-hover, var(--xy-node-boxshadow-hover-default));
+    }
+.react-flow__node-input.selectable.selected,
+    .react-flow__node-input.selectable:focus,
+    .react-flow__node-input.selectable:focus-visible,
+    .react-flow__node-default.selectable.selected,
+    .react-flow__node-default.selectable:focus,
+    .react-flow__node-default.selectable:focus-visible,
+    .react-flow__node-output.selectable.selected,
+    .react-flow__node-output.selectable:focus,
+    .react-flow__node-output.selectable:focus-visible,
+    .react-flow__node-group.selectable.selected,
+    .react-flow__node-group.selectable:focus,
+    .react-flow__node-group.selectable:focus-visible {
+      box-shadow: var(--xy-node-boxshadow-selected, var(--xy-node-boxshadow-selected-default));
+    }
+.react-flow__node-group {
+  background-color: var(--xy-node-group-background-color, var(--xy-node-group-background-color-default));
+}
+.react-flow__nodesselection-rect,
+.react-flow__selection {
+  background: var(--xy-selection-background-color, var(--xy-selection-background-color-default));
+  border: var(--xy-selection-border, var(--xy-selection-border-default));
+}
+.react-flow__nodesselection-rect:focus,
+  .react-flow__nodesselection-rect:focus-visible,
+  .react-flow__selection:focus,
+  .react-flow__selection:focus-visible {
+    outline: none;
+  }
+.react-flow__controls-button:hover {
+      background: var(
+        --xy-controls-button-background-color-hover-props,
+        var(--xy-controls-button-background-color-hover, var(--xy-controls-button-background-color-hover-default))
+      );
+      color: var(
+        --xy-controls-button-color-hover-props,
+        var(--xy-controls-button-color-hover, var(--xy-controls-button-color-hover-default))
+      );
+    }
+.react-flow__controls-button:disabled {
+      pointer-events: none;
+    }
+.react-flow__controls-button:disabled svg {
+        fill-opacity: 0.4;
+      }
+.react-flow__controls-button:last-child {
+    border-bottom: none;
+  }
+.react-flow__controls.horizontal .react-flow__controls-button {
+    border-bottom: none;
+    border-right: 1px solid
+      var(
+        --xy-controls-button-border-color-props,
+        var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default))
+      );
+  }
+.react-flow__controls.horizontal .react-flow__controls-button:last-child {
+    border-right: none;
+  }
+.react-flow__resize-control {
+  position: absolute;
+}
+.react-flow__resize-control.left,
+.react-flow__resize-control.right {
+  cursor: ew-resize;
+}
+.react-flow__resize-control.top,
+.react-flow__resize-control.bottom {
+  cursor: ns-resize;
+}
+.react-flow__resize-control.top.left,
+.react-flow__resize-control.bottom.right {
+  cursor: nwse-resize;
+}
+.react-flow__resize-control.bottom.left,
+.react-flow__resize-control.top.right {
+  cursor: nesw-resize;
+}
+/* handle styles */
+.react-flow__resize-control.handle {
+  width: 5px;
+  height: 5px;
+  border: 1px solid #fff;
+  border-radius: 1px;
+  background-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default));
+  translate: -50% -50%;
+}
+.react-flow__resize-control.handle.left {
+  left: 0;
+  top: 50%;
+}
+.react-flow__resize-control.handle.right {
+  left: 100%;
+  top: 50%;
+}
+.react-flow__resize-control.handle.top {
+  left: 50%;
+  top: 0;
+}
+.react-flow__resize-control.handle.bottom {
+  left: 50%;
+  top: 100%;
+}
+.react-flow__resize-control.handle.top.left {
+  left: 0;
+}
+.react-flow__resize-control.handle.bottom.left {
+  left: 0;
+}
+.react-flow__resize-control.handle.top.right {
+  left: 100%;
+}
+.react-flow__resize-control.handle.bottom.right {
+  left: 100%;
+}
+/* line styles */
+.react-flow__resize-control.line {
+  border-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default));
+  border-width: 0;
+  border-style: solid;
+}
+.react-flow__resize-control.line.left,
+.react-flow__resize-control.line.right {
+  width: 1px;
+  transform: translate(-50%, 0);
+  top: 0;
+  height: 100%;
+}
+.react-flow__resize-control.line.left {
+  left: 0;
+  border-left-width: 1px;
+}
+.react-flow__resize-control.line.right {
+  left: 100%;
+  border-right-width: 1px;
+}
+.react-flow__resize-control.line.top,
+.react-flow__resize-control.line.bottom {
+  height: 1px;
+  transform: translate(0, -50%);
+  left: 0;
+  width: 100%;
+}
+.react-flow__resize-control.line.top {
+  top: 0;
+  border-top-width: 1px;
+}
+.react-flow__resize-control.line.bottom {
+  border-bottom-width: 1px;
+  top: 100%;
+}
+.react-flow__edge-textbg {
+  fill: var(--xy-edge-label-background-color, var(--xy-edge-label-background-color-default));
+}
+.react-flow__edge-text {
+  fill: var(--xy-edge-label-color, var(--xy-edge-label-color-default));
+}
+`;function ra(e,t){let o=e("react"),n=o.createElement,r=o.useState,i=o.useEffect,a=o.useMemo,s=o.useCallback,l=o.useRef,c=`
 .kvmflow-root {
   container-type: inline-size;
   height: 100%;
@@ -169,1636 +785,308 @@ window.__ModuleLoader__.load({
   .kvmflow-title { font-size: 17px; }
 }
 
-`;
-        function cn(...values) {
-            return values.filter(Boolean).join(' ');
-        }
-        // Mirrors src/host/view.ts. The client half cannot import the Host module
-        // across the bundle boundary, so the same two formulas live here.
-        function isFullFrameMapping(mapping) {
-            return mapping === undefined || mapping === null
-                || (mapping.left === 0 && mapping.top === 0 && mapping.right === 1 && mapping.bottom === 1);
-        }
-        function clamp01(value) {
-            return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
-        }
-        function frameToTargetPoint(mapping, x, y) {
-            if (isFullFrameMapping(mapping))
-                return { x: clamp01(x), y: clamp01(y) };
-            return {
-                x: clamp01((x - mapping.left) / Math.max(1e-6, mapping.right - mapping.left)),
-                y: clamp01((y - mapping.top) / Math.max(1e-6, mapping.bottom - mapping.top)),
-            };
-        }
-        /**
-         * Find the target's screen inside a captured frame by trimming uniform black
-         * bars. A frame that is entirely the target returns undefined; so does an
-         * ambiguous result, because a wrong mapping is worse than no mapping.
-         */
-        function detectContentMapping(media) {
-            try {
-                // Works for an <img> snapshot and for a <video> element.
-                const naturalWidth = media.videoWidth || media.naturalWidth || media.width;
-                const naturalHeight = media.videoHeight || media.naturalHeight || media.height;
-                if (!(naturalWidth > 0) || !(naturalHeight > 0))
-                    return undefined;
-                const width = 360;
-                const height = Math.max(8, Math.round(width * naturalHeight / naturalWidth));
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const context = canvas.getContext('2d', { willReadFrequently: true });
-                if (context === null || context === undefined)
-                    return undefined;
-                context.drawImage(media, 0, 0, width, height);
-                const data = context.getImageData(0, 0, width, height).data;
-                const luma = (x, y) => {
-                    const index = (y * width + x) * 4;
-                    return (data[index] + data[index + 1] + data[index + 2]) / 3;
-                };
-                const isBar = (x, y) => luma(x, y) <= 22;
-                const columnIsBar = (x) => {
-                    let dark = 0;
-                    for (let y = 0; y < height; y += 1)
-                        if (isBar(x, y))
-                            dark += 1;
-                    return dark / height >= 0.985;
-                };
-                const rowIsBar = (y) => {
-                    let dark = 0;
-                    for (let x = 0; x < width; x += 1)
-                        if (isBar(x, y))
-                            dark += 1;
-                    return dark / width >= 0.985;
-                };
-                const limitX = Math.floor(width * 0.3);
-                const limitY = Math.floor(height * 0.3);
-                let left = 0;
-                while (left < limitX && columnIsBar(left))
-                    left += 1;
-                let right = width - 1;
-                while (right > width - 1 - limitX && columnIsBar(right))
-                    right -= 1;
-                let top = 0;
-                while (top < limitY && rowIsBar(top))
-                    top += 1;
-                let bottom = height - 1;
-                while (bottom > height - 1 - limitY && rowIsBar(bottom))
-                    bottom -= 1;
-                if (right - left + 1 < width * 0.45 || bottom - top + 1 < height * 0.45)
-                    return undefined;
-                let sum = 0;
-                let count = 0;
-                for (let y = top; y <= bottom; y += 2) {
-                    for (let x = left; x <= right; x += 2) {
-                        sum += luma(x, y);
-                        count += 1;
-                    }
-                }
-                const contentLuma = count === 0 ? 0 : sum / count;
-                // An all-black frame would otherwise trim to a false 40% box.
-                if (contentLuma < 12)
-                    return undefined;
-                const mapping = {
-                    left: left / width,
-                    top: top / height,
-                    right: (right + 1) / width,
-                    bottom: (bottom + 1) / height,
-                };
-                if (mapping.left < 0.006)
-                    mapping.left = 0;
-                if (mapping.top < 0.006)
-                    mapping.top = 0;
-                if (mapping.right > 0.994)
-                    mapping.right = 1;
-                if (mapping.bottom > 0.994)
-                    mapping.bottom = 1;
-                if (isFullFrameMapping(mapping))
-                    return undefined;
-                const contentAspect = ((mapping.right - mapping.left) * naturalWidth) / ((mapping.bottom - mapping.top) * naturalHeight);
-                if (contentAspect < 0.4 || contentAspect > 2.8)
-                    return undefined;
-                return mapping;
-            }
-            catch (error) {
-                return undefined;
-            }
-        }
-        /** Resolve once the local description carries its candidates, or after a bounded wait. */
-        function waitForIce(pc, timeoutMs = 1500) {
-            return new Promise(resolve => {
-                if (pc.iceGatheringState === 'complete') {
-                    resolve();
-                    return;
-                }
-                let settled = false;
-                const done = () => {
-                    if (settled)
-                        return;
-                    settled = true;
-                    clearTimeout(timer);
-                    if (typeof pc.removeEventListener === 'function')
-                        pc.removeEventListener('icegatheringstatechange', check);
-                    resolve();
-                };
-                const check = () => { if (pc.iceGatheringState === 'complete')
-                    done(); };
-                const timer = setTimeout(done, timeoutMs);
-                if (typeof pc.addEventListener === 'function')
-                    pc.addEventListener('icegatheringstatechange', check);
-            });
-        }
-        function formatTime(at) {
-            if (typeof at !== 'number' || at <= 0)
-                return '';
-            const date = new Date(at);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        }
-        function formatDateTime(at) {
-            if (typeof at !== 'number' || at <= 0)
-                return '—';
-            return new Date(at).toLocaleString();
-        }
-        function statusTone(status) {
-            if (status === 'succeeded' || status === 'passed')
-                return 'ok';
-            if (status === 'failed' || status === 'aborted')
-                return 'err';
-            if (status === 'paused' || status === 'armed' || status === 'verifying')
-                return 'warn';
-            if (status === 'running' || status === 'acting' || status === 'precheck')
-                return 'brand';
-            return '';
-        }
-        function Btn(props) {
-            // Forward ARIA state so toggles announce themselves instead of only
-            // changing their label.
-            const aria = {};
-            for (const key of Object.keys(props)) {
-                if (key.startsWith('aria-'))
-                    aria[key] = props[key];
-            }
-            return h('button', {
-                type: 'button',
-                className: cn('kvmflow-btn', props.kind, props.className),
-                onClick: props.onClick,
-                disabled: props.disabled === true,
-                title: props.title,
-                ...aria,
-            }, props.children);
-        }
-        function Pill(props) {
-            return h('span', { className: cn('kvmflow-pill', props.tone) }, props.children);
-        }
-        function Field(props) {
-            return h('div', { className: cn('kvmflow-field', props.className) }, props.label === undefined ? null : h('label', null, props.label), props.children, props.hint === undefined ? null : h('span', { className: 'kvmflow-hint' }, props.hint));
-        }
-        function Card(props) {
-            // `actions` is an in-title toolbar for viewer controls; anything longer than
-            // one control belongs in a CardActions row under the title instead.
-            const actions = Array.isArray(props.actions)
-                ? props.actions.map((node, index) => (node === null || node === undefined ? null : h(React.Fragment, { key: index }, node)))
-                : props.actions;
-            return h('section', { className: cn('kvmflow-card', props.className), style: props.style }, props.title === undefined ? null : h('h2', { className: 'kvmflow-card-title' }, h('span', null, props.title, props.subtitle === undefined ? null : h('span', { className: 'kvmflow-card-sub' }, ` · ${props.subtitle}`)), actions === undefined ? null : h('div', { className: 'kvmflow-actions' }, actions)), props.children);
-        }
-        /** A card's controls, always in one wrapping row at the bottom of its body. */
-        function CardActions(props) {
-            return h('div', { className: cn('kvmflow-card-actions', props.className) }, props.children);
-        }
-        function Empty(props) {
-            return h('div', { className: 'kvmflow-empty' }, props.children);
-        }
-        function Notice(props) {
-            if (props.message === undefined || props.message === null)
-                return null;
-            return h('div', {
-                className: cn('kvmflow-notice', props.tone),
-                role: props.tone === 'err' ? 'alert' : 'status',
-            }, h('span', null, props.message), h('span', { className: 'kvmflow-actions' }, props.action === undefined ? null : h('button', {
-                type: 'button',
-                className: 'kvmflow-btn small',
-                onClick: () => { props.action.onClick(); props.onClose(); },
-            }, props.action.label), h('button', { type: 'button', className: 'kvmflow-btn small', 'aria-label': props.dismissLabel ?? 'Dismiss', title: props.dismissLabel ?? 'Dismiss', onClick: props.onClose }, '×')));
-        }
-        /** Two-step destructive control: the first click arms, the second confirms. */
-        function ConfirmButton(props) {
-            const [armed, setArmed] = useState(false);
-            const timer = useRef();
-            useEffect(() => () => { if (timer.current !== undefined)
-                clearTimeout(timer.current); }, []);
-            useEffect(() => {
-                if (!armed)
-                    return undefined;
-                timer.current = setTimeout(() => setArmed(false), 5000);
-                return () => { if (timer.current !== undefined)
-                    clearTimeout(timer.current); };
-            }, [armed]);
-            if (!armed) {
-                return h(Btn, {
-                    kind: props.kind,
-                    disabled: props.disabled,
-                    title: props.title,
-                    onClick: () => setArmed(true),
-                }, props.children);
-            }
-            return h('span', { className: 'kvmflow-confirm' }, h('span', { className: 'kvmflow-confirm-text' }, props.confirmLabel ?? 'Confirm?'), h(Btn, { kind: 'danger', disabled: props.disabled, onClick: () => { setArmed(false); props.onConfirm(); } }, props.confirmAction ?? 'Delete'), h(Btn, { onClick: () => setArmed(false) }, props.cancelLabel ?? 'Cancel'));
-        }
-        function StepStatus(props) {
-            const status = props.status ?? 'pending';
-            const label = props.t === undefined ? status : statusLabel(props.t, status);
-            return h(Pill, { tone: statusTone(status), status }, label);
-        }
-        function ImageThumb(props) {
-            const [source, setSource] = useState(undefined);
-            const [failed, setFailed] = useState(false);
-            useEffect(() => {
-                let alive = true;
-                setSource(undefined);
-                setFailed(false);
-                if (typeof props.path !== 'string' || props.path === '')
-                    return undefined;
-                props.shared.rpc('image.read', { path: props.path })
-                    .then((value) => { if (alive)
-                    setSource(`data:${value.mediaType};base64,${value.data}`); })
-                    .catch(() => { if (alive)
-                    setFailed(true); });
-                return () => { alive = false; };
-            }, [props.path]);
-            if (typeof props.path !== 'string' || props.path === '')
-                return null;
-            if (failed) {
-                return h('span', { className: 'kvmflow-thumb-error', title: props.path }, props.shared.t('截图不可用', 'Screenshot unavailable'));
-            }
-            if (source === undefined)
-                return h('span', { className: 'kvmflow-hint' }, props.label ?? props.shared.t('载入中…', 'loading…'));
-            return h('img', { className: 'kvmflow-thumb', src: source, alt: props.label ?? 'screen capture' });
-        }
-        /** Human-readable run and step status through the active locale. */
-        function statusLabel(t, status) {
-            const labels = {
-                starting: ['启动中', 'starting'],
-                armed: ['等待开机', 'armed'],
-                running: ['执行中', 'running'],
-                paused: ['已暂停', 'paused'],
-                succeeded: ['已完成', 'succeeded'],
-                failed: ['失败', 'failed'],
-                aborted: ['已中止', 'aborted'],
-                pending: ['待执行', 'pending'],
-                precheck: ['检查前置条件', 'precheck'],
-                acting: ['执行动作', 'acting'],
-                verifying: ['验证画面', 'verifying'],
-                passed: ['通过', 'passed'],
-                skipped: ['跳过', 'skipped'],
-            };
-            const entry = labels[status];
-            return entry === undefined ? status : t(entry[0], entry[1]);
-        }
-        /** Panel/tab glyph: the black monitor mark from icon.svg with its pink cursor. */
-        function Icon(props) {
-            const size = typeof props.size === 'number' ? props.size : 18;
-            // label-primary is black on the light theme and white on the dark one, so a
-            // black line drawing stays legible in both instead of vanishing on dark.
-            const stroke = 'var(--dsw-alias-label-primary)';
-            return h('svg', {
-                width: size,
-                height: size,
-                viewBox: '0 0 36 36',
-                role: 'img',
-                'aria-label': 'KVMFlow',
-                focusable: 'false',
-                fill: 'none',
-                strokeLinecap: 'round',
-                strokeLinejoin: 'round',
-            }, h('g', { stroke, strokeWidth: 2 }, h('rect', { x: 4.5, y: 6.3, width: 27, height: 18.4, rx: 2.8 }), h('path', { d: 'M18 24.7L18 28.5' }), h('path', { d: 'M11.6 29.7L24.4 29.7' })), h('path', {
-                d: 'M14.8 11.92L15.17 11.9L21.35 15.25L21.22 15.92L18.04 16.25L16.36 19.1L15.71 18.98L14.65 12.27Z',
-                stroke: '#ec4899',
-                strokeWidth: 1.4,
-            }));
-        }
-        /** Outline glyph: corners point outward for the wide layout. */
-        function IconExpand(props) {
-            const size = typeof props.size === 'number' ? props.size : 15;
-            return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true }, h('path', { d: 'M4 9V4h5', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }), h('path', { d: 'M15 4h5v5', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }), h('path', { d: 'M20 15v5h-5', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }), h('path', { d: 'M9 20H4v-5', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }));
-        }
-        /** Outline glyph: corners point inward for the standard layout. */
-        function IconCollapse(props) {
-            const size = typeof props.size === 'number' ? props.size : 15;
-            return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true }, h('path', { d: 'M9 4v5H4', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }), h('path', { d: 'M20 9h-5V4', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }), h('path', { d: 'M15 20v-5h5', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }), h('path', { d: 'M4 15h5v5', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }));
-        }
-        function apply(ctx) {
-            // One subscription thunk and one snapshot reader for every panel instance:
-            // a fresh arrow per render would resubscribe the whole page each time.
-            const subscribeLocale = (listener) => ctx.locale.subscribe(listener);
-            const readLocale = () => ctx.locale.getSnapshot();
-            function useT() {
-                const snapshot = React.useSyncExternalStore(subscribeLocale, readLocale, readLocale);
-                const active = typeof snapshot?.active === 'string' ? snapshot.active : 'en';
-                // Stable identity while the locale is unchanged: an effect that lists the
-                // translator would otherwise re-run on every render.
-                return React.useCallback((zh, en) => (active.toLowerCase().startsWith('zh') ? zh : en), [active]);
-            }
-            async function rpc(method, params = {}, signal) {
-                const response = await fetch(new URL('kvmflow/rpc', document.baseURI), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ method, params }),
-                    credentials: 'same-origin',
-                    ...(signal === undefined ? {} : { signal }),
-                });
-                const text = await response.text();
-                let result;
-                try {
-                    result = JSON.parse(text);
-                }
-                catch {
-                    throw new Error(`KVMFlow RPC ${method} returned HTTP ${response.status}`);
-                }
-                if (result === undefined || result.ok !== true) {
-                    const error = new Error(result?.error?.message ?? `KVMFlow RPC ${method} failed`);
-                    error.code = result?.error?.code ?? 'kvmflow/rpc';
-                    throw error;
-                }
-                return result.value;
-            }
-            function Panel(props) {
-                const t = useT();
-                const compact = props?.compact === true;
-                const [state, setState] = useState(undefined);
-                const [tab, setTab] = useState('live');
-                const [deviceId, setDeviceIdState] = useState(() => {
-                    try {
-                        return window.localStorage.getItem('kvmflow.deviceId') ?? '';
-                    }
-                    catch {
-                        return '';
-                    }
-                });
-                const [busy, setBusy] = useState('');
-                const [notice, setNotice] = useState(undefined);
-                // Drafts live above the tab switch so an unsaved YAML edit or a half-typed
-                // step never disappears when the user looks at another tab.
-                const [workflowDraft, setWorkflowDraft] = useState({ id: '', yaml: '', dirty: false });
-                const [recordDraft, setRecordDraft] = useState({ name: '', description: '', stepName: '', stepDesc: '' });
-                const [promptFallback, setPromptFallback] = useState('');
-                const [logs, setLogs] = useState([]);
-                const log = useCallback((kind, message) => {
-                    setLogs(current => [...current.slice(-119), { at: Date.now(), kind, message }]);
-                }, []);
-                const notify = useCallback((message, tone, action) => {
-                    setNotice({ message, tone, ...(action === undefined ? {} : { action }) });
-                    log(tone === 'err' ? 'err' : tone === 'ok' ? 'info' : 'warn', message);
-                }, [log]);
-                /** Hand one prompt to the agent in a new Session, or surface it for manual copy. */
-                const handPrompt = useCallback(async (prompt, okMessage, errMessage) => {
-                    const workspace = typeof ctx.get === 'function' ? ctx.get('uiWorkspace') : undefined;
-                    if (workspace !== undefined && typeof workspace.startSession === 'function') {
-                        workspace.startSession(undefined, { prompt, whenDraftExists: 'append' });
-                        setPromptFallback('');
-                        notify(okMessage, 'ok');
-                        return;
-                    }
-                    if (typeof navigator !== 'undefined' && navigator.clipboard !== undefined) {
-                        try {
-                            await navigator.clipboard.writeText(prompt);
-                            setPromptFallback('');
-                            notify(okMessage, 'ok');
-                            return;
-                        }
-                        catch (error) {
-                            // Fall through to the inline prompt.
-                        }
-                    }
-                    setPromptFallback(prompt);
-                    notify(errMessage, 'warn');
-                }, [notify]);
-                const setDeviceId = useCallback((id) => {
-                    setDeviceIdState(id);
-                    try {
-                        window.localStorage.setItem('kvmflow.deviceId', id);
-                    }
-                    catch { /* ignore */ }
-                }, []);
-                const refresh = useCallback(async () => {
-                    try {
-                        const next = await rpc('state');
-                        setState(next);
-                        if (deviceId === '' && typeof next.defaultDeviceId === 'string')
-                            setDeviceId(next.defaultDeviceId);
-                        if (deviceId !== '' && Array.isArray(next.devices) && !next.devices.some((device) => device.id === deviceId)) {
-                            setDeviceId(typeof next.defaultDeviceId === 'string' ? next.defaultDeviceId : '');
-                        }
-                    }
-                    catch (error) {
-                        setNotice({ message: error.message ?? String(error), tone: 'err' });
-                    }
-                }, [deviceId, setDeviceId]);
-                useEffect(() => {
-                    void refresh();
-                    const timer = setInterval(() => { void refresh(); }, 4000);
-                    return () => clearInterval(timer);
-                }, [refresh]);
-                const runRpc = useCallback(async (label, method, params = {}) => {
-                    setBusy(label);
-                    try {
-                        const value = await rpc(method, params);
-                        return value;
-                    }
-                    catch (error) {
-                        notify(error.message ?? String(error), 'err');
-                        return undefined;
-                    }
-                    finally {
-                        setBusy('');
-                    }
-                }, [notify]);
-                const probe = useCallback(async (id) => {
-                    if (id === '') {
-                        notify(t('请先选择设备。', 'Select a device first.'), 'warn');
-                        return;
-                    }
-                    const value = await runRpc(t('测试连接', 'Test connection'), 'device.probe', { deviceId: id });
-                    if (value === undefined)
-                        return;
-                    const probeValue = value.probe ?? {};
-                    if (probeValue.video === true)
-                        notify(t('连接成功，已获取画面信号。', 'Connected; video signal available.'), 'ok');
-                    else if (probeValue.reachable === false)
-                        notify(t('无法连接设备，请检查地址与网络。', 'Cannot reach the device; check the origin and network.'), 'err');
-                    else if (probeValue.authenticated === false)
-                        notify(t('设备可达但访问令牌被拒绝。', 'Device reachable but the access token was rejected.'), 'err');
-                    else
-                        notify(t('设备与令牌有效，但当前没有画面信号（目标机可能未开机）。', 'Device and token are valid, but there is no video signal (the target may be off).'), 'warn');
-                }, [notify, runRpc, t]);
-                const shared = useMemo(() => ({
-                    state, setState, tab, setTab, deviceId, setDeviceId, busy, setBusy, notify, log, logs, setLogs, refresh, rpc, runRpc, t,
-                    workflowDraft, setWorkflowDraft, recordDraft, setRecordDraft, handPrompt, probe,
-                }), [state, tab, deviceId, busy, notify, log, logs, refresh, runRpc, t, workflowDraft, recordDraft, handPrompt, probe]);
-                if (state === undefined) {
-                    return h('div', { className: 'kvmflow-root' }, h('style', null, CSS), h('div', { className: 'kvmflow-empty' }, busy || t('正在加载 KVMFlow…', 'Loading KVMFlow…')));
-                }
-                const tabs = [
-                    { id: 'live', zh: '实时画面', en: 'Live screen' },
-                    { id: 'devices', zh: '设备', en: 'Devices' },
-                    { id: 'recorder', zh: '录制器', en: 'Recorder' },
-                    { id: 'workflows', zh: '工作流', en: 'Workflows' },
-                    { id: 'runs', zh: '执行', en: 'Runs' },
-                ];
-                const selectedDevice = (state.devices ?? []).find((device) => device.id === deviceId);
-                return h('div', { className: cn('kvmflow-root', compact ? 'compact' : '') }, h('style', null, CSS), h('div', { className: 'kvmflow-head' }, h('div', { className: 'kvmflow-head-main' }, h('div', { className: 'kvmflow-title-row' }, h('h1', { className: 'kvmflow-title' }, 'KVMFlow'), state.activeRun === undefined || state.activeRun === null ? null : h(Pill, { tone: statusTone(state.activeRun.status) }, `${state.activeRun.status} · ${state.activeRun.phase}`), state.activeRecording === undefined ? null : h(Pill, { tone: 'warn' }, t(`录制中 · ${state.activeRecording.eventCount} 事件`, `Recording · ${state.activeRecording.eventCount} events`))), h('p', { className: 'kvmflow-sub' }, t('IP-KVM 控制、人工录制、AI 生成 YAML 工作流与逐步验证执行。', 'IP-KVM control, manual recording, AI-generated YAML workflows, and verified playback.'))), h('div', { className: 'kvmflow-head-right' }, h('span', {
-                    className: 'kvmflow-pill kvmflow-pill-device',
-                    title: selectedDevice === undefined ? t('未选择设备', 'No device') : selectedDevice.name,
-                }, h('span', { className: cn('kvmflow-dot', selectedDevice === undefined ? '' : 'on') }), h('span', { className: 'kvmflow-pill-text' }, selectedDevice === undefined ? t('未选择设备', 'No device') : selectedDevice.name)), h('select', {
-                    className: 'kvmflow-select kvmflow-device-select',
-                    value: deviceId,
-                    onChange: (event) => setDeviceId(event.target.value),
-                    'aria-label': t('选择设备', 'Select device'),
-                    title: selectedDevice === undefined ? '' : `${selectedDevice.name} — ${selectedDevice.baseUrl}`,
-                }, h('option', { value: '' }, t('选择 KVM 设备…', 'Select a KVM device…')), (state.devices ?? []).map((device) => h('option', { key: device.id, value: device.id }, `${device.name} — ${device.baseUrl}`))), h(Btn, { onClick: () => { void refresh(); }, disabled: busy !== '' }, t('刷新', 'Refresh')), busy === '' ? null : h('span', { className: 'kvmflow-busy', role: 'status' }, h('span', { className: 'kvmflow-spinner' }), busy))), h(Notice, {
-                    message: notice?.message,
-                    tone: notice?.tone,
-                    action: notice?.action,
-                    dismissLabel: t('关闭提示', 'Dismiss notice'),
-                    onClose: () => setNotice(undefined),
-                }), promptFallback === '' ? null : h('div', { className: 'kvmflow-card', style: { marginBottom: '10px' } }, h('div', { className: 'kvmflow-card-title' }, h('span', null, t('复制这段提示词给 AI', 'Copy this prompt to the agent')), h(Btn, { small: true, onClick: () => setPromptFallback('') }, t('收起', 'Hide'))), h('textarea', { className: 'kvmflow-textarea compact', readOnly: true, value: promptFallback, onFocus: (event) => event.target.select() })), h('div', {
-                    className: 'kvmflow-tabs',
-                    role: 'tablist',
-                    'aria-label': 'KVMFlow',
-                    onKeyDown: (event) => {
-                        const ids = tabs.map(entry => entry.id);
-                        const index = ids.indexOf(tab);
-                        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-                            event.preventDefault();
-                            setTab(ids[(index + 1) % ids.length]);
-                        }
-                        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-                            event.preventDefault();
-                            setTab(ids[(index - 1 + ids.length) % ids.length]);
-                        }
-                        else if (event.key === 'Home') {
-                            event.preventDefault();
-                            setTab(ids[0]);
-                        }
-                        else if (event.key === 'End') {
-                            event.preventDefault();
-                            setTab(ids[ids.length - 1]);
-                        }
-                    },
-                }, tabs.map(entry => h('button', {
-                    key: entry.id,
-                    type: 'button',
-                    role: 'tab',
-                    id: `kvmflow-tab-${entry.id}`,
-                    tabIndex: tab === entry.id ? 0 : -1,
-                    'aria-selected': tab === entry.id,
-                    'aria-controls': 'kvmflow-tabpanel',
-                    className: cn('kvmflow-tab', tab === entry.id ? 'active' : ''),
-                    onClick: () => setTab(entry.id),
-                }, t(entry.zh, entry.en)))), h('div', { role: 'tabpanel', id: 'kvmflow-tabpanel', 'aria-labelledby': `kvmflow-tab-${tab}` }, tab === 'live' ? h(LiveTab, shared) : null, tab === 'devices' ? h(DevicesTab, shared) : null, tab === 'recorder' ? h(RecorderTab, shared) : null, tab === 'workflows' ? h(WorkflowsTab, shared) : null, tab === 'runs' ? h(RunsTab, shared) : null));
-            }
-            function DevicesTab(shared) {
-                const { state, deviceId, setDeviceId, runRpc, refresh, busy, t } = shared;
-                const selected = (state.devices ?? []).find((device) => device.id === deviceId);
-                const [editingId, setEditingId] = useState('');
-                const EMPTY_FORM = {
-                    name: '', baseUrl: '', token: '', notes: '',
-                    webUsername: '', webPassword: '',
-                };
-                const [form, setForm] = useState(EMPTY_FORM);
-                useEffect(() => {
-                    if (selected === undefined)
-                        return;
-                    if (editingId !== selected.id) {
-                        setEditingId(selected.id);
-                        setForm({
-                            name: selected.name ?? '',
-                            baseUrl: selected.baseUrl ?? '',
-                            token: '',
-                            notes: selected.notes ?? '',
-                            webUsername: selected.username ?? '',
-                            webPassword: '',
-                        });
-                    }
-                }, [selected?.id]);
-                const reset = () => {
-                    setEditingId('');
-                    setForm(EMPTY_FORM);
-                };
-                const save = async () => {
-                    if (editingId === '') {
-                        const value = await runRpc(t('添加设备', 'Add device'), 'device.add', {
-                            name: form.name,
-                            baseUrl: form.baseUrl,
-                            token: form.token,
-                            notes: form.notes,
-                            username: form.webUsername,
-                            ...(form.webPassword === '' ? {} : { password: form.webPassword }),
-                        });
-                        if (value !== undefined) {
-                            shared.notify(t('设备已添加', 'Device added'), 'ok');
-                            if (value.device?.id !== undefined)
-                                setDeviceId(value.device.id);
-                            reset();
-                            await refresh();
-                        }
-                    }
-                    else {
-                        // The frame mapping is detected from arriving frames, never typed:
-                        // saving the form must not overwrite a measurement.
-                        const patch = {
-                            id: editingId,
-                            name: form.name,
-                            baseUrl: form.baseUrl,
-                            notes: form.notes,
-                            username: form.webUsername,
-                        };
-                        if (typeof form.token === 'string' && form.token.trim() !== '')
-                            patch.token = form.token.trim();
-                        // An empty password field keeps the stored one, mirroring the token.
-                        if (typeof form.webPassword === 'string' && form.webPassword !== '')
-                            patch.password = form.webPassword;
-                        const value = await runRpc(t('保存设备', 'Save device'), 'device.update', patch);
-                        if (value !== undefined) {
-                            shared.notify(t('设备已保存', 'Device saved'), 'ok');
-                            setForm(current => ({ ...current, token: '' }));
-                            await refresh();
-                        }
-                    }
-                };
-                const remove = async (id) => {
-                    const value = await runRpc(t('删除设备', 'Remove device'), 'device.remove', { id });
-                    if (value !== undefined) {
-                        shared.notify(t('设备已删除', 'Device removed'), 'ok');
-                        if (deviceId === id)
-                            setDeviceId('');
-                        reset();
-                        await refresh();
-                    }
-                };
-                return h('div', { className: 'kvmflow-grid two' }, h('div', null, h(Card, { title: t('KVM 设备', 'KVM devices'), subtitle: `${state.devices?.length ?? 0}` }, (state.devices ?? []).length === 0
-                    ? h(Empty, null, t('还没有设备。请添加 Radxa Linkr 的地址和访问令牌（在窄屏或右侧栏中表单位于下方）。', 'No devices yet. Add a Radxa Linkr origin and access token in the add form.'))
-                    : h('div', { className: 'kvmflow-col' }, (state.devices ?? []).map((device) => h('div', {
-                        key: device.id,
-                        className: cn('kvmflow-device', device.id === deviceId ? 'selected' : ''),
-                    }, h('div', null, h('div', { className: 'kvmflow-device-name' }, device.name), h('div', { className: 'kvmflow-muted kvmflow-mono' }, device.baseUrl), h('div', { className: 'kvmflow-hint' }, [
-                        device.driver,
-                        device.hasToken ? t('令牌已保存', 'token saved') : t('缺少令牌', 'token missing'),
-                        device.hasWebCredentials ? t('视频账号已配置', 'video account set') : t('无视频账号', 'no video account'),
-                        device.id === state.defaultDeviceId ? t('默认设备', 'default') : '',
-                    ].filter(Boolean).join(' · ')), device.notes ? h('div', { className: 'kvmflow-hint' }, device.notes) : null, device.viewMapping === undefined ? null : h('div', { className: 'kvmflow-hint' }, t(`画面映射：左 ${Math.round(device.viewMapping.left * 100)}% 上 ${Math.round(device.viewMapping.top * 100)}% 右 ${Math.round(device.viewMapping.right * 100)}% 下 ${Math.round(device.viewMapping.bottom * 100)}%`, `view mapping: left ${Math.round(device.viewMapping.left * 100)}% top ${Math.round(device.viewMapping.top * 100)}% right ${Math.round(device.viewMapping.right * 100)}% bottom ${Math.round(device.viewMapping.bottom * 100)}%`))), h('div', { className: 'kvmflow-actions' }, h(Btn, { onClick: () => { setDeviceId(device.id); }, disabled: device.id === deviceId }, t('使用', 'Use')), h(Btn, { onClick: () => { setEditingId(device.id); setForm({ name: device.name, baseUrl: device.baseUrl, token: '', notes: device.notes ?? '', webUsername: device.username ?? '', webPassword: '' }); } }, t('编辑', 'Edit')), h(Btn, { onClick: () => { void shared.probe(device.id); }, disabled: busy !== '' }, t('测试', 'Test')), h(ConfirmButton, {
-                        kind: 'danger',
-                        disabled: busy !== '',
-                        confirmLabel: t('删除设备及其令牌？', 'Delete device and its token?'),
-                        confirmAction: t('删除', 'Delete'),
-                        cancelLabel: t('取消', 'Cancel'),
-                        onConfirm: () => { void remove(device.id); },
-                    }, t('删除', 'Remove')))))))), h(Card, { title: editingId === '' ? t('添加设备', 'Add device') : t('编辑设备', 'Edit device') }, h('div', { className: 'kvmflow-form-grid' }, h(Field, { label: t('名称', 'Name'), className: 'wide' }, h('input', { className: 'kvmflow-input', value: form.name, placeholder: 'Lab Linkr', onChange: (event) => setForm({ ...form, name: event.target.value }) })), h(Field, { label: t('地址', 'Origin'), className: 'wide' }, h('input', { className: 'kvmflow-input', value: form.baseUrl, placeholder: 'http://192.168.1.100', onChange: (event) => setForm({ ...form, baseUrl: event.target.value }) })), h(Field, { label: t('访问令牌', 'Access token'), className: 'wide', hint: editingId === '' ? t('在 Linkr Web 控制台的“系统设置 → 访问令牌”中生成后粘贴到这里；保存为 devices.json（权限 0600）。', 'Generate one in the Linkr web console under System settings → Access tokens, then paste it here. Stored in devices.json with mode 0600.') : t('留空表示保留现有令牌。', 'Leave blank to keep the current token.') }, h('input', { className: 'kvmflow-input', type: 'password', value: form.token, placeholder: editingId === '' ? 'radxa_linkr_…' : '••••••••', onChange: (event) => setForm({ ...form, token: event.target.value }) })), h(Field, { label: t('备注', 'Notes'), className: 'wide' }, h('input', { className: 'kvmflow-input', value: form.notes, onChange: (event) => setForm({ ...form, notes: event.target.value }) })), h(Field, { label: t('Web 用户名（实时视频用）', 'Web username (for live video)'), className: 'wide', hint: t('只有实时视频需要 Web 账号；截图与键鼠用访问令牌即可。', 'Only live video needs the web account; snapshots and HID use the access token.') }, h('input', { className: 'kvmflow-input', value: form.webUsername, autoComplete: 'off', onChange: (event) => setForm({ ...form, webUsername: event.target.value }) })), h(Field, { label: t('Web 密码', 'Web password'), className: 'wide', hint: editingId === '' ? t('与 Web 控制台登录密码相同，保存为 devices.json（0600）。', 'Same as the web console password; stored in devices.json (0600).') : t('留空表示保留现有密码。', 'Leave blank to keep the stored password.') }, h('input', { className: 'kvmflow-input', type: 'password', value: form.webPassword, autoComplete: 'new-password', placeholder: editingId === '' ? '' : (selected?.hasWebCredentials ? '••••••••' : t('未设置', 'not set')), onChange: (event) => setForm({ ...form, webPassword: event.target.value }) }))), h('div', { className: 'kvmflow-split' }), h('div', { className: 'kvmflow-form-actions' }, h(Btn, { kind: 'primary', onClick: () => { void save(); }, disabled: busy !== '' || form.baseUrl.trim() === '' || (editingId === '' && form.token.trim() === '') }, editingId === '' ? t('添加', 'Add') : t('保存', 'Save')), editingId === '' ? null : h(Btn, { onClick: reset }, t('取消编辑', 'Cancel edit'))), h('p', { className: 'kvmflow-hint', style: { marginTop: '10px' } }, t('第一阶段使用 Radxa Linkr 公开 HTTP API：GET /api/public/snapshot 与 POST /api/public/control。', 'Stage one uses the Radxa Linkr public HTTP API: GET /api/public/snapshot and POST /api/public/control.'))));
-            }
-            function LiveTab(shared) {
-                const { state, deviceId, runRpc, rpc, log, logs, t, refresh } = shared;
-                const device = (state.devices ?? []).find((entry) => entry.id === deviceId);
-                // Wide mode gives the screen the whole panel instead of one grid column.
-                const [wide, setWide] = useState(() => {
-                    try {
-                        return window.localStorage.getItem('kvmflow.wide') === '1';
-                    }
-                    catch {
-                        return false;
-                    }
-                });
-                const toggleWide = useCallback(() => {
-                    setWide((current) => {
-                        const next = !current;
-                        try {
-                            window.localStorage.setItem('kvmflow.wide', next ? '1' : '0');
-                        }
-                        catch { /* ignore */ }
-                        return next;
-                    });
-                }, []);
-                const [frame, setFrame] = useState(undefined);
-                const [frameError, setFrameError] = useState('');
-                const [live, setLive] = useState(true);
-                const [pressed, setPressed] = useState({});
-                const [text, setText] = useState('');
-                // The target's screen inside the frame, when the frame is letterboxed.
-                const [mapping, setMapping] = useState(device?.viewMapping);
-                const [pointer, setPointer] = useState(undefined);
-                // Real-time preview is WebRTC (needs the device's web account); JPEG
-                // polling stays available and is the fallback when the peer fails.
-                const [previewMode, setPreviewMode] = useState(() => {
-                    const stored = (() => {
-                        try {
-                            return window.localStorage.getItem('kvmflow.preview');
-                        }
-                        catch {
-                            return null;
-                        }
-                    })();
-                    if (stored === 'video' || stored === 'snapshot')
-                        return stored;
-                    return device?.preview === 'snapshot' ? 'snapshot' : 'video';
-                });
-                const [videoStream, setVideoStream] = useState(undefined);
-                const [videoError, setVideoError] = useState('');
-                const [videoSize, setVideoSize] = useState(undefined);
-                const [videoRetry, setVideoRetry] = useState(0);
-                const videoRef = useRef(null);
-                const detected = useRef({ size: '', persisted: JSON.stringify(device?.viewMapping ?? null) });
-                useEffect(() => {
-                    setMapping(device?.viewMapping);
-                    detected.current = { size: '', persisted: JSON.stringify(device?.viewMapping ?? null) };
-                }, [device?.id, JSON.stringify(device?.viewMapping ?? null)]);
-                const applyDetected = useCallback(async (image) => {
-                    const size = `${image.naturalWidth}x${image.naturalHeight}`;
-                    if (detected.current.size === size)
-                        return;
-                    detected.current.size = size;
-                    const next = detectContentMapping(image);
-                    const serialized = JSON.stringify(next ?? null);
-                    setMapping(next);
-                    if (serialized === detected.current.persisted)
-                        return;
-                    detected.current.persisted = serialized;
-                    try {
-                        await rpc('device.update', { id: deviceId, viewMapping: next ?? null });
-                        log('info', next === undefined
-                            ? 'Frame covers the whole target screen; click mapping is 1:1.'
-                            : `Detected a letterboxed target area (${(next.right - next.left).toFixed(3)}×${(next.bottom - next.top).toFixed(3)} of the frame); mapping clicks to it.`);
-                    }
-                    catch (error) {
-                        shared.notify(error.message ?? String(error), 'err');
-                    }
-                }, [deviceId, rpc, log, shared]);
-                const screenRef = useRef(null);
-                const captureInFlight = useRef(false);
-                // The right Sidebar hides docked bodies by moving them off-frame rather
-                // than unmounting, so capture also requires the screen to be on screen.
-                const onScreen = useRef(true);
-                const [onScreenState, setOnScreenState] = useState(true);
-                // Linkr's public API allows 5 requests/second, shared by snapshots and
-                // every HID event, so a faster preview costs input headroom. A 429 backs
-                // off exponentially instead of hammering the limiter.
-                const [frameIntervalMs, setFrameIntervalMs] = useState(() => {
-                    try {
-                        const stored = Number(window.localStorage.getItem('kvmflow.frameIntervalMs'));
-                        return Number.isFinite(stored) && stored >= 400 ? stored : 1100;
-                    }
-                    catch {
-                        return 1100;
-                    }
-                });
-                const rateStrikes = useRef(0);
-                const rateBackoffUntil = useRef(0);
-                const capture = useCallback(async () => {
-                    if (deviceId === '' || captureInFlight.current || !onScreen.current)
-                        return;
-                    if (Date.now() < rateBackoffUntil.current)
-                        return;
-                    captureInFlight.current = true;
-                    try {
-                        const value = await rpc('screen.snapshot', { deviceId });
-                        setFrame(value);
-                        setFrameError('');
-                        rateStrikes.current = 0;
-                    }
-                    catch (error) {
-                        setFrameError(error.message ?? String(error));
-                        if (typeof error?.code === 'string' && error.code.includes('RATE_LIMITED')) {
-                            rateStrikes.current = Math.min(3, rateStrikes.current + 1);
-                            rateBackoffUntil.current = Date.now() + 1000 * 2 ** rateStrikes.current;
-                        }
-                    }
-                    finally {
-                        captureInFlight.current = false;
-                    }
-                }, [deviceId, rpc]);
-                const chooseFrameInterval = useCallback((ms) => {
-                    setFrameIntervalMs(ms);
-                    rateStrikes.current = 0;
-                    rateBackoffUntil.current = 0;
-                    try {
-                        window.localStorage.setItem('kvmflow.frameIntervalMs', String(ms));
-                    }
-                    catch { /* ignore */ }
-                }, []);
-                useEffect(() => {
-                    setFrame(undefined);
-                    setFrameError('');
-                    setVideoStream(undefined);
-                    setVideoError('');
-                    setVideoSize(undefined);
-                }, [deviceId]);
-                useEffect(() => {
-                    const element = screenRef.current;
-                    if (element === null || element === undefined || typeof IntersectionObserver === 'undefined')
-                        return undefined;
-                    const observer = new IntersectionObserver(entries => {
-                        for (const current of entries) {
-                            onScreen.current = current.isIntersecting;
-                            setOnScreenState(current.isIntersecting);
-                        }
-                    });
-                    observer.observe(element);
-                    return () => observer.disconnect();
-                }, [deviceId]);
-                useEffect(() => {
-                    const element = screenRef.current;
-                    if (element === null || element === undefined)
-                        return undefined;
-                    const listener = (event) => wheelHandler.current(event);
-                    element.addEventListener('wheel', listener, { passive: false });
-                    // A press released outside the screen never reaches the element, so the
-                    // target would keep the button down. Window-level pointerup covers it,
-                    // and pointerleave covers dragging off the edge.
-                    const onPointerUp = (event) => {
-                        if (heldButton.current === 0)
-                            return;
-                        if (typeof element.contains === 'function' && event.target !== null && element.contains(event.target))
-                            return;
-                        releaseHeldRef.current();
-                    };
-                    const onPointerLeave = () => { releaseHeldRef.current(); };
-                    window.addEventListener('pointerup', onPointerUp, true);
-                    element.addEventListener('pointerleave', onPointerLeave);
-                    return () => {
-                        element.removeEventListener('wheel', listener);
-                        window.removeEventListener('pointerup', onPointerUp, true);
-                        element.removeEventListener('pointerleave', onPointerLeave);
-                    };
-                }, [deviceId]);
-                const videoLive = previewMode === 'video' && videoStream !== undefined;
-                const rpcRef = useRef(rpc);
-                rpcRef.current = rpc;
-                const translateRef = useRef(t);
-                translateRef.current = t;
-                useEffect(() => {
-                    const element = videoRef.current;
-                    if (element === null || element === undefined)
-                        return;
-                    if (element.srcObject !== videoStream)
-                        element.srcObject = videoStream ?? null;
-                }, [videoStream, videoLive]);
-                // Real-time video replaces the polling loop entirely: it costs no
-                // snapshot quota and leaves the device's 5 req/s for actual input.
-                useEffect(() => {
-                    if (deviceId === '' || !live || videoLive)
-                        return undefined;
-                    void capture();
-                    const timer = setInterval(() => {
-                        if (typeof document !== 'undefined' && document.visibilityState === 'hidden')
-                            return;
-                        void capture();
-                    }, frameIntervalMs);
-                    return () => clearInterval(timer);
-                }, [deviceId, live, capture, frameIntervalMs, videoLive]);
-                useEffect(() => {
-                    if (deviceId === '' || !live || previewMode !== 'video' || !onScreenState)
-                        return undefined;
-                    if (typeof RTCPeerConnection === 'undefined') {
-                        setVideoError(translateRef.current('当前浏览器不支持 WebRTC。', 'This browser has no WebRTC support.'));
-                        return undefined;
-                    }
-                    let cancelled = false;
-                    let pc;
-                    setVideoError('');
-                    void (async () => {
-                        try {
-                            pc = new RTCPeerConnection({ iceServers: [] });
-                            pc.addTransceiver('video', { direction: 'recvonly' });
-                            pc.ontrack = (event) => {
-                                if (cancelled)
-                                    return;
-                                const stream = event.streams !== undefined && event.streams.length > 0
-                                    ? event.streams[0]
-                                    : new MediaStream([event.track]);
-                                setVideoStream(stream);
-                                setVideoError('');
-                            };
-                            pc.onconnectionstatechange = () => {
-                                if (cancelled || pc === undefined)
-                                    return;
-                                const state = pc.connectionState;
-                                if (state === 'failed' || state === 'closed') {
-                                    setVideoError(translateRef.current('视频连接已断开。', 'The video connection dropped.'));
-                                }
-                            };
-                            const offer = await pc.createOffer();
-                            await pc.setLocalDescription(offer);
-                            await waitForIce(pc);
-                            const local = pc.localDescription ?? offer;
-                            const value = await rpcRef.current('rtc.offer', { deviceId, offer: local.sdp });
-                            if (cancelled)
-                                return;
-                            await pc.setRemoteDescription({ type: 'answer', sdp: value.answer });
-                        }
-                        catch (error) {
-                            if (cancelled)
-                                return;
-                            const message = error?.message ?? String(error);
-                            setVideoError(message);
-                            // Keep the selected mode and the snapshot fallback together: the
-                            // picture stays live, and the user decides whether to retry.
-                            log('warn', `WebRTC negotiation failed: ${message}`);
-                            try {
-                                if (pc !== undefined)
-                                    pc.close();
-                            }
-                            catch { /* ignore */ }
-                        }
-                    })();
-                    return () => {
-                        cancelled = true;
-                        setVideoStream(undefined);
-                        try {
-                            if (pc !== undefined)
-                                pc.close();
-                        }
-                        catch { /* ignore */ }
-                    };
-                }, [deviceId, live, previewMode, videoRetry, onScreenState]);
-                const send = useCallback(async (events, label, quiet = false) => {
-                    if (deviceId === '') {
-                        shared.notify(t('请先选择设备。', 'Select a device first.'), 'warn');
-                        return;
-                    }
-                    try {
-                        await rpc('screen.control', { deviceId, events });
-                        // Input outranks the preview: give a fresh HID batch a clear window
-                        // in the device's shared budget instead of competing with polling.
-                        rateBackoffUntil.current = Math.max(rateBackoffUntil.current, Date.now() + 300);
-                        if (!quiet)
-                            log('info', label);
-                    }
-                    catch (error) {
-                        shared.notify(error.message ?? String(error), 'err');
-                    }
-                }, [deviceId, rpc, log, shared, t]);
-                // Measure the rendered image, never the padded/bordered wrapper, and then
-                // convert the image point into the target's absolute HID space.
-                const point = (event, useMapping = true) => {
-                    const stage = event.currentTarget;
-                    const image = stage !== null && typeof stage.querySelector === 'function' ? stage.querySelector('img, video') : null;
-                    const rect = (image ?? stage).getBoundingClientRect();
-                    const frameX = clamp01((event.clientX - rect.left) / Math.max(1, rect.width));
-                    const frameY = clamp01((event.clientY - rect.top) / Math.max(1, rect.height));
-                    const target = frameToTargetPoint(useMapping ? mapping : undefined, frameX, frameY);
-                    return { x: target.x, y: target.y, frameX, frameY };
-                };
-                // A button pressed in the screen and released outside it would otherwise
-                // stay pressed on the target, which looks like a stuck drag.
-                const heldButton = useRef(0);
-                const lastPoint = useRef({ x: 0.5, y: 0.5 });
-                const dragAt = useRef(0);
-                // Native listeners outlive one render, so they reach the current closure
-                // through this ref instead of capturing a stale one.
-                const releaseHeldRef = useRef(() => { });
-                const releaseHeld = () => {
-                    if (heldButton.current === 0)
-                        return;
-                    const button = heldButton.current;
-                    heldButton.current = 0;
-                    const { x, y } = lastPoint.current;
-                    void send([['mouse_abs', 0, x, y, 0, 0]], `release ${button} on leave`);
-                };
-                releaseHeldRef.current = releaseHeld;
-                const mouseDown = (event) => {
-                    event.preventDefault();
-                    screenRef.current?.focus();
-                    const { x, y } = point(event);
-                    const button = event.button === 2 ? 2 : event.button === 1 ? 4 : 1;
-                    heldButton.current = button;
-                    lastPoint.current = { x, y };
-                    // Let the first move through immediately so a drag starts crisply;
-                    // later moves then coalesce to the device's request budget.
-                    dragAt.current = Date.now() - 200;
-                    setPointer({ x, y });
-                    void send([['mouse_abs', 0, x, y, 0, 0], ['mouse_abs', button, x, y, 0, 0]], `mouse down ${button} @ ${x.toFixed(3)},${y.toFixed(3)}`);
-                };
-                const mouseUp = (event) => {
-                    event.preventDefault();
-                    const { x, y } = point(event);
-                    heldButton.current = 0;
-                    lastPoint.current = { x, y };
-                    setPointer({ x, y });
-                    void send([['mouse_abs', 0, x, y, 0, 0]], `mouse up @ ${x.toFixed(3)},${y.toFixed(3)}`);
-                };
-                // Linkr wheel steps are -20..20, where one detent is one step. Browsers
-                // report pixels (100 per detent), lines, or pages, and a precision
-                // trackpad reports fractions, so deltas accumulate until they reach a
-                // whole step instead of being rounded away.
-                const wheelAccum = useRef({ x: 0, y: 0 });
-                const wheelDelta = (event) => {
-                    // A browser reports positive deltaY when the user scrolls down, and
-                    // Linkr's positive wheelY also scrolls the target down, so the sign
-                    // carries through unchanged. (Verified on hardware: wheelY +3 advanced
-                    // an alphabetical list forward.)
-                    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1;
-                    wheelAccum.current.y = clampStep(wheelAccum.current.y + (event.deltaY * unit) / 100);
-                    wheelAccum.current.x = clampStep(wheelAccum.current.x + (event.deltaX * unit) / 100);
-                    const steps = Math.trunc(wheelAccum.current.y);
-                    const stepsX = Math.trunc(wheelAccum.current.x);
-                    wheelAccum.current.y -= steps;
-                    wheelAccum.current.x -= stepsX;
-                    return { steps, stepsX };
-                };
-                const clampStep = (value) => (Number.isFinite(value) ? Math.max(-20, Math.min(20, value)) : 0);
-                // React installs `wheel` passively at its root, so preventDefault() in a
-                // synthetic handler is ignored and the page scrolls. Attach the wheel
-                // listener directly with passive:false; the ref keeps the closure fresh
-                // without re-registering on every frame.
-                const wheelHandler = useRef((event) => { });
-                const wheel = (event) => {
-                    // The page must not scroll while the pointer is over the target; the
-                    // gesture belongs to the remote machine.
-                    event.preventDefault();
-                    event.stopPropagation();
-                    if (deviceId === '' || frame === undefined)
-                        return;
-                    const { x, y } = point(event);
-                    setPointer({ x, y });
-                    const { steps, stepsX } = wheelDelta(event);
-                    if (steps === 0 && stepsX === 0)
-                        return;
-                    void send([['mouse_abs', 0, x, y, steps, stepsX]], `wheel ${steps}${stepsX === 0 ? '' : `,${stepsX}`}`);
-                };
-                wheelHandler.current = wheel;
-                const keyDown = (event) => {
-                    // Tab must move focus back out of the capture surface; forwarding it
-                    // would trap keyboard users inside the screen.
-                    if (event.key === 'Tab')
-                        return;
-                    if (event.repeat) {
-                        event.preventDefault();
-                        return;
-                    }
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setPressed(current => ({ ...current, [event.code]: true }));
-                    void send([['keyboard', event.code, true]], `key down ${event.code}`);
-                };
-                const keyUp = (event) => {
-                    if (event.key === 'Tab')
-                        return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setPressed(current => {
-                        const next = { ...current };
-                        delete next[event.code];
-                        return next;
-                    });
-                    void send([['keyboard', event.code, false]], `key up ${event.code}`);
-                };
-                const shortcut = (keys) => {
-                    const events = keys.map(key => ['keyboard', key, true]);
-                    events.push(['delay', 80]);
-                    for (const key of [...keys].reverse())
-                        events.push(['keyboard', key, false]);
-                    void send(events, `shortcut ${keys.join('+')}`);
-                };
-                const typeText = () => {
-                    if (text === '')
-                        return;
-                    const events = [];
-                    for (let index = 0; index < text.length; index += 120)
-                        events.push(['text', text.slice(index, index + 120)]);
-                    void send(events, `text ${Math.min(text.length, 60)}${text.length > 60 ? '…' : ''}`);
-                    setText('');
-                };
-                const recording = state.activeRecording;
-                const draft = shared.recordDraft;
-                const setDraft = shared.setRecordDraft;
-                const stepName = draft.stepName;
-                const stepDesc = draft.stepDesc;
-                const recordName = draft.name;
-                const setStepName = (value) => setDraft({ ...draft, stepName: value });
-                const setStepDesc = (value) => setDraft({ ...draft, stepDesc: value });
-                const setRecordName = (value) => setDraft({ ...draft, name: value });
-                return h('div', { className: cn('kvmflow-grid', wide ? 'wide' : 'two') }, h('div', null, h(Card, {
-                    title: t('实时画面', 'Live screen'),
-                    subtitle: device?.name ?? t('未选择设备', 'No device'),
-                    // Viewer controls stay on the title line, right-aligned.
-                    actions: [
-                        h(Btn, { onClick: () => { void capture(); }, disabled: deviceId === '' }, t('截图', 'Snapshot')),
-                        h('select', {
-                            className: 'kvmflow-select kvmflow-inline-select',
-                            value: previewMode,
-                            'aria-label': t('预览方式', 'Preview mode'),
-                            title: t('实时视频需要设备 Web 账号；截图模式按下拉右侧的帧率轮询', 'Real-time video needs the device web account; snapshot mode polls at the rate set next to it'),
-                            onChange: (event) => {
-                                const next = event.target.value;
-                                setPreviewMode(next);
-                                try {
-                                    window.localStorage.setItem('kvmflow.preview', next);
-                                }
-                                catch { /* ignore */ }
-                                if (deviceId !== '')
-                                    void rpc('device.update', { id: deviceId, preview: next }).catch(() => { });
-                            },
-                        }, h('option', { value: 'video' }, t('实时视频', 'Live video')), h('option', { value: 'snapshot' }, t('截图轮询', 'Snapshot polling'))),
-                        previewMode === 'video' ? null : h('select', {
-                            className: 'kvmflow-select kvmflow-inline-select',
-                            value: String(frameIntervalMs),
-                            'aria-label': t('预览刷新频率', 'Preview refresh rate'),
-                            title: t('设备公开 API 限 5 次/秒，且与键鼠事件共用；调高预览会挤占操作余量', 'The public API allows 5 requests/second shared with HID input, so a faster preview leaves less room for input'),
-                            onChange: (event) => chooseFrameInterval(Number(event.target.value)),
-                        }, h('option', { value: '2000' }, t('0.5 帧/秒', '0.5 fps')), h('option', { value: '1100' }, t('1 帧/秒', '1 fps')), h('option', { value: '700' }, t('1.5 帧/秒', '1.5 fps')), h('option', { value: '500' }, t('2 帧/秒', '2 fps'))),
-                        h(Btn, { onClick: () => setLive(value => !value) }, live ? t('暂停', 'Pause') : t('继续', 'Resume')),
-                        h(Btn, { onClick: () => { void shared.probe(deviceId); } }, t('测试', 'Test')),
-                        h('button', {
-                            type: 'button',
-                            className: 'kvmflow-icon-btn',
-                            'aria-pressed': wide,
-                            'aria-label': wide ? t('切换为标准布局', 'Switch to the standard layout') : t('切换为宽屏布局', 'Switch to the wide layout'),
-                            title: wide
-                                ? t('切换为标准布局（右侧显示录制与设备信息）', 'Switch to the standard layout with recording and device panes')
-                                : t('切换为宽屏：画面占满面板宽度，其余卡片移到下方', 'Switch to wide: the screen takes the whole panel width and the other cards move below'),
-                            onClick: toggleWide,
-                        }, wide ? h(IconCollapse) : h(IconExpand)),
-                    ],
-                }, deviceId === '' ? h(Empty, null, t('先在“设备”页添加并选择一个 KVM。', 'Add and select a KVM on the Devices tab first.')) : null, deviceId === '' ? null : h('div', {
-                    ref: screenRef,
-                    className: 'kvmflow-screen-wrap',
-                    tabIndex: 0,
-                    role: 'application',
-                    'aria-label': t('KVM 画面，点击可发送鼠标，聚焦后可用键盘', 'KVM screen; click for mouse and focus for keyboard'),
-                    onMouseMove: (event) => {
-                        const { x, y } = point(event);
-                        lastPoint.current = { x, y };
-                        setPointer(current => {
-                            if (current !== undefined && Math.round(current.x * 1000) === Math.round(x * 1000) && Math.round(current.y * 1000) === Math.round(y * 1000))
-                                return current;
-                            return { x, y };
-                        });
-                        // A drag has to reach the target while the button is held. The
-                        // device answers 5 requests/second, so moves coalesce and the
-                        // newest position wins instead of queueing every sample.
-                        if (heldButton.current !== 0) {
-                            const now = Date.now();
-                            if (now - dragAt.current >= 200) {
-                                dragAt.current = now;
-                                void send([['mouse_abs', heldButton.current, x, y, 0, 0]], 'drag', true);
-                            }
-                        }
-                    },
-                    onMouseLeave: () => {
-                        setPointer(undefined);
-                        releaseHeld();
-                    },
-                    onMouseDown: mouseDown,
-                    onMouseUp: mouseUp,
-                    onContextMenu: (event) => event.preventDefault(),
-                    onKeyDown: keyDown,
-                    onKeyUp: keyUp,
-                    onBlur: () => {
-                        const codes = Object.keys(pressed);
-                        setPressed({});
-                        if (codes.length > 0) {
-                            void send(codes.map(code => ['keyboard', code, false]), `release ${codes.join(',')}`);
-                        }
-                    },
-                }, videoLive
-                    ? h('div', { className: 'kvmflow-screen-stage' }, h('video', {
-                        ref: videoRef,
-                        className: 'kvmflow-screen',
-                        autoPlay: true,
-                        muted: true,
-                        playsInline: true,
-                        onLoadedMetadata: (event) => {
-                            const element = event.currentTarget;
-                            setVideoSize({ width: element.videoWidth, height: element.videoHeight });
-                            void applyDetected(element);
-                        },
-                    }), isFullFrameMapping(mapping) ? null : h('div', {
-                        className: 'kvmflow-screen-target',
-                        'aria-hidden': true,
-                        style: {
-                            left: `${mapping.left * 100}%`,
-                            top: `${mapping.top * 100}%`,
-                            width: `${(mapping.right - mapping.left) * 100}%`,
-                            height: `${(mapping.bottom - mapping.top) * 100}%`,
-                        },
-                    }))
-                    : frame === undefined
-                        ? h('div', { className: 'kvmflow-screen-empty' }, frameError === '' ? (live ? t('正在获取画面…', 'Capturing…') : t('画面已暂停', 'Screen paused')) : t('无画面信号', 'No video signal'))
-                        : h('div', { className: 'kvmflow-screen-stage' }, h('img', {
-                            className: 'kvmflow-screen',
-                            src: `data:${frame.mediaType};base64,${frame.data}`,
-                            alt: 'KVM screen',
-                            draggable: false,
-                            onLoad: (event) => { void applyDetected(event.currentTarget); },
-                        }), isFullFrameMapping(mapping) ? null : h('div', {
-                            className: 'kvmflow-screen-target',
-                            'aria-hidden': true,
-                            style: {
-                                left: `${mapping.left * 100}%`,
-                                top: `${mapping.top * 100}%`,
-                                width: `${(mapping.right - mapping.left) * 100}%`,
-                                height: `${(mapping.bottom - mapping.top) * 100}%`,
-                            },
-                        }))), deviceId === '' ? null : h('div', { className: 'kvmflow-screen-status' }, h('span', { className: cn('kvmflow-dot', videoLive || frameError === '' ? 'on' : 'err') }), h('span', null, videoLive
-                    ? `${videoSize === undefined ? '—' : `${videoSize.width}×${videoSize.height}`} · WebRTC`
-                    : (frameError === '' ? (frame === undefined ? '—' : `${frame.width}×${frame.height} · ${(frame.bytes / 1024).toFixed(0)} KB`) : t('无信号', 'No signal'))), isFullFrameMapping(mapping) ? null : (() => {
-                    const sourceWidth = videoLive ? (videoSize?.width ?? 0) : (frame?.width ?? 0);
-                    const sourceHeight = videoLive ? (videoSize?.height ?? 0) : (frame?.height ?? 0);
-                    const targetWidth = Math.round((mapping.right - mapping.left) * sourceWidth);
-                    const targetHeight = Math.round((mapping.bottom - mapping.top) * sourceHeight);
-                    return h('span', null, t(`目标区 ${targetWidth}×${targetHeight}`, `target ${targetWidth}×${targetHeight}`));
-                })(), pointer === undefined ? null : h('span', { className: 'kvmflow-screen-readout' }, `${pointer.x.toFixed(3)}, ${pointer.y.toFixed(3)}`), h('span', null, live ? t('实时', 'LIVE') : t('已暂停', 'PAUSED'))), deviceId === '' ? null : h('div', { className: 'kvmflow-actions', style: { marginTop: '10px' } }, h(Btn, { onClick: () => shortcut(['ControlLeft', 'AltLeft', 'Delete']) }, 'Ctrl+Alt+Del'), h(Btn, { onClick: () => shortcut(['Escape']) }, 'Esc'), h(Btn, { onClick: () => shortcut(['Enter']) }, 'Enter'), h(Btn, { onClick: () => shortcut(['F2']) }, 'F2'), h(Btn, { onClick: () => shortcut(['F12']) }, 'F12'), h(Btn, { onClick: () => shortcut(['MetaLeft']) }, 'Win')), frameError === '' ? null : h('div', { className: 'kvmflow-notice err', style: { marginTop: '10px', marginBottom: 0 } }, frameError), videoError === '' || videoLive ? null : h('div', { className: 'kvmflow-notice', style: { marginTop: '10px', marginBottom: 0 } }, h('span', null, t(`实时视频不可用：${videoError}`, `Live video unavailable: ${videoError}`)), h('span', { className: 'kvmflow-actions' }, h(Btn, { onClick: () => { setVideoError(''); setVideoRetry(value => value + 1); }, disabled: deviceId === '' }, t('重试', 'Retry')))), h('div', { className: 'kvmflow-row', style: { marginTop: '8px' } }, h('input', {
-                    className: 'kvmflow-input',
-                    style: { flex: '1 1 auto' },
-                    value: text,
-                    placeholder: t('输入 ASCII 文本（Linkr 文本通道）', 'Type ASCII text (Linkr text channel)'),
-                    onChange: (event) => setText(event.target.value),
-                    onKeyDown: (event) => { if (event.key === 'Enter')
-                        typeText(); },
-                }), h(Btn, { onClick: typeText, disabled: text === '' }, t('输入', 'Type')))), h(Card, { title: t('键鼠操作日志', 'Input log') }, h(CardActions, null, h(Btn, { onClick: () => shared.setLogs([]), disabled: logs.length === 0 }, t('清空', 'Clear'))), logs.length === 0
-                    ? h('div', { className: 'kvmflow-hint' }, t('尚无操作。', 'No actions yet.'))
-                    : h('div', { className: 'kvmflow-log' }, logs.slice(-80).map((entry, index) => h('div', { key: index, className: cn('kvmflow-log-row', entry.kind === 'err' ? 'err' : entry.kind === 'warn' ? 'warn' : '') }, h('span', { className: 'kvmflow-log-time' }, formatTime(entry.at)), h('span', null, entry.message)))))), h('div', null, h(Card, { title: t('录制', 'Recording') }, recording === undefined
-                    ? h('div', { className: 'kvmflow-col' }, h(Field, { label: t('录制名称', 'Recording name') }, h('input', { className: 'kvmflow-input', value: recordName, placeholder: t('例如：进入 BIOS 开启虚拟化', 'e.g. Enter BIOS and enable virtualization'), onChange: (event) => setRecordName(event.target.value) })), h(Field, { label: t('录制说明', 'Recording description') }, h('textarea', { className: 'kvmflow-input kvmflow-textarea compact', value: draft.description, placeholder: t('这次录制要完成什么？', 'What should this recording accomplish?'), onChange: (event) => setDraft({ ...draft, description: event.target.value }) })), h(Btn, {
-                        kind: 'primary',
-                        disabled: deviceId === '',
-                        onClick: async () => {
-                            const value = await runRpc(t('开始录制', 'Start recording'), 'record.start', {
-                                deviceId,
-                                name: recordName || t('未命名录制', 'Untitled recording'),
-                                description: draft.description,
-                            });
-                            if (value !== undefined) {
-                                shared.notify(t('录制已开始，操作画面会自动记录。', 'Recording started; your input is captured.'), 'ok');
-                                setDraft({ ...draft, name: '', description: '' });
-                                await refresh();
-                            }
-                        },
-                    }, t('开始录制', 'Start recording')), h('p', { className: 'kvmflow-hint' }, t('录制期间所有键盘、鼠标和文本操作都会写入事件流，并在操作前后保存截图。', 'Every keyboard, mouse, and text action is stored with before/after screenshots.')))
-                    : h('div', { className: 'kvmflow-col' }, h('div', { className: 'kvmflow-kv' }, h('dt', null, t('名称', 'Name')), h('dd', null, recording.name), h('dt', null, t('事件', 'Events')), h('dd', null, String(recording.eventCount)), h('dt', null, t('步骤', 'Steps')), h('dd', null, String(recording.stepCount)), h('dt', null, t('开始', 'Started')), h('dd', null, formatDateTime(recording.startedAt))), h('div', { className: 'kvmflow-split' }), h(Field, { label: t('步骤名称', 'Step name') }, h('input', { className: 'kvmflow-input', value: stepName, placeholder: t('例如：打开 Advanced 菜单', 'e.g. Open the Advanced menu'), onChange: (event) => setStepName(event.target.value) })), h(Field, { label: t('步骤描述', 'Step description') }, h('textarea', { className: 'kvmflow-input kvmflow-textarea compact', value: stepDesc, placeholder: t('这一步完成什么，画面应该出现什么', 'What this step does and what should appear'), onChange: (event) => setStepDesc(event.target.value) })), h(Btn, {
-                        onClick: async () => {
-                            const value = await runRpc(t('标记步骤', 'Mark step'), 'record.markStep', { deviceId, name: stepName || t('步骤', 'Step'), description: stepDesc });
-                            if (value !== undefined) {
-                                setStepName('');
-                                setStepDesc('');
-                                shared.notify(t('已保存步骤边界。', 'Step boundary saved.'), 'ok');
-                                await refresh();
-                            }
-                        },
-                    }, t('标记步骤', 'Mark step')), h(Btn, {
-                        kind: 'primary',
-                        onClick: async () => {
-                            const value = await runRpc(t('停止录制', 'Stop recording'), 'record.stop');
-                            if (value !== undefined) {
-                                shared.notify(t('录制结束，已保存步骤与截图。', 'Recording stopped; steps and screenshots saved.'), 'ok', { label: t('查看录制', 'Review recording'), onClick: () => shared.setTab('recorder') });
-                                await refresh();
-                            }
-                        },
-                    }, t('停止录制', 'Stop recording')))), h(Card, { title: t('设备与数据', 'Device and data') }, h('dl', { className: 'kvmflow-kv' }, h('dt', null, t('设备', 'Device')), h('dd', null, device?.name ?? '—'), h('dt', null, t('地址', 'Origin')), h('dd', { className: 'kvmflow-mono' }, device?.baseUrl ?? '—'), h('dt', null, t('数据目录', 'Data dir')), h('dd', { className: 'kvmflow-mono' }, state.dataDir ?? '—'), h('dt', null, t('驱动', 'Driver')), h('dd', null, device?.driver ?? '—')))));
-            }
-            function RecorderTab(shared) {
-                const { state, deviceId, runRpc, rpc, refresh, busy, t, notify } = shared;
-                const active = state.activeRecording;
-                const recordings = state.recordings ?? [];
-                const [selectedId, setSelectedId] = useState('');
-                const [detail, setDetail] = useState(undefined);
-                const [loading, setLoading] = useState(false);
-                const draft = shared.recordDraft;
-                const setDraft = shared.setRecordDraft;
-                const recordName = draft.name;
-                const recordDesc = draft.description;
-                const stepName = draft.stepName;
-                const stepDesc = draft.stepDesc;
-                const setRecordName = (value) => setDraft({ ...draft, name: value });
-                const setRecordDesc = (value) => setDraft({ ...draft, description: value });
-                const setStepName = (value) => setDraft({ ...draft, stepName: value });
-                const setStepDesc = (value) => setDraft({ ...draft, stepDesc: value });
-                const [editing, setEditing] = useState(undefined);
-                useEffect(() => {
-                    if (active !== undefined) {
-                        setSelectedId(active.id);
-                    }
-                    else if (selectedId === '' && recordings.length > 0) {
-                        setSelectedId(recordings[0].id);
-                    }
-                }, [active?.id, recordings.length]);
-                const load = useCallback(async (id) => {
-                    if (id === '') {
-                        setDetail(undefined);
-                        return;
-                    }
-                    setLoading(true);
-                    try {
-                        const value = await rpc('record.get', { id });
-                        setDetail(value.recording);
-                    }
-                    catch (error) {
-                        notify(error.message ?? String(error), 'err');
-                    }
-                    finally {
-                        setLoading(false);
-                    }
-                }, [rpc, notify]);
-                useEffect(() => {
-                    void load(selectedId);
-                    if (selectedId === '')
-                        return undefined;
-                    const timer = setInterval(() => {
-                        if (active !== undefined && active.id === selectedId)
-                            void load(selectedId);
-                    }, 2500);
-                    return () => clearInterval(timer);
-                }, [selectedId, active?.id, load]);
-                const start = async () => {
-                    const value = await runRpc(t('开始录制', 'Start recording'), 'record.start', { deviceId, name: recordName || t('未命名录制', 'Untitled recording'), description: recordDesc });
-                    if (value !== undefined) {
-                        notify(t('录制已开始，请在实时画面中操作。', 'Recording started; drive the target from the Live screen.'), 'ok', { label: t('去实时画面', 'Go to Live screen'), onClick: () => shared.setTab('live') });
-                        setDraft({ ...draft, name: '', description: '' });
-                        setSelectedId(value.recording.id);
-                        await refresh();
-                    }
-                };
-                const mark = async () => {
-                    const value = await runRpc(t('标记步骤', 'Mark step'), 'record.markStep', { deviceId, name: stepName || t('步骤', 'Step'), description: stepDesc });
-                    if (value !== undefined) {
-                        setStepName('');
-                        setStepDesc('');
-                        await load(selectedId);
-                        await refresh();
-                    }
-                };
-                const stop = async () => {
-                    const value = await runRpc(t('停止录制', 'Stop recording'), 'record.stop');
-                    if (value !== undefined) {
-                        notify(t('录制已结束。', 'Recording stopped.'), 'ok');
-                        setSelectedId(value.recording.id);
-                        await load(value.recording.id);
-                        await refresh();
-                    }
-                };
-                const saveStep = async () => {
-                    if (editing === undefined)
-                        return;
-                    const value = await runRpc(t('保存步骤', 'Save step'), 'record.updateStep', {
-                        recordingId: selectedId,
-                        stepId: editing.id,
-                        name: editing.name,
-                        description: editing.description,
-                    });
-                    if (value !== undefined) {
-                        setEditing(undefined);
-                        await load(selectedId);
-                        await refresh();
-                    }
-                };
-                const removeRecording = async () => {
-                    if (selectedId === '')
-                        return;
-                    const value = await runRpc(t('删除录制', 'Delete recording'), 'record.delete', { id: selectedId });
-                    if (value !== undefined) {
-                        notify(t('录制已删除。', 'Recording removed.'), 'ok');
-                        setSelectedId('');
-                        setDetail(undefined);
-                        await refresh();
-                    }
-                };
-                const askAi = async (recording) => {
-                    const recordingId = recording.id;
-                    const prompt = [
-                        `请使用 KVMFlow 工具把录制 ${recordingId} 转换成一份可执行、可编辑的 YAML 工作流。`,
-                        '先调用 kvmflow_record_get 查看事件序列、人工步骤边界和截图（必要时读取截图）。',
-                        '再按用户目标设计步骤：每个步骤写明 name、description、action，尽量补充 precondition（前置画面条件）与 verify（成功验证），并为有风险的动作设置 onFailure: pause。',
-                        '需要视觉判断的验证请使用 verify.mode: vision 并写出具体 prompt；屏幕必然发生可见变化时可用 change。',
-                        'action 可以直接引用录制事件的 eventRange: [firstSeq, lastSeq]，或使用 key / shortcut / text / click / delay / sequence。',
-                        '最后调用 kvmflow_workflow_generate 或 kvmflow_workflow_save 生成/保存 YAML，并告诉我工作流 id。',
-                        '',
-                        `录制名称：${recording.name}`,
-                        recording.description ? `录制说明：${recording.description}` : '',
-                        '我的目标与注意事项（请让用户补充）：',
-                    ].filter(Boolean).join('\n');
-                    await shared.handPrompt(prompt, t('已在新会话中启动 AI 工作流生成，请补充目标描述。', 'Started a new session for AI workflow generation; add your goal there.'), t('无法自动创建会话，提示词已显示在下方，请手动复制。', 'Could not open a session automatically; copy the prompt shown below.'));
-                };
-                const selected = detail ?? (active !== undefined && active.id === selectedId ? { id: active.id, name: active.name, status: 'recording', events: [], steps: [], createdAt: active.startedAt } : undefined);
-                return h('div', { className: 'kvmflow-grid two' }, h('div', null, h(Card, {
-                    title: t('录制器', 'Recorder'),
-                    subtitle: active === undefined ? t('未在录制', 'idle') : t('录制中', 'recording'),
-                }, active === undefined ? null : h(CardActions, null, h(Btn, { kind: 'primary', onClick: () => { void stop(); }, disabled: busy !== '' }, t('停止录制', 'Stop'))), active === undefined
-                    ? h('div', { className: 'kvmflow-col' }, h('div', { className: 'kvmflow-form-grid' }, h(Field, { label: t('名称', 'Name'), className: 'wide' }, h('input', { className: 'kvmflow-input', value: recordName, placeholder: t('例如：BIOS 开启虚拟化', 'e.g. Enable virtualization in BIOS'), onChange: (event) => setRecordName(event.target.value) })), h(Field, { label: t('说明', 'Description'), className: 'wide' }, h('textarea', { className: 'kvmflow-input kvmflow-textarea compact', value: recordDesc, placeholder: t('这次录制要完成什么？', 'What should this recording accomplish?'), onChange: (event) => setRecordDesc(event.target.value) }))), h('div', { className: 'kvmflow-actions' }, h(Btn, { kind: 'primary', onClick: () => { void start(); }, disabled: deviceId === '' || busy !== '' }, t('开始录制', 'Start recording'))), h('p', { className: 'kvmflow-hint' }, t('开始后，请在“实时画面”中操作目标机，并在每个有意义的阶段点击“标记步骤”。', 'After starting, drive the target from the Live screen and mark each meaningful stage as a step.')))
-                    : h('div', { className: 'kvmflow-col' }, h('div', { className: 'kvmflow-kv' }, h('dt', null, t('名称', 'Name')), h('dd', null, active.name), h('dt', null, t('事件', 'Events')), h('dd', null, String(active.eventCount)), h('dt', null, t('步骤', 'Steps')), h('dd', null, String(active.stepCount))), h('div', { className: 'kvmflow-split' }), h('div', { className: 'kvmflow-form-grid' }, h(Field, { label: t('步骤名称', 'Step name'), className: 'wide' }, h('input', { className: 'kvmflow-input', value: stepName, placeholder: t('例如：打开 Advanced', 'e.g. Open Advanced'), onChange: (event) => setStepName(event.target.value) })), h(Field, { label: t('步骤描述', 'Step description'), className: 'wide' }, h('textarea', { className: 'kvmflow-input kvmflow-textarea compact', value: stepDesc, placeholder: t('完成什么，画面应出现什么', 'What completes and what should appear'), onChange: (event) => setStepDesc(event.target.value) }))), h('div', { className: 'kvmflow-actions' }, h(Btn, { onClick: () => { void mark(); }, disabled: busy !== '' }, t('标记步骤', 'Mark step'))))), h(Card, { title: t('录制列表', 'Recordings'), subtitle: `${recordings.length}` }, recordings.length === 0
-                    ? h(Empty, null, t('还没有录制。从上方开始一次录制。', 'No recordings yet. Start one above.'))
-                    : h('div', { className: 'kvmflow-col' }, recordings.map((recording) => h('div', {
-                        key: recording.id,
-                        className: cn('kvmflow-device', recording.id === selectedId ? 'selected' : ''),
-                        onClick: () => setSelectedId(recording.id),
-                        style: { cursor: 'pointer' },
-                    }, h('div', null, h('div', { className: 'kvmflow-device-name' }, recording.name), h('div', { className: 'kvmflow-hint' }, `${t('事件', 'events')} ${recording.eventCount} · ${t('步骤', 'steps')} ${recording.stepCount} · ${formatDateTime(recording.updatedAt)}`)), h(Pill, { tone: recording.status === 'recording' ? 'warn' : '' }, recording.status)))))), h('div', null, h(Card, {
-                    title: t('录制详情', 'Recording detail'),
-                    subtitle: selected === undefined ? t('未选择', 'none') : selected.status,
-                }, selected === undefined ? null : h(CardActions, null, h(Btn, { onClick: () => { void askAi(selected); } }, t('让 AI 生成工作流', 'Generate with AI')), selected.status === 'recording' ? null : h(ConfirmButton, {
-                    kind: 'danger',
-                    disabled: busy !== '',
-                    confirmLabel: t('删除录制和截图？', 'Delete recording and screenshots?'),
-                    confirmAction: t('删除', 'Delete'),
-                    cancelLabel: t('取消', 'Cancel'),
-                    onConfirm: () => { void removeRecording(); },
-                }, t('删除', 'Delete'))), selected === undefined
-                    ? h(Empty, null, t('选择一条录制查看步骤和事件。', 'Select a recording to inspect steps and events.'))
-                    : h('div', { className: 'kvmflow-col' }, h('div', { className: 'kvmflow-kv' }, h('dt', null, t('ID', 'ID')), h('dd', { className: 'kvmflow-mono' }, selected.id), h('dt', null, t('名称', 'Name')), h('dd', null, selected.name), h('dt', null, t('说明', 'Description')), h('dd', null, selected.description || '—'), h('dt', null, t('开始', 'Started')), h('dd', null, formatDateTime(selected.createdAt))), h('div', { className: 'kvmflow-split' }), h('h3', { className: 'kvmflow-card-title' }, h('span', null, t('人工步骤', 'Human steps')), h('span', { className: 'kvmflow-hint' }, `${selected.steps?.length ?? 0}`)), (selected.steps ?? []).length === 0
-                        ? h('div', { className: 'kvmflow-hint' }, t('尚未标记步骤。', 'No steps marked.'))
-                        : h('div', { className: 'kvmflow-steps' }, (selected.steps ?? []).map((step) => h('div', { key: step.id, className: 'kvmflow-step' }, h('div', { className: 'kvmflow-step-head' }, h('div', { className: 'kvmflow-step-name' }, step.name), h('div', { className: 'kvmflow-actions' }, h('span', { className: 'kvmflow-hint' }, `#${step.startSeq}–${step.endSeq}`), h(Btn, { small: true, onClick: () => setEditing({ ...step }) }, t('编辑', 'Edit')))), step.description ? h('div', { className: 'kvmflow-step-body' }, h('div', { className: 'kvmflow-muted' }, step.description)) : null, h('div', { className: 'kvmflow-thumb-row' }, h(ImageThumb, { shared, path: step.before ? `recordings/${selected.id}/${step.before}` : undefined, label: t('步骤前', 'before') }), h(ImageThumb, { shared, path: step.after ? `recordings/${selected.id}/${step.after}` : undefined, label: t('步骤后', 'after') }))))), editing === undefined ? null : h('div', { className: 'kvmflow-step', style: { marginTop: '8px' } }, h(Field, { label: t('步骤名称', 'Step name') }, h('input', { className: 'kvmflow-input', value: editing.name ?? '', onChange: (event) => setEditing({ ...editing, name: event.target.value }) })), h(Field, { label: t('步骤描述', 'Step description') }, h('textarea', { className: 'kvmflow-input kvmflow-textarea compact', value: editing.description ?? '', onChange: (event) => setEditing({ ...editing, description: event.target.value }) })), h('div', { className: 'kvmflow-actions', style: { marginTop: '8px' } }, h(Btn, { kind: 'primary', onClick: () => { void saveStep(); }, disabled: busy !== '' }, t('保存步骤', 'Save step')), h(Btn, { onClick: () => setEditing(undefined) }, t('取消', 'Cancel')))), h('div', { className: 'kvmflow-split' }), h('h3', { className: 'kvmflow-card-title' }, h('span', null, t('事件流', 'Events')), h('span', { className: 'kvmflow-hint' }, `${selected.events?.length ?? 0}`)), (selected.events ?? []).length === 0
-                        ? h('div', { className: 'kvmflow-hint' }, t('尚无事件。', 'No events yet.'))
-                        : h('div', { className: 'kvmflow-scroll-y kvmflow-log' }, (selected.events ?? []).map((entry) => h('div', { key: entry.seq, className: 'kvmflow-log-row' }, h('span', { className: 'kvmflow-log-time' }, `#${entry.seq} ${formatTime(entry.at)}`), h('span', null, JSON.stringify(entry.event)))))))));
-            }
-            function WorkflowsTab(shared) {
-                const { state, runRpc, rpc, refresh, busy, t, notify, setTab } = shared;
-                const workflows = state.workflows ?? [];
-                const draft = shared.workflowDraft;
-                const setDraft = shared.setWorkflowDraft;
-                const [selectedId, setSelectedIdState] = useState(draft.id);
-                const [detail, setDetail] = useState(undefined);
-                const [newName, setNewName] = useState('');
-                const yaml = draft.yaml;
-                const dirty = draft.dirty;
-                const setSelectedId = useCallback((id) => {
-                    setSelectedIdState(id);
-                    setDraft(current => ({ ...current, id }));
-                }, [setDraft]);
-                const setYaml = useCallback((value) => setDraft(current => ({ ...current, yaml: value })), [setDraft]);
-                const setDirty = useCallback((value) => setDraft(current => ({ ...current, dirty: value })), [setDraft]);
-                useEffect(() => {
-                    if (selectedId === '' && workflows.length > 0)
-                        setSelectedId(workflows[0].id);
-                }, [workflows.length, selectedId, setSelectedId]);
-                const load = useCallback(async (id) => {
-                    if (id === '') {
-                        setDetail(undefined);
-                        setYaml('');
-                        return;
-                    }
-                    try {
-                        const value = await rpc('workflow.get', { id });
-                        setDetail(value.workflow);
-                        // A pending edit for this same workflow survives a refresh.
-                        setDraft(current => current.id === id && current.dirty
-                            ? current
-                            : { id, yaml: value.yaml, dirty: false });
-                    }
-                    catch (error) {
-                        notify(error.message ?? String(error), 'err');
-                    }
-                }, [rpc, notify, setDraft, setYaml]);
-                useEffect(() => { void load(selectedId); }, [selectedId, load]);
-                const save = async () => {
-                    const value = await runRpc(t('保存工作流', 'Save workflow'), 'workflow.save', { id: selectedId || undefined, yaml });
-                    if (value === undefined)
-                        return false;
-                    notify(t('工作流已保存。', 'Workflow saved.'), 'ok');
-                    setSelectedId(value.workflow.id);
-                    setDetail(value.workflow);
-                    setDraft({ id: value.workflow.id, yaml: value.yaml, dirty: false });
-                    await refresh();
-                    return true;
-                };
-                const create = async () => {
-                    const value = await runRpc(t('新建工作流', 'Create workflow'), 'workflow.create', { name: newName || t('新工作流', 'New workflow'), deviceId: shared.deviceId });
-                    if (value !== undefined) {
-                        setNewName('');
-                        setSelectedId(value.workflow.id);
-                        setDetail(value.workflow);
-                        setDraft({ id: value.workflow.id, yaml: value.yaml, dirty: false });
-                        notify(t('已创建工作流骨架。', 'Workflow skeleton created.'), 'ok');
-                        await refresh();
-                    }
-                };
-                const remove = async () => {
-                    const value = await runRpc(t('删除工作流', 'Delete workflow'), 'workflow.delete', { id: selectedId });
-                    if (value !== undefined) {
-                        notify(t('工作流已删除。', 'Workflow removed.'), 'ok');
-                        setSelectedId('');
-                        setDetail(undefined);
-                        setDraft({ id: '', yaml: '', dirty: false });
-                        await refresh();
-                    }
-                };
-                const run = async () => {
-                    // Running a stale copy is worse than an extra save: persist the open
-                    // draft first so the executed document is the one on screen.
-                    if (dirty && !(await save()))
-                        return;
-                    const value = await runRpc(t('启动执行', 'Start run'), 'run.start', { workflowId: selectedId, deviceId: shared.deviceId });
-                    if (value !== undefined) {
-                        notify(t('执行已启动。', 'Run started.'), 'ok', { label: t('查看执行', 'Supervise run'), onClick: () => setTab('runs') });
-                        setTab('runs');
-                        await refresh();
-                    }
-                };
-                const runDisabledReason = selectedId === ''
-                    ? t('先选择工作流', 'Select a workflow first')
-                    : shared.deviceId === ''
-                        ? t('先选择 KVM 设备', 'Select a KVM device first')
-                        : state.activeRun !== undefined && state.activeRun !== null
-                            ? t('已有执行进行中', 'A run is already active')
-                            : dirty
-                                ? t('将先保存再执行', 'The draft will be saved before running')
-                                : undefined;
-                const askAi = async () => {
-                    if (detail === undefined)
-                        return;
-                    const prompt = [
-                        `请编辑 KVMFlow 工作流 ${detail.id}（当前名称：${detail.name}）。`,
-                        '先调用 kvmflow_workflow_get 读取 YAML，再根据我的目标改进 steps：补充前置条件、成功验证和失败处理。',
-                        '需要视觉判断的 verify 用 mode: vision 并写出明确的画面条件；可确定画面变化时用 change。',
-                        '保存时调用 kvmflow_workflow_save（保留 id），不要覆盖无关字段。',
-                        '',
-                        '我的修改目标：',
-                    ].join('\n');
-                    await shared.handPrompt(prompt, t('已在新会话中启动 AI 编辑。', 'Started a new session for AI editing.'), t('无法自动创建会话，提示词已显示在下方，请手动复制。', 'Could not open a session automatically; copy the prompt shown below.'));
-                };
-                return h('div', { className: 'kvmflow-grid two' }, h('div', null, h(Card, { title: t('工作流', 'Workflows'), subtitle: `${workflows.length}` }, h('div', { className: 'kvmflow-row', style: { marginBottom: '8px' } }, h('input', { className: 'kvmflow-input', style: { flex: '1 1 auto' }, value: newName, placeholder: t('新工作流名称', 'New workflow name'), onChange: (event) => setNewName(event.target.value) }), h(Btn, { onClick: () => { void create(); }, disabled: busy !== '' }, t('新建', 'New'))), workflows.length === 0
-                    ? h(Empty, null, t('还没有工作流。从录制生成，或新建一个。', 'No workflows yet. Generate one from a recording or create a new one.'))
-                    : h('div', { className: 'kvmflow-col' }, workflows.map((workflow) => h('div', {
-                        key: workflow.id,
-                        className: cn('kvmflow-device', workflow.id === selectedId ? 'selected' : ''),
-                        onClick: () => setSelectedId(workflow.id),
-                        style: { cursor: 'pointer' },
-                    }, h('div', null, h('div', { className: 'kvmflow-device-name' }, workflow.name), h('div', { className: 'kvmflow-hint' }, `${t('步骤', 'steps')} ${workflow.stepCount}${workflow.hasBios ? ` · ${t('BIOS 前奏', 'BIOS prelude')}` : ''} · ${formatDateTime(workflow.updatedAt)}`), workflow.error ? h('div', { className: 'kvmflow-hint', style: { color: 'var(--dsw-alias-state-error-primary)' } }, workflow.error) : null), workflow.error ? h(Pill, { tone: 'err' }, 'invalid') : h(Pill, null, workflow.id.slice(0, 14)))))), h(Card, { title: t('工作流说明', 'Workflow notes') }, h('p', { className: 'kvmflow-hint' }, t('工作流是 YAML：version、name、可选 bios、steps。每个 step 包含 precondition、action、verify、onFailure。验证支持 change（画面哈希变化）、image（与参考图比较）和 vision（调用默认 DSH 视觉模型判断）。', 'A workflow is YAML: version, name, optional bios, steps. Each step has precondition, action, verify, onFailure. Verification supports change (hash), image (reference), and vision (default DSH visual model).')))), h('div', null, h(Card, {
-                    title: detail === undefined ? t('YAML 编辑器', 'YAML editor') : detail.name,
-                    // Saved state lives in the subtitle; the row stays four even buttons
-                    // with one primary action and the destructive one last.
-                    subtitle: [
-                        selectedId === '' ? t('未选择', 'none') : selectedId,
-                        dirty ? t('未保存', 'unsaved') : t('已保存', 'saved'),
-                    ].join(' · '),
-                }, h(CardActions, null, h(Btn, { onClick: () => { void askAi(); }, disabled: detail === undefined }, t('AI 编辑', 'Edit with AI')), h(Btn, { onClick: () => { void save(); }, disabled: selectedId === '' || busy !== '' || !dirty }, t('保存', 'Save')), h(Btn, {
-                    kind: 'primary',
-                    onClick: () => { void run(); },
-                    disabled: selectedId === '' || busy !== '' || shared.deviceId === '' || (state.activeRun !== undefined && state.activeRun !== null),
-                    title: runDisabledReason,
-                }, t('执行', 'Run')), h(ConfirmButton, {
-                    kind: 'danger',
-                    disabled: selectedId === '' || busy !== '',
-                    confirmLabel: t('删除该工作流？', 'Delete this workflow?'),
-                    confirmAction: t('删除', 'Delete'),
-                    cancelLabel: t('取消', 'Cancel'),
-                    onConfirm: () => { void remove(); },
-                }, t('删除', 'Delete'))), detail === undefined
-                    ? h(Empty, null, t('从左侧选择或新建工作流。', 'Select or create a workflow on the left.'))
-                    : h('div', { className: 'kvmflow-col' }, h('div', { className: 'kvmflow-row' }, h(Pill, null, `${t('步骤', 'steps')} ${detail.steps?.length ?? 0}`), detail.bios ? h(Pill, { tone: 'warn' }, `BIOS ${detail.bios.hotkey ?? 'F2'}`) : null, detail.sourceRecording
-                        ? h('button', {
-                            type: 'button',
-                            className: 'kvmflow-btn small',
-                            onClick: () => setTab('recorder'),
-                            title: t('查看来源录制', 'Open the source recording'),
-                        }, t('来源录制', 'from recording'))
-                        : null, h('span', { className: 'kvmflow-hint' }, formatDateTime(detail.updatedAt))), h('textarea', {
-                        className: 'kvmflow-textarea',
-                        value: yaml,
-                        spellCheck: false,
-                        onChange: (event) => { setYaml(event.target.value); setDirty(true); },
-                    }), h('p', { className: 'kvmflow-hint' }, t('保存时会解析并规范化；YAML 出错会保留原文并显示行号。', 'Saving parses and normalizes the document; YAML errors keep the text and report the line.')), (detail.steps ?? []).length === 0 ? null : h('div', { className: 'kvmflow-steps' }, (detail.steps ?? []).map((step, index) => h('div', { key: step.id, className: 'kvmflow-step' }, h('div', { className: 'kvmflow-step-head' }, h('div', { className: 'kvmflow-step-name' }, `${index + 1}. ${step.name}`), h(Pill, null, step.verify?.mode ?? 'change')), h('div', { className: 'kvmflow-step-body' }, step.description ? h('div', { className: 'kvmflow-muted' }, step.description) : null, h('div', { className: 'kvmflow-hint kvmflow-mono' }, `${step.action?.type}${step.action?.key ? ` ${step.action.key}` : ''}${step.action?.keys ? ` ${step.action.keys.join('+')}` : ''}${step.action?.events ? ` · ${step.action.events.length} events` : ''}`), step.verify?.prompt ? h('div', { className: 'kvmflow-hint' }, `verify: ${step.verify.prompt}`) : null))))))));
-            }
-            function RunsTab(shared) {
-                const { state, runRpc, rpc, refresh, busy, t, notify } = shared;
-                const [run, setRun] = useState(state.activeRun ?? undefined);
-                const [selectedRunId, setSelectedRunId] = useState('');
-                const [pollError, setPollError] = useState('');
-                const refreshRun = useCallback(async () => {
-                    const id = selectedRunId || state.activeRun?.id;
-                    try {
-                        const value = await rpc('run.get', id === undefined || id === '' ? {} : { id });
-                        if (value.run !== null && value.run !== undefined)
-                            setRun(value.run);
-                        setPollError('');
-                    }
-                    catch (error) {
-                        setPollError(error?.message ?? String(error));
-                    }
-                }, [rpc, selectedRunId, state.activeRun?.id]);
-                useEffect(() => {
-                    if (state.activeRun !== undefined && state.activeRun !== null && (run === undefined || run.id !== state.activeRun.id)) {
-                        setSelectedRunId('');
-                        setRun(state.activeRun);
-                    }
-                }, [state.activeRun?.id]);
-                const terminal = run !== undefined && ['succeeded', 'failed', 'aborted'].includes(run.status);
-                useEffect(() => {
-                    void refreshRun();
-                    if (terminal)
-                        return undefined;
-                    const timer = setInterval(() => { void refreshRun(); }, 1500);
-                    return () => clearInterval(timer);
-                }, [refreshRun, terminal]);
-                const control = async (action) => {
-                    if (run === undefined)
-                        return;
-                    const value = await runRpc(t('执行控制', 'Run control'), 'run.control', { id: run.id, action });
-                    if (value !== undefined) {
-                        setRun(value.run);
-                        await refresh();
-                    }
-                };
-                const current = run ?? state.activeRun;
-                const awaiting = current?.awaiting;
-                const actions = awaiting?.actions ?? [];
-                const canPause = current !== undefined && (current.status === 'running' || current.status === 'armed') && !actions.includes('pause');
-                const actionLabels = {
-                    resume: ['继续', 'Resume'], retry: ['重试步骤', 'Retry step'], continue: ['忽略并继续', 'Continue'], skip: ['跳过', 'Skip'], abort: ['中止', 'Abort'], confirm_bios: ['确认已进入 BIOS', 'Confirm BIOS'], pause: ['暂停', 'Pause'],
-                };
-                return h('div', { className: 'kvmflow-grid two' }, h('div', null, h(Card, {
-                    title: t('执行状态', 'Run status'),
-                    subtitle: current === undefined ? t('暂无执行', 'none') : current.id,
-                }, h(CardActions, null, h(Btn, { onClick: () => { void refreshRun(); } }, t('刷新', 'Refresh')), canPause ? h(Btn, { onClick: () => { void control('pause'); }, disabled: busy !== '' }, t('暂停', 'Pause')) : null, current === undefined || current.status === 'succeeded' || current.status === 'failed' || current.status === 'aborted' ? null : h(Btn, { kind: 'danger', onClick: () => { void control('abort'); }, disabled: busy !== '' }, t('中止', 'Abort'))), pollError === '' ? null : h('div', { className: 'kvmflow-notice err', style: { marginBottom: '8px' } }, pollError), current === undefined
-                    ? h(Empty, null, t('还没有执行记录。先在“工作流”页启动一个工作流。', 'No runs yet. Start one from the Workflows tab.'))
-                    : h('div', { className: 'kvmflow-col' }, h('div', { className: 'kvmflow-row' }, h(Pill, { tone: statusTone(current.status) }, statusLabel(t, current.status)), h(Pill, null, current.phase), current.bios ? h(Pill, { tone: 'warn' }, `BIOS ${current.bios.hotkey} · every ${current.bios.intervalMs}ms`) : null), current.reason ? h('div', { className: 'kvmflow-notice err', style: { marginBottom: 0 } }, current.reason) : null, awaiting ? h('div', { className: 'kvmflow-notice', style: { marginBottom: 0 } }, h('span', null, awaiting.message), h('div', { className: 'kvmflow-actions' }, actions.map(action => h(Btn, { key: action, kind: action === 'abort' ? 'danger' : action === 'confirm_bios' || action === 'retry' ? 'primary' : undefined, onClick: () => { void control(action); }, disabled: busy !== '' }, actionLabels[action]?.[0] ?? action)))) : null, h('div', { className: 'kvmflow-split' }), h('div', { className: 'kvmflow-steps' }, (current.steps ?? []).map((step) => h('div', { key: step.id, className: cn('kvmflow-step', step.status) }, h('div', { className: 'kvmflow-step-head' }, h('div', { className: 'kvmflow-step-name' }, `${step.index + 1}. ${step.name}`), h('div', { className: 'kvmflow-actions' }, step.attempts > 1 ? h('span', { className: 'kvmflow-hint' }, `×${step.attempts}`) : null, h(StepStatus, { status: step.status, t }))), step.verify ? h('div', { className: 'kvmflow-step-body' }, h('div', { className: 'kvmflow-muted' }, `${step.verify.mode}: ${step.verify.reason}`)) : null, step.error && (!step.verify || step.verify.reason !== step.error) ? h('div', { className: 'kvmflow-hint', style: { color: 'var(--dsw-alias-state-error-primary)' } }, step.error) : null, h('div', { className: 'kvmflow-thumb-row' }, h(ImageThumb, { shared, path: step.before, label: t('操作前', 'before') }), h(ImageThumb, { shared, path: step.after, label: t('操作后', 'after') })))))))), h('div', null, h(Card, { title: t('执行日志', 'Run log'), subtitle: `${current?.log?.length ?? 0}` }, current === undefined
-                    ? h('div', { className: 'kvmflow-hint' }, '—')
-                    : h('div', { className: 'kvmflow-log' }, (current.log ?? []).slice(-60).map((entry, index) => h('div', { key: index, className: cn('kvmflow-log-row', entry.level === 'error' ? 'err' : entry.level === 'warn' ? 'warn' : '') }, h('span', { className: 'kvmflow-log-time' }, formatTime(entry.at)), h('span', null, entry.message))))), h(Card, { title: t('历史执行', 'Recent runs'), subtitle: `${state.recentRuns?.length ?? 0}` }, (state.recentRuns ?? []).length === 0
-                    ? h('div', { className: 'kvmflow-hint' }, t('暂无历史。', 'No history.'))
-                    : h('div', { className: 'kvmflow-col' }, (state.recentRuns ?? []).map((entry) => h('div', {
-                        key: entry.id,
-                        className: cn('kvmflow-device', entry.id === current?.id ? 'selected' : ''),
-                        style: { cursor: 'pointer' },
-                        onClick: () => { setSelectedRunId(entry.id); void rpc('run.get', { id: entry.id }).then((value) => { if (value.run !== null)
-                            setRun(value.run); }); },
-                    }, h('div', null, h('div', { className: 'kvmflow-device-name' }, entry.workflowName), h('div', { className: 'kvmflow-hint' }, `${formatDateTime(entry.createdAt)} · ${t('步骤', 'step')} ${entry.currentStepIndex + 1}/${entry.totalSteps}`)), h(Pill, { tone: statusTone(entry.status) }, statusLabel(t, entry.status))))))));
-            }
-            const RIGHT_TAB_ID = 'dsh-kvmflow/sidebar';
-            const RIGHT_TAB_KIND = 'kvmflow';
-            ctx.slots.inject('main', () => ctx.slots.register({
-                name: 'main',
-                key: 'kvmflow',
-            }, Panel));
-            ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
-                name: 'sidebar.panellist',
-                id: 'kvmflow',
-                order: 5,
-                label: () => 'KVMFlow',
-            }, Icon));
-            // Dockable companion tab: the same panel, sized for the right column, so a
-            // human can drive the KVM while the conversation stays visible.
-            ctx.effect(() => ctx.sidebarRightTabs.register({
-                id: RIGHT_TAB_ID,
-                kind: RIGHT_TAB_KIND,
-                priority: 'extension',
-                title: () => 'KVMFlow',
-                guide: [{
-                        id: 'kvmflow.live',
-                        order: 40,
-                        title: () => 'KVMFlow',
-                        description: () => 'Watch and drive the KVM target beside the chat.',
-                        icon: Icon,
-                    }],
-            }), 'kvmflow: right tab type');
-            ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
-                name: 'sidebar.right.pane.tab',
-                key: RIGHT_TAB_ID,
-            }, function KvmflowSidebarTab() {
-                return h(Panel, { compact: true });
-            }));
-            ctx.slots.inject('sidebar.right.pane.tab.title', () => ctx.slots.register({
-                name: 'sidebar.right.pane.tab.title',
-                key: RIGHT_TAB_ID,
-            }, function KvmflowSidebarTabTitle() {
-                return h('span', null, 'KVMFlow');
-            }));
-        }
-        return {
-            inject: ['slots', 'locale', 'sidebarRightTabs'],
-            apply,
-        };
+.kvmflow-pill-btn { appearance: none; cursor: pointer; font: inherit; font-size: 11px; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
+@media (hover: hover) { .kvmflow-pill-btn:hover { border-color: currentColor; } }
+.kvmflow-pill-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+.kvmflow-pill.attention { color: var(--dsw-alias-state-warn-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 55%, var(--dsw-alias-border-l1)); }
+.kvmflow-rec-dot { animation: kvmflow-blink 1.2s ease-in-out infinite; }
+@keyframes kvmflow-blink { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .kvmflow-rec-dot { animation: none; } }
+.kvmflow-tab { display: inline-flex; align-items: center; gap: 6px; }
+.kvmflow-tab-badge { font-size: 10px; line-height: 15px; min-width: 15px; padding: 0 4px; border-radius: 8px; text-align: center; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l1); }
+.kvmflow-tab-badge.alert { color: var(--dsw-alias-state-warn-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 50%, transparent); }
+
+/* Workflows: a narrow list beside a full-height editor. */
+.kvmflow-wf { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 12px; align-items: start; }
+.kvmflow-wf.collapsed { grid-template-columns: minmax(0, 1fr); }
+.kvmflow-wf.collapsed .kvmflow-wf-list { display: none; }
+.kvmflow-wf-list { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 0; max-height: calc(100vh - 170px); overflow: auto; }
+.kvmflow-wf-list-head { display: flex; align-items: center; gap: 6px; }
+.kvmflow-wf-list-title { font-weight: 650; flex: 1 1 auto; }
+.kvmflow-wf-items { display: flex; flex-direction: column; gap: 6px; }
+.kvmflow-wf-item { border: 1px solid var(--dsw-alias-border-l1); border-radius: 9px; padding: 8px 10px; background: var(--dsw-alias-bg-layer-1); cursor: pointer; display: flex; flex-direction: column; gap: 3px; outline: none; }
+.kvmflow-wf-item:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+@media (hover: hover) { .kvmflow-wf-item:hover { border-color: var(--dsw-alias-border-l2); } }
+.kvmflow-wf-item.selected { border-color: var(--dsw-alias-brand-primary); box-shadow: inset 3px 0 0 var(--dsw-alias-brand-primary); }
+.kvmflow-wf-item-name { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12.5px; min-width: 0; }
+.kvmflow-wf-item-name > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kvmflow-wf-item-meta { font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.kvmflow-wf-item-meta.err, .kvmflow-wf-issues { color: var(--dsw-alias-state-warn-primary); }
+.kvmflow-wf-item-meta.err { color: var(--dsw-alias-state-error-primary); word-break: break-word; }
+.kvmflow-wf-item-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 20px; }
+.kvmflow-wf-empty { border: 1px dashed var(--dsw-alias-border-l2); border-radius: 9px; padding: 14px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.kvmflow-wf-empty p { margin: 0; }
+.kvmflow-wf-main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.kvmflow-wf-reopen { appearance: none; align-self: flex-start; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); border-radius: 7px; font: inherit; font-size: 11.5px; padding: 3px 9px; cursor: pointer; }
+@container (max-width: 860px) {
+  .kvmflow-wf { grid-template-columns: minmax(0, 1fr); }
+  .kvmflow-wf-list { position: static; max-height: 260px; }
+}
+.kvmflow-awaiting { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--dsw-alias-bg-layer-2); }
+.kvmflow-awaiting.attention { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 55%, var(--dsw-alias-border-l1)); background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 6%, var(--dsw-alias-bg-layer-1)); }
+.kvmflow-awaiting.human { border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, var(--dsw-alias-border-l1)); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, var(--dsw-alias-bg-layer-1)); }
+.kvmflow-awaiting-title { font-weight: 650; }
+.kvmflow-awaiting-msg { font-size: 12px; }
+.kvmflow-run-stats { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.kvmflow-run-stats .kvmflow-mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.kvmflow-section-title { font-size: 12px; font-weight: 650; margin: 4px 0 6px; }
+.kvmflow-trace { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 360px; overflow: auto; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; }
+.kvmflow-trace-row { display: grid; grid-template-columns: 42px minmax(70px, max-content) max-content minmax(0, 1fr) max-content; gap: 8px; align-items: baseline; padding: 5px 8px; font-size: 11.5px; border-bottom: 1px solid var(--dsw-alias-border-l1); cursor: pointer; }
+.kvmflow-trace-row:last-child { border-bottom: 0; }
+@media (hover: hover) { .kvmflow-trace-row:hover { background: var(--dsw-alias-bg-layer-2); } }
+.kvmflow-trace-row.focus { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent); }
+.kvmflow-trace-row.failed .kvmflow-trace-node { color: var(--dsw-alias-state-error-primary); }
+.kvmflow-trace-seq, .kvmflow-trace-time { color: var(--dsw-alias-label-secondary); font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 10.5px; }
+.kvmflow-trace-node { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kvmflow-trace-port { color: var(--dsw-alias-brand-primary); white-space: nowrap; }
+.kvmflow-trace-port.err { color: var(--dsw-alias-state-error-primary); }
+.kvmflow-trace-reason { color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kvmflow-trace-focus { border: 1px solid var(--dsw-alias-border-l1); border-radius: 9px; padding: 9px 11px; background: var(--dsw-alias-bg-layer-2); display: flex; flex-direction: column; gap: 6px; }
+.kvmflow-pre { margin: 0; font-size: 11px; font-family: var(--ds-font-family-code, ui-monospace, monospace); white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
+@container (max-width: 560px) {
+  .kvmflow-trace-row { grid-template-columns: 36px minmax(0, 1fr) max-content; }
+  .kvmflow-trace-reason, .kvmflow-trace-time { display: none; }
+}
+
+`;function d(...g){return g.filter(Boolean).join(" ")}function f(g){return g==null||g.left===0&&g.top===0&&g.right===1&&g.bottom===1}function u(g){return Number.isFinite(g)?Math.min(1,Math.max(0,g)):0}function m(g,M,L){return f(g)?{x:u(M),y:u(L)}:{x:u((M-g.left)/Math.max(1e-6,g.right-g.left)),y:u((L-g.top)/Math.max(1e-6,g.bottom-g.top))}}function h(g){try{let M=g.videoWidth||g.naturalWidth||g.width,L=g.videoHeight||g.naturalHeight||g.height;if(!(M>0)||!(L>0))return;let O=360,j=Math.max(8,Math.round(O*L/M)),de=document.createElement("canvas");de.width=O,de.height=j;let re=de.getContext("2d",{willReadFrequently:!0});if(re==null)return;re.drawImage(g,0,0,O,j);let he=re.getImageData(0,0,O,j).data,ge=(ie,xe)=>{let ye=(xe*O+ie)*4;return(he[ye]+he[ye+1]+he[ye+2])/3},ne=(ie,xe)=>ge(ie,xe)<=22,B=ie=>{let xe=0;for(let ye=0;ye<j;ye+=1)ne(ie,ye)&&(xe+=1);return xe/j>=.985},ae=ie=>{let xe=0;for(let ye=0;ye<O;ye+=1)ne(ye,ie)&&(xe+=1);return xe/O>=.985},ve=Math.floor(O*.3),pe=Math.floor(j*.3),V=0;for(;V<ve&&B(V);)V+=1;let W=O-1;for(;W>O-1-ve&&B(W);)W-=1;let G=0;for(;G<pe&&ae(G);)G+=1;let ee=j-1;for(;ee>j-1-pe&&ae(ee);)ee-=1;if(W-V+1<O*.45||ee-G+1<j*.45)return;let fe=0,ce=0;for(let ie=G;ie<=ee;ie+=2)for(let xe=V;xe<=W;xe+=2)fe+=ge(xe,ie),ce+=1;if((ce===0?0:fe/ce)<12)return;let N={left:V/O,top:G/j,right:(W+1)/O,bottom:(ee+1)/j};if(N.left<.006&&(N.left=0),N.top<.006&&(N.top=0),N.right>.994&&(N.right=1),N.bottom>.994&&(N.bottom=1),f(N))return;let Ce=(N.right-N.left)*M/((N.bottom-N.top)*L);return Ce<.4||Ce>2.8?void 0:N}catch{return}}function x(g,M=1500){return new Promise(L=>{if(g.iceGatheringState==="complete"){L();return}let O=!1,j=()=>{O||(O=!0,clearTimeout(re),typeof g.removeEventListener=="function"&&g.removeEventListener("icegatheringstatechange",de),L())},de=()=>{g.iceGatheringState==="complete"&&j()},re=setTimeout(j,M);typeof g.addEventListener=="function"&&g.addEventListener("icegatheringstatechange",de)})}function b(g){return typeof g!="number"||g<=0?"":new Date(g).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"})}function v(g){return typeof g!="number"||g<=0?"\u2014":new Date(g).toLocaleString()}function C(g){return g==="succeeded"||g==="passed"?"ok":g==="failed"||g==="aborted"?"err":g==="paused"||g==="armed"||g==="verifying"?"warn":g==="running"||g==="acting"||g==="precheck"?"brand":""}function p(g){let M={};for(let L of Object.keys(g))L.startsWith("aria-")&&(M[L]=g[L]);return n("button",{type:"button",className:d("kvmflow-btn",g.kind,g.className),onClick:g.onClick,disabled:g.disabled===!0,title:g.title,...M},g.children)}function w(g){return n("span",{className:d("kvmflow-pill",g.tone)},g.children)}function S(g){return n("div",{className:d("kvmflow-field",g.className)},g.label===void 0?null:n("label",null,g.label),g.children,g.hint===void 0?null:n("span",{className:"kvmflow-hint"},g.hint))}function _(g){let M=Array.isArray(g.actions)?g.actions.map((L,O)=>L==null?null:n(o.Fragment,{key:O},L)):g.actions;return n("section",{className:d("kvmflow-card",g.className),style:g.style},g.title===void 0?null:n("h2",{className:"kvmflow-card-title"},n("span",null,g.title,g.subtitle===void 0?null:n("span",{className:"kvmflow-card-sub"},` \xB7 ${g.subtitle}`)),M===void 0?null:n("div",{className:"kvmflow-actions"},M)),g.children)}function R(g){return n("div",{className:d("kvmflow-card-actions",g.className)},g.children)}function A(g){return n("div",{className:"kvmflow-empty"},g.children)}function z(g){return g.message===void 0||g.message===null?null:n("div",{className:d("kvmflow-notice",g.tone),role:g.tone==="err"?"alert":"status"},n("span",null,g.message),n("span",{className:"kvmflow-actions"},g.action===void 0?null:n("button",{type:"button",className:"kvmflow-btn small",onClick:()=>{g.action.onClick(),g.onClose()}},g.action.label),n("button",{type:"button",className:"kvmflow-btn small","aria-label":g.dismissLabel??"Dismiss",title:g.dismissLabel??"Dismiss",onClick:g.onClose},"\xD7")))}function Z(g){let[M,L]=r(!1),O=l();return i(()=>()=>{O.current!==void 0&&clearTimeout(O.current)},[]),i(()=>{if(M)return O.current=setTimeout(()=>L(!1),5e3),()=>{O.current!==void 0&&clearTimeout(O.current)}},[M]),M?n("span",{className:"kvmflow-confirm"},n("span",{className:"kvmflow-confirm-text"},g.confirmLabel??"Confirm?"),n(p,{kind:"danger",disabled:g.disabled,onClick:()=>{L(!1),g.onConfirm()}},g.confirmAction??"Delete"),n(p,{onClick:()=>L(!1)},g.cancelLabel??"Cancel")):n(p,{kind:g.kind,disabled:g.disabled,title:g.title,onClick:()=>L(!0)},g.children)}function X(g){let M=g.status??"pending",L=g.t===void 0?M:q(g.t,M);return n(w,{tone:C(M),status:M},L)}function K(g){let[M,L]=r(void 0),[O,j]=r(!1);return i(()=>{let de=!0;if(L(void 0),j(!1),!(typeof g.path!="string"||g.path===""))return g.shared.rpc("image.read",{path:g.path}).then(re=>{de&&L(`data:${re.mediaType};base64,${re.data}`)}).catch(()=>{de&&j(!0)}),()=>{de=!1}},[g.path]),typeof g.path!="string"||g.path===""?null:O?n("span",{className:"kvmflow-thumb-error",title:g.path},g.shared.t("\u622A\u56FE\u4E0D\u53EF\u7528","Screenshot unavailable")):M===void 0?n("span",{className:"kvmflow-hint"},g.label??g.shared.t("\u8F7D\u5165\u4E2D\u2026","loading\u2026")):n("img",{className:"kvmflow-thumb",src:M,alt:g.label??"screen capture"})}function q(g,M){let O={starting:["\u542F\u52A8\u4E2D","starting"],armed:["\u7B49\u5F85\u5F00\u673A","armed"],running:["\u6267\u884C\u4E2D","running"],paused:["\u5DF2\u6682\u505C","paused"],succeeded:["\u5DF2\u5B8C\u6210","succeeded"],failed:["\u5931\u8D25","failed"],aborted:["\u5DF2\u4E2D\u6B62","aborted"],pending:["\u5F85\u6267\u884C","pending"],precheck:["\u68C0\u67E5\u524D\u7F6E\u6761\u4EF6","precheck"],acting:["\u6267\u884C\u52A8\u4F5C","acting"],verifying:["\u9A8C\u8BC1\u753B\u9762","verifying"],passed:["\u901A\u8FC7","passed"],skipped:["\u8DF3\u8FC7","skipped"]}[M];return O===void 0?M:g(O[0],O[1])}function y(g){let M=typeof g.size=="number"?g.size:18;return n("svg",{width:M,height:M,viewBox:"0 0 36 36",role:"img","aria-label":"KVMFlow",focusable:"false",fill:"none",strokeLinecap:"round",strokeLinejoin:"round"},n("g",{stroke:"var(--dsw-alias-label-primary)",strokeWidth:2},n("rect",{x:4.5,y:6.3,width:27,height:18.4,rx:2.8}),n("path",{d:"M18 24.7L18 28.5"}),n("path",{d:"M11.6 29.7L24.4 29.7"})),n("path",{d:"M14.8 11.92L15.17 11.9L21.35 15.25L21.22 15.92L18.04 16.25L16.36 19.1L15.71 18.98L14.65 12.27Z",stroke:"#ec4899",strokeWidth:1.4}))}function I(g){let M=typeof g.size=="number"?g.size:15;return n("svg",{width:M,height:M,viewBox:"0 0 24 24",fill:"none","aria-hidden":!0},n("path",{d:"M4 9V4h5",stroke:"currentColor",strokeWidth:1.6,strokeLinecap:"round",strokeLinejoin:"round"}),n("path",{d:"M15 4h5v5",stroke:"currentColor",strokeWidth:1.6,strokeLinecap:"round",strokeLinejoin:"round"}),n("path",{d:"M20 15v5h-5",stroke:"currentColor",strokeWidth:1.6,strokeLinecap:"round",strokeLinejoin:"round"}),n("path",{d:"M9 20H4v-5",stroke:"currentColor",strokeWidth:1.6,strokeLinecap:"round",strokeLinejoin:"round"}))}function D(g){let M=typeof g.size=="number"?g.size:15;return n("svg",{width:M,height:M,viewBox:"0 0 24 24",fill:"none","aria-hidden":!0},n("path",{d:"M9 4v5H4",stroke:"currentColor",strokeWidth:1.6,strokeLinecap:"round",strokeLinejoin:"round"}),n("path",{d:"M20 9h-5V4",stroke:"currentColor",strokeWidth:1.6,strokeLinecap:"round",strokeLinejoin:"round"}),n("path",{d:"M15 20v-5h5",stroke:"currentColor",strokeWidth:1.6,strokeLinecap:"round",strokeLinejoin:"round"}),n("path",{d:"M4 15h5v5",stroke:"currentColor",strokeWidth:1.6,strokeLinecap:"round",strokeLinejoin:"round"}))}function T(g){let M=V=>g.locale.subscribe(V),L=()=>g.locale.getSnapshot();function O(){let V=o.useSyncExternalStore(M,L,L),W=typeof V?.active=="string"?V.active:"en";return o.useCallback((G,ee)=>W.toLowerCase().startsWith("zh")?G:ee,[W])}async function j(V,W={},G){let ee=await fetch(new URL("kvmflow/rpc",document.baseURI),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({method:V,params:W}),credentials:"same-origin",...G===void 0?{}:{signal:G}}),fe=await ee.text(),ce;try{ce=JSON.parse(fe)}catch{throw new Error(`KVMFlow RPC ${V} returned HTTP ${ee.status}`)}if(ce===void 0||ce.ok!==!0){let Y=new Error(ce?.error?.message??`KVMFlow RPC ${V} failed`);throw Y.code=ce?.error?.code??"kvmflow/rpc",Y}return ce.value}function de(V){let W=O(),G=V?.compact===!0,[ee,fe]=r(void 0),[ce,Y]=r("live"),[N,Ce]=r(()=>{try{return window.localStorage.getItem("kvmflow.deviceId")??""}catch{return""}}),[ie,xe]=r(""),[ye,se]=r(void 0),[be,Re]=r({id:"",yaml:"",dirty:!1}),[Ae,Fe]=r({name:"",description:"",stepName:"",stepDesc:""}),[E,$]=r(""),[Q,Se]=r([]),_e=s((J,ke)=>{Se(Te=>[...Te.slice(-119),{at:Date.now(),kind:J,message:ke}])},[]),De=s((J,ke,Te)=>{se({message:J,tone:ke,...Te===void 0?{}:{action:Te}}),_e(ke==="err"?"err":ke==="ok"?"info":"warn",J)},[_e]),Ee=s(async(J,ke,Te)=>{let Ge=typeof g.get=="function"?g.get("uiWorkspace"):void 0;if(Ge!==void 0&&typeof Ge.startSession=="function"){Ge.startSession(void 0,{prompt:J,whenDraftExists:"append"}),$(""),De(ke,"ok");return}if(typeof navigator<"u"&&navigator.clipboard!==void 0)try{await navigator.clipboard.writeText(J),$(""),De(ke,"ok");return}catch{}$(J),De(Te,"warn")},[De]),Be=s(J=>{Ce(J);try{window.localStorage.setItem("kvmflow.deviceId",J)}catch{}},[]),ze=s(async()=>{try{let J=await j("state");fe(ke=>(ke===void 0&&(J.devices??[]).length===0&&Y("devices"),J)),N===""&&typeof J.defaultDeviceId=="string"&&Be(J.defaultDeviceId),N!==""&&Array.isArray(J.devices)&&!J.devices.some(ke=>ke.id===N)&&Be(typeof J.defaultDeviceId=="string"?J.defaultDeviceId:"")}catch(J){se({message:J.message??String(J),tone:"err"})}},[N,Be]);i(()=>{ze();let J=setInterval(()=>{ze()},4e3);return()=>clearInterval(J)},[ze]);let Pe=s(async(J,ke,Te={})=>{xe(J);try{return await j(ke,Te)}catch(Ge){De(Ge.message??String(Ge),"err");return}finally{xe("")}},[De]),Oe=s(async J=>{if(J===""){De(W("\u8BF7\u5148\u9009\u62E9\u8BBE\u5907\u3002","Select a device first."),"warn");return}let ke=await Pe(W("\u6D4B\u8BD5\u8FDE\u63A5","Test connection"),"device.probe",{deviceId:J});if(ke===void 0)return;let Te=ke.probe??{};Te.video===!0?De(W("\u8FDE\u63A5\u6210\u529F\uFF0C\u5DF2\u83B7\u53D6\u753B\u9762\u4FE1\u53F7\u3002","Connected; video signal available."),"ok"):Te.reachable===!1?De(W("\u65E0\u6CD5\u8FDE\u63A5\u8BBE\u5907\uFF0C\u8BF7\u68C0\u67E5\u5730\u5740\u4E0E\u7F51\u7EDC\u3002","Cannot reach the device; check the origin and network."),"err"):Te.authenticated===!1?De(W("\u8BBE\u5907\u53EF\u8FBE\u4F46\u8BBF\u95EE\u4EE4\u724C\u88AB\u62D2\u7EDD\u3002","Device reachable but the access token was rejected."),"err"):De(W("\u8BBE\u5907\u4E0E\u4EE4\u724C\u6709\u6548\uFF0C\u4F46\u5F53\u524D\u6CA1\u6709\u753B\u9762\u4FE1\u53F7\uFF08\u76EE\u6807\u673A\u53EF\u80FD\u672A\u5F00\u673A\uFF09\u3002","Device and token are valid, but there is no video signal (the target may be off)."),"warn")},[De,Pe,W]),Le=a(()=>({state:ee,setState:fe,tab:ce,setTab:Y,deviceId:N,setDeviceId:Be,busy:ie,setBusy:xe,notify:De,log:_e,logs:Q,setLogs:Se,refresh:ze,rpc:j,runRpc:Pe,t:W,workflowDraft:be,setWorkflowDraft:Re,recordDraft:Ae,setRecordDraft:Fe,handPrompt:Ee,probe:Oe,compact:G}),[ee,ce,N,ie,De,_e,Q,ze,Pe,W,be,Ae,Ee,Oe,G]);if(ee===void 0)return n("div",{className:"kvmflow-root"},n("style",null,c),n("div",{className:"kvmflow-empty"},ie||W("\u6B63\u5728\u52A0\u8F7D KVMFlow\u2026","Loading KVMFlow\u2026")));let U=[{id:"live",zh:"\u5B9E\u65F6\u753B\u9762",en:"Live screen"},{id:"devices",zh:"\u8BBE\u5907",en:"Devices"},{id:"recorder",zh:"\u5F55\u5236\u5668",en:"Recorder"},{id:"workflows",zh:"\u5DE5\u4F5C\u6D41",en:"Workflows"},{id:"runs",zh:"\u6267\u884C",en:"Runs"}],te=(ee.devices??[]).find(J=>J.id===N);return n("div",{className:d("kvmflow-root",G?"compact":"")},n("style",null,c),n("style",null,t.CSS),n("div",{className:"kvmflow-head"},n("div",{className:"kvmflow-head-main"},n("div",{className:"kvmflow-title-row"},n("h1",{className:"kvmflow-title"},"KVMFlow"),ee.activeRun===void 0||ee.activeRun===null?null:n("button",{type:"button",className:d("kvmflow-pill","kvmflow-pill-btn",C(ee.activeRun.status),ee.activeRun.awaiting?"attention":""),onClick:()=>Y("runs"),title:W("\u67E5\u770B\u6267\u884C","Open the run")},n("span",{className:d("kvmflow-dot",ee.activeRun.awaiting?"err":"on")}),ee.activeRun.awaiting?W("\u7B49\u5F85\u5904\u7406","Needs you"):q(W,ee.activeRun.status),` \xB7 ${ee.activeRun.workflowName}`),ee.activeRecording===void 0?null:n("button",{type:"button",className:"kvmflow-pill kvmflow-pill-btn warn",onClick:()=>Y("recorder"),title:W("\u67E5\u770B\u5F55\u5236","Open the recorder")},n("span",{className:"kvmflow-dot err kvmflow-rec-dot"}),W(`\u5F55\u5236\u4E2D \xB7 ${ee.activeRecording.eventCount} \u4E8B\u4EF6`,`Recording \xB7 ${ee.activeRecording.eventCount} events`))),n("p",{className:"kvmflow-sub"},W("IP-KVM \u63A7\u5236\u3001\u4EBA\u5DE5\u5F55\u5236\u3001AI \u7F16\u6392\u7684\u5206\u652F\u5DE5\u4F5C\u6D41\u4E0E\u9010\u8282\u70B9\u9A8C\u8BC1\u6267\u884C\u3002","IP-KVM control, manual recording, AI-authored branching workflows, and verified playback."))),n("div",{className:"kvmflow-head-right"},n("span",{className:"kvmflow-pill kvmflow-pill-device",title:te===void 0?W("\u672A\u9009\u62E9\u8BBE\u5907","No device"):te.name},n("span",{className:d("kvmflow-dot",te===void 0?"":"on")}),n("span",{className:"kvmflow-pill-text"},te===void 0?W("\u672A\u9009\u62E9\u8BBE\u5907","No device"):te.name)),n("select",{className:"kvmflow-select kvmflow-device-select",value:N,onChange:J=>Be(J.target.value),"aria-label":W("\u9009\u62E9\u8BBE\u5907","Select device"),title:te===void 0?"":`${te.name} \u2014 ${te.baseUrl}`},n("option",{value:""},W("\u9009\u62E9 KVM \u8BBE\u5907\u2026","Select a KVM device\u2026")),(ee.devices??[]).map(J=>n("option",{key:J.id,value:J.id},`${J.name} \u2014 ${J.baseUrl}`))),n(p,{onClick:()=>{ze()},disabled:ie!==""},W("\u5237\u65B0","Refresh")),ie===""?null:n("span",{className:"kvmflow-busy",role:"status"},n("span",{className:"kvmflow-spinner"}),ie))),n(z,{message:ye?.message,tone:ye?.tone,action:ye?.action,dismissLabel:W("\u5173\u95ED\u63D0\u793A","Dismiss notice"),onClose:()=>se(void 0)}),E===""?null:n("div",{className:"kvmflow-card",style:{marginBottom:"10px"}},n("div",{className:"kvmflow-card-title"},n("span",null,W("\u590D\u5236\u8FD9\u6BB5\u63D0\u793A\u8BCD\u7ED9 AI","Copy this prompt to the agent")),n(p,{small:!0,onClick:()=>$("")},W("\u6536\u8D77","Hide"))),n("textarea",{className:"kvmflow-textarea compact",readOnly:!0,value:E,onFocus:J=>J.target.select()})),n("div",{className:"kvmflow-tabs",role:"tablist","aria-label":"KVMFlow",onKeyDown:J=>{let ke=U.map(Ge=>Ge.id),Te=ke.indexOf(ce);J.key==="ArrowRight"||J.key==="ArrowDown"?(J.preventDefault(),Y(ke[(Te+1)%ke.length])):J.key==="ArrowLeft"||J.key==="ArrowUp"?(J.preventDefault(),Y(ke[(Te-1+ke.length)%ke.length])):J.key==="Home"?(J.preventDefault(),Y(ke[0])):J.key==="End"&&(J.preventDefault(),Y(ke[ke.length-1]))}},U.map(J=>{let ke=J.id==="devices"?(ee.devices??[]).length===0?"!":"":J.id==="workflows"?String((ee.workflows??[]).length||""):J.id==="recorder"?ee.activeRecording===void 0?"":"\u25CF":J.id==="runs"?ee.activeRun?.awaiting?"!":ee.activeRun?"\u25CF":"":"",Te=ke==="!"||J.id==="recorder"&&ke==="\u25CF";return n("button",{key:J.id,type:"button",role:"tab",id:`kvmflow-tab-${J.id}`,tabIndex:ce===J.id?0:-1,"aria-selected":ce===J.id,"aria-controls":"kvmflow-tabpanel",className:d("kvmflow-tab",ce===J.id?"active":""),onClick:()=>Y(J.id)},W(J.zh,J.en),ke===""?null:n("span",{className:d("kvmflow-tab-badge",Te?"alert":"")},ke))})),n("div",{role:"tabpanel",id:"kvmflow-tabpanel","aria-labelledby":`kvmflow-tab-${ce}`},ce==="live"?n(he,Le):null,ce==="devices"?n(re,Le):null,ce==="recorder"?n(ge,Le):null,ce==="workflows"?n(ne,Le):null,ce==="runs"?n(ae,Le):null))}function re(V){let{state:W,deviceId:G,setDeviceId:ee,runRpc:fe,refresh:ce,busy:Y,t:N}=V,Ce=(W.devices??[]).find(E=>E.id===G),[ie,xe]=r(""),ye={name:"",baseUrl:"",token:"",notes:"",webUsername:"",webPassword:""},[se,be]=r(ye);i(()=>{Ce!==void 0&&ie!==Ce.id&&(xe(Ce.id),be({name:Ce.name??"",baseUrl:Ce.baseUrl??"",token:"",notes:Ce.notes??"",webUsername:Ce.username??"",webPassword:""}))},[Ce?.id]);let Re=()=>{xe(""),be(ye)},Ae=async()=>{if(ie===""){let E=await fe(N("\u6DFB\u52A0\u8BBE\u5907","Add device"),"device.add",{name:se.name,baseUrl:se.baseUrl,token:se.token,notes:se.notes,username:se.webUsername,...se.webPassword===""?{}:{password:se.webPassword}});E!==void 0&&(V.notify(N("\u8BBE\u5907\u5DF2\u6DFB\u52A0","Device added"),"ok"),E.device?.id!==void 0&&ee(E.device.id),Re(),await ce())}else{let E={id:ie,name:se.name,baseUrl:se.baseUrl,notes:se.notes,username:se.webUsername};typeof se.token=="string"&&se.token.trim()!==""&&(E.token=se.token.trim()),typeof se.webPassword=="string"&&se.webPassword!==""&&(E.password=se.webPassword),await fe(N("\u4FDD\u5B58\u8BBE\u5907","Save device"),"device.update",E)!==void 0&&(V.notify(N("\u8BBE\u5907\u5DF2\u4FDD\u5B58","Device saved"),"ok"),be(Q=>({...Q,token:""})),await ce())}},Fe=async E=>{await fe(N("\u5220\u9664\u8BBE\u5907","Remove device"),"device.remove",{id:E})!==void 0&&(V.notify(N("\u8BBE\u5907\u5DF2\u5220\u9664","Device removed"),"ok"),G===E&&ee(""),Re(),await ce())};return n("div",{className:"kvmflow-grid two"},n("div",null,n(_,{title:N("KVM \u8BBE\u5907","KVM devices"),subtitle:`${W.devices?.length??0}`},(W.devices??[]).length===0?n(A,null,N("\u8FD8\u6CA1\u6709\u8BBE\u5907\u3002\u8BF7\u6DFB\u52A0 Radxa Linkr \u7684\u5730\u5740\u548C\u8BBF\u95EE\u4EE4\u724C\uFF08\u5728\u7A84\u5C4F\u6216\u53F3\u4FA7\u680F\u4E2D\u8868\u5355\u4F4D\u4E8E\u4E0B\u65B9\uFF09\u3002","No devices yet. Add a Radxa Linkr origin and access token in the add form.")):n("div",{className:"kvmflow-col"},(W.devices??[]).map(E=>n("div",{key:E.id,className:d("kvmflow-device",E.id===G?"selected":"")},n("div",null,n("div",{className:"kvmflow-device-name"},E.name),n("div",{className:"kvmflow-muted kvmflow-mono"},E.baseUrl),n("div",{className:"kvmflow-hint"},[E.driver,E.hasToken?N("\u4EE4\u724C\u5DF2\u4FDD\u5B58","token saved"):N("\u7F3A\u5C11\u4EE4\u724C","token missing"),E.hasWebCredentials?N("\u89C6\u9891\u8D26\u53F7\u5DF2\u914D\u7F6E","video account set"):N("\u65E0\u89C6\u9891\u8D26\u53F7","no video account"),E.id===W.defaultDeviceId?N("\u9ED8\u8BA4\u8BBE\u5907","default"):""].filter(Boolean).join(" \xB7 ")),E.notes?n("div",{className:"kvmflow-hint"},E.notes):null,E.viewMapping===void 0?null:n("div",{className:"kvmflow-hint"},N(`\u753B\u9762\u6620\u5C04\uFF1A\u5DE6 ${Math.round(E.viewMapping.left*100)}% \u4E0A ${Math.round(E.viewMapping.top*100)}% \u53F3 ${Math.round(E.viewMapping.right*100)}% \u4E0B ${Math.round(E.viewMapping.bottom*100)}%`,`view mapping: left ${Math.round(E.viewMapping.left*100)}% top ${Math.round(E.viewMapping.top*100)}% right ${Math.round(E.viewMapping.right*100)}% bottom ${Math.round(E.viewMapping.bottom*100)}%`))),n("div",{className:"kvmflow-actions"},n(p,{onClick:()=>{ee(E.id)},disabled:E.id===G},N("\u4F7F\u7528","Use")),n(p,{onClick:()=>{xe(E.id),be({name:E.name,baseUrl:E.baseUrl,token:"",notes:E.notes??"",webUsername:E.username??"",webPassword:""})}},N("\u7F16\u8F91","Edit")),n(p,{onClick:()=>{V.probe(E.id)},disabled:Y!==""},N("\u6D4B\u8BD5","Test")),n(Z,{kind:"danger",disabled:Y!=="",confirmLabel:N("\u5220\u9664\u8BBE\u5907\u53CA\u5176\u4EE4\u724C\uFF1F","Delete device and its token?"),confirmAction:N("\u5220\u9664","Delete"),cancelLabel:N("\u53D6\u6D88","Cancel"),onConfirm:()=>{Fe(E.id)}},N("\u5220\u9664","Remove")))))))),n(_,{title:ie===""?N("\u6DFB\u52A0\u8BBE\u5907","Add device"):N("\u7F16\u8F91\u8BBE\u5907","Edit device")},n("div",{className:"kvmflow-form-grid"},n(S,{label:N("\u540D\u79F0","Name"),className:"wide"},n("input",{className:"kvmflow-input",value:se.name,placeholder:"Lab Linkr",onChange:E=>be({...se,name:E.target.value})})),n(S,{label:N("\u5730\u5740","Origin"),className:"wide"},n("input",{className:"kvmflow-input",value:se.baseUrl,placeholder:"http://192.168.1.100",onChange:E=>be({...se,baseUrl:E.target.value})})),n(S,{label:N("\u8BBF\u95EE\u4EE4\u724C","Access token"),className:"wide",hint:ie===""?N("\u5728 Linkr Web \u63A7\u5236\u53F0\u7684\u201C\u7CFB\u7EDF\u8BBE\u7F6E \u2192 \u8BBF\u95EE\u4EE4\u724C\u201D\u4E2D\u751F\u6210\u540E\u7C98\u8D34\u5230\u8FD9\u91CC\uFF1B\u4FDD\u5B58\u4E3A devices.json\uFF08\u6743\u9650 0600\uFF09\u3002","Generate one in the Linkr web console under System settings \u2192 Access tokens, then paste it here. Stored in devices.json with mode 0600."):N("\u7559\u7A7A\u8868\u793A\u4FDD\u7559\u73B0\u6709\u4EE4\u724C\u3002","Leave blank to keep the current token.")},n("input",{className:"kvmflow-input",type:"password",value:se.token,placeholder:ie===""?"radxa_linkr_\u2026":"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",onChange:E=>be({...se,token:E.target.value})})),n(S,{label:N("\u5907\u6CE8","Notes"),className:"wide"},n("input",{className:"kvmflow-input",value:se.notes,onChange:E=>be({...se,notes:E.target.value})})),n(S,{label:N("Web \u7528\u6237\u540D\uFF08\u5B9E\u65F6\u89C6\u9891\u7528\uFF09","Web username (for live video)"),className:"wide",hint:N("\u53EA\u6709\u5B9E\u65F6\u89C6\u9891\u9700\u8981 Web \u8D26\u53F7\uFF1B\u622A\u56FE\u4E0E\u952E\u9F20\u7528\u8BBF\u95EE\u4EE4\u724C\u5373\u53EF\u3002","Only live video needs the web account; snapshots and HID use the access token.")},n("input",{className:"kvmflow-input",value:se.webUsername,autoComplete:"off",onChange:E=>be({...se,webUsername:E.target.value})})),n(S,{label:N("Web \u5BC6\u7801","Web password"),className:"wide",hint:ie===""?N("\u4E0E Web \u63A7\u5236\u53F0\u767B\u5F55\u5BC6\u7801\u76F8\u540C\uFF0C\u4FDD\u5B58\u4E3A devices.json\uFF080600\uFF09\u3002","Same as the web console password; stored in devices.json (0600)."):N("\u7559\u7A7A\u8868\u793A\u4FDD\u7559\u73B0\u6709\u5BC6\u7801\u3002","Leave blank to keep the stored password.")},n("input",{className:"kvmflow-input",type:"password",value:se.webPassword,autoComplete:"new-password",placeholder:ie===""?"":Ce?.hasWebCredentials?"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022":N("\u672A\u8BBE\u7F6E","not set"),onChange:E=>be({...se,webPassword:E.target.value})}))),n("div",{className:"kvmflow-split"}),n("div",{className:"kvmflow-form-actions"},n(p,{kind:"primary",onClick:()=>{Ae()},disabled:Y!==""||se.baseUrl.trim()===""||ie===""&&se.token.trim()===""},ie===""?N("\u6DFB\u52A0","Add"):N("\u4FDD\u5B58","Save")),ie===""?null:n(p,{onClick:Re},N("\u53D6\u6D88\u7F16\u8F91","Cancel edit"))),n("p",{className:"kvmflow-hint",style:{marginTop:"10px"}},N("\u7B2C\u4E00\u9636\u6BB5\u4F7F\u7528 Radxa Linkr \u516C\u5F00 HTTP API\uFF1AGET /api/public/snapshot \u4E0E POST /api/public/control\u3002","Stage one uses the Radxa Linkr public HTTP API: GET /api/public/snapshot and POST /api/public/control."))))}function he(V){let{state:W,deviceId:G,runRpc:ee,rpc:fe,log:ce,logs:Y,t:N,refresh:Ce}=V,ie=(W.devices??[]).find(P=>P.id===G),[xe,ye]=r(()=>{try{return window.localStorage.getItem("kvmflow.wide")==="1"}catch{return!1}}),se=s(()=>{ye(P=>{let oe=!P;try{window.localStorage.setItem("kvmflow.wide",oe?"1":"0")}catch{}return oe})},[]),[be,Re]=r(void 0),[Ae,Fe]=r(""),[E,$]=r(!0),[Q,Se]=r({}),[_e,De]=r(""),[Ee,Be]=r(ie?.viewMapping),[ze,Pe]=r(void 0),[Oe,Le]=r(()=>{let P=(()=>{try{return window.localStorage.getItem("kvmflow.preview")}catch{return null}})();return P==="video"||P==="snapshot"?P:ie?.preview==="snapshot"?"snapshot":"video"}),[U,te]=r(void 0),[J,ke]=r(""),[Te,Ge]=r(void 0),[rn,We]=r(0),le=l(null),tt=l({size:"",persisted:JSON.stringify(ie?.viewMapping??null)});i(()=>{Be(ie?.viewMapping),tt.current={size:"",persisted:JSON.stringify(ie?.viewMapping??null)}},[ie?.id,JSON.stringify(ie?.viewMapping??null)]);let an=s(async P=>{let oe=`${P.naturalWidth}x${P.naturalHeight}`;if(tt.current.size===oe)return;tt.current.size=oe;let me=h(P),Me=JSON.stringify(me??null);if(Be(me),Me!==tt.current.persisted){tt.current.persisted=Me;try{await fe("device.update",{id:G,viewMapping:me??null}),ce("info",me===void 0?"Frame covers the whole target screen; click mapping is 1:1.":`Detected a letterboxed target area (${(me.right-me.left).toFixed(3)}\xD7${(me.bottom-me.top).toFixed(3)} of the frame); mapping clicks to it.`)}catch(Ke){V.notify(Ke.message??String(Ke),"err")}}},[G,fe,ce,V]),sn=l(null),Dn=l(!1),so=l(!0),[lo,Sr]=r(!0),[$n,Cr]=r(()=>{try{let P=Number(window.localStorage.getItem("kvmflow.frameIntervalMs"));return Number.isFinite(P)&&P>=400?P:1100}catch{return 1100}}),Ft=l(0),Ht=l(0),Vt=s(async()=>{if(!(G===""||Dn.current||!so.current)&&!(Date.now()<Ht.current)){Dn.current=!0;try{let P=await fe("screen.snapshot",{deviceId:G});Re(P),Fe(""),Ft.current=0}catch(P){Fe(P.message??String(P)),typeof P?.code=="string"&&P.code.includes("RATE_LIMITED")&&(Ft.current=Math.min(3,Ft.current+1),Ht.current=Date.now()+1e3*2**Ft.current)}finally{Dn.current=!1}}},[G,fe]),co=s(P=>{Cr(P),Ft.current=0,Ht.current=0;try{window.localStorage.setItem("kvmflow.frameIntervalMs",String(P))}catch{}},[]);i(()=>{Re(void 0),Fe(""),te(void 0),ke(""),Ge(void 0)},[G]),i(()=>{let P=sn.current;if(P==null||typeof IntersectionObserver>"u")return;let oe=new IntersectionObserver(me=>{for(let Me of me)so.current=Me.isIntersecting,Sr(Me.isIntersecting)});return oe.observe(P),()=>oe.disconnect()},[G]),i(()=>{let P=sn.current;if(P==null)return;let oe=Ke=>mo.current(Ke);P.addEventListener("wheel",oe,{passive:!1});let me=Ke=>{mt.current!==0&&(typeof P.contains=="function"&&Ke.target!==null&&P.contains(Ke.target)||Tn.current())},Me=()=>{Tn.current()};return window.addEventListener("pointerup",me,!0),P.addEventListener("pointerleave",Me),()=>{P.removeEventListener("wheel",oe),window.removeEventListener("pointerup",me,!0),P.removeEventListener("pointerleave",Me)}},[G]);let rt=Oe==="video"&&U!==void 0,uo=l(fe);uo.current=fe;let Pn=l(N);Pn.current=N,i(()=>{let P=le.current;P!=null&&P.srcObject!==U&&(P.srcObject=U??null)},[U,rt]),i(()=>{if(G===""||!E||rt)return;Vt();let P=setInterval(()=>{typeof document<"u"&&document.visibilityState==="hidden"||Vt()},$n);return()=>clearInterval(P)},[G,E,Vt,$n,rt]),i(()=>{if(G===""||!E||Oe!=="video"||!lo)return;if(typeof RTCPeerConnection>"u"){ke(Pn.current("\u5F53\u524D\u6D4F\u89C8\u5668\u4E0D\u652F\u6301 WebRTC\u3002","This browser has no WebRTC support."));return}let P=!1,oe;return ke(""),(async()=>{try{oe=new RTCPeerConnection({iceServers:[]}),oe.addTransceiver("video",{direction:"recvonly"}),oe.ontrack=gt=>{if(P)return;let bo=gt.streams!==void 0&&gt.streams.length>0?gt.streams[0]:new MediaStream([gt.track]);te(bo),ke("")},oe.onconnectionstatechange=()=>{if(P||oe===void 0)return;let gt=oe.connectionState;(gt==="failed"||gt==="closed")&&ke(Pn.current("\u89C6\u9891\u8FDE\u63A5\u5DF2\u65AD\u5F00\u3002","The video connection dropped."))};let me=await oe.createOffer();await oe.setLocalDescription(me),await x(oe);let Me=oe.localDescription??me,Ke=await uo.current("rtc.offer",{deviceId:G,offer:Me.sdp});if(P)return;await oe.setRemoteDescription({type:"answer",sdp:Ke.answer})}catch(me){if(P)return;let Me=me?.message??String(me);ke(Me),ce("warn",`WebRTC negotiation failed: ${Me}`);try{oe!==void 0&&oe.close()}catch{}}})(),()=>{P=!0,te(void 0);try{oe!==void 0&&oe.close()}catch{}}},[G,E,Oe,rn,lo]);let it=s(async(P,oe,me=!1)=>{if(G===""){V.notify(N("\u8BF7\u5148\u9009\u62E9\u8BBE\u5907\u3002","Select a device first."),"warn");return}try{await fe("screen.control",{deviceId:G,events:P}),Ht.current=Math.max(Ht.current,Date.now()+300),me||ce("info",oe)}catch(Me){V.notify(Me.message??String(Me),"err")}},[G,fe,ce,V,N]),ln=(P,oe=!0)=>{let me=P.currentTarget,Ke=((me!==null&&typeof me.querySelector=="function"?me.querySelector("img, video"):null)??me).getBoundingClientRect(),gt=u((P.clientX-Ke.left)/Math.max(1,Ke.width)),bo=u((P.clientY-Ke.top)/Math.max(1,Ke.height)),ta=m(oe?Ee:void 0,gt,bo);return{x:ta.x,y:ta.y,frameX:gt,frameY:bo}},mt=l(0),cn=l({x:.5,y:.5}),dn=l(0),Tn=l(()=>{}),fo=()=>{if(mt.current===0)return;let P=mt.current;mt.current=0;let{x:oe,y:me}=cn.current;it([["mouse_abs",0,oe,me,0,0]],`release ${P} on leave`)};Tn.current=fo;let _r=P=>{P.preventDefault(),sn.current?.focus();let{x:oe,y:me}=ln(P),Me=P.button===2?2:P.button===1?4:1;mt.current=Me,cn.current={x:oe,y:me},dn.current=Date.now()-200,Pe({x:oe,y:me}),it([["mouse_abs",0,oe,me,0,0],["mouse_abs",Me,oe,me,0,0]],`mouse down ${Me} @ ${oe.toFixed(3)},${me.toFixed(3)}`)},Er=P=>{P.preventDefault();let{x:oe,y:me}=ln(P);mt.current=0,cn.current={x:oe,y:me},Pe({x:oe,y:me}),it([["mouse_abs",0,oe,me,0,0]],`mouse up @ ${oe.toFixed(3)},${me.toFixed(3)}`)},ht=l({x:0,y:0}),Mr=P=>{let oe=P.deltaMode===1?16:P.deltaMode===2?400:1;ht.current.y=po(ht.current.y+P.deltaY*oe/100),ht.current.x=po(ht.current.x+P.deltaX*oe/100);let me=Math.trunc(ht.current.y),Me=Math.trunc(ht.current.x);return ht.current.y-=me,ht.current.x-=Me,{steps:me,stepsX:Me}},po=P=>Number.isFinite(P)?Math.max(-20,Math.min(20,P)):0,mo=l(P=>{}),ho=P=>{if(P.preventDefault(),P.stopPropagation(),G===""||be===void 0)return;let{x:oe,y:me}=ln(P);Pe({x:oe,y:me});let{steps:Me,stepsX:Ke}=Mr(P);Me===0&&Ke===0||it([["mouse_abs",0,oe,me,Me,Ke]],`wheel ${Me}${Ke===0?"":`,${Ke}`}`)};mo.current=ho;let Ir=P=>{if(P.key!=="Tab"){if(P.repeat){P.preventDefault();return}P.preventDefault(),P.stopPropagation(),Se(oe=>({...oe,[P.code]:!0})),it([["keyboard",P.code,!0]],`key down ${P.code}`)}},Rr=P=>{P.key!=="Tab"&&(P.preventDefault(),P.stopPropagation(),Se(oe=>{let me={...oe};return delete me[P.code],me}),it([["keyboard",P.code,!1]],`key up ${P.code}`))},Rt=P=>{let oe=P.map(me=>["keyboard",me,!0]);oe.push(["delay",80]);for(let me of[...P].reverse())oe.push(["keyboard",me,!1]);it(oe,`shortcut ${P.join("+")}`)},go=()=>{if(_e==="")return;let P=[];for(let oe=0;oe<_e.length;oe+=120)P.push(["text",_e.slice(oe,oe+120)]);it(P,`text ${Math.min(_e.length,60)}${_e.length>60?"\u2026":""}`),De("")},Bt=W.activeRecording,at=V.recordDraft,Wt=V.setRecordDraft,wo=at.stepName,An=at.stepDesc,vo=at.name,zn=P=>Wt({...at,stepName:P}),yo=P=>Wt({...at,stepDesc:P}),Dr=P=>Wt({...at,name:P});return n("div",{className:d("kvmflow-grid",xe?"wide":"two")},n("div",null,n(_,{title:N("\u5B9E\u65F6\u753B\u9762","Live screen"),subtitle:ie?.name??N("\u672A\u9009\u62E9\u8BBE\u5907","No device"),actions:[n(p,{onClick:()=>{Vt()},disabled:G===""},N("\u622A\u56FE","Snapshot")),n("select",{className:"kvmflow-select kvmflow-inline-select",value:Oe,"aria-label":N("\u9884\u89C8\u65B9\u5F0F","Preview mode"),title:N("\u5B9E\u65F6\u89C6\u9891\u9700\u8981\u8BBE\u5907 Web \u8D26\u53F7\uFF1B\u622A\u56FE\u6A21\u5F0F\u6309\u4E0B\u62C9\u53F3\u4FA7\u7684\u5E27\u7387\u8F6E\u8BE2","Real-time video needs the device web account; snapshot mode polls at the rate set next to it"),onChange:P=>{let oe=P.target.value;Le(oe);try{window.localStorage.setItem("kvmflow.preview",oe)}catch{}G!==""&&fe("device.update",{id:G,preview:oe}).catch(()=>{})}},n("option",{value:"video"},N("\u5B9E\u65F6\u89C6\u9891","Live video")),n("option",{value:"snapshot"},N("\u622A\u56FE\u8F6E\u8BE2","Snapshot polling"))),Oe==="video"?null:n("select",{className:"kvmflow-select kvmflow-inline-select",value:String($n),"aria-label":N("\u9884\u89C8\u5237\u65B0\u9891\u7387","Preview refresh rate"),title:N("\u8BBE\u5907\u516C\u5F00 API \u9650 5 \u6B21/\u79D2\uFF0C\u4E14\u4E0E\u952E\u9F20\u4E8B\u4EF6\u5171\u7528\uFF1B\u8C03\u9AD8\u9884\u89C8\u4F1A\u6324\u5360\u64CD\u4F5C\u4F59\u91CF","The public API allows 5 requests/second shared with HID input, so a faster preview leaves less room for input"),onChange:P=>co(Number(P.target.value))},n("option",{value:"2000"},N("0.5 \u5E27/\u79D2","0.5 fps")),n("option",{value:"1100"},N("1 \u5E27/\u79D2","1 fps")),n("option",{value:"700"},N("1.5 \u5E27/\u79D2","1.5 fps")),n("option",{value:"500"},N("2 \u5E27/\u79D2","2 fps"))),n(p,{onClick:()=>$(P=>!P)},E?N("\u6682\u505C","Pause"):N("\u7EE7\u7EED","Resume")),n(p,{onClick:()=>{V.probe(G)}},N("\u6D4B\u8BD5","Test")),n("button",{type:"button",className:"kvmflow-icon-btn","aria-pressed":xe,"aria-label":xe?N("\u5207\u6362\u4E3A\u6807\u51C6\u5E03\u5C40","Switch to the standard layout"):N("\u5207\u6362\u4E3A\u5BBD\u5C4F\u5E03\u5C40","Switch to the wide layout"),title:xe?N("\u5207\u6362\u4E3A\u6807\u51C6\u5E03\u5C40\uFF08\u53F3\u4FA7\u663E\u793A\u5F55\u5236\u4E0E\u8BBE\u5907\u4FE1\u606F\uFF09","Switch to the standard layout with recording and device panes"):N("\u5207\u6362\u4E3A\u5BBD\u5C4F\uFF1A\u753B\u9762\u5360\u6EE1\u9762\u677F\u5BBD\u5EA6\uFF0C\u5176\u4F59\u5361\u7247\u79FB\u5230\u4E0B\u65B9","Switch to wide: the screen takes the whole panel width and the other cards move below"),onClick:se},n(xe?D:I))]},G===""?n(A,null,N("\u5148\u5728\u201C\u8BBE\u5907\u201D\u9875\u6DFB\u52A0\u5E76\u9009\u62E9\u4E00\u4E2A KVM\u3002","Add and select a KVM on the Devices tab first.")):null,G===""?null:n("div",{ref:sn,className:"kvmflow-screen-wrap",tabIndex:0,role:"application","aria-label":N("KVM \u753B\u9762\uFF0C\u70B9\u51FB\u53EF\u53D1\u9001\u9F20\u6807\uFF0C\u805A\u7126\u540E\u53EF\u7528\u952E\u76D8","KVM screen; click for mouse and focus for keyboard"),onMouseMove:P=>{let{x:oe,y:me}=ln(P);if(cn.current={x:oe,y:me},Pe(Me=>Me!==void 0&&Math.round(Me.x*1e3)===Math.round(oe*1e3)&&Math.round(Me.y*1e3)===Math.round(me*1e3)?Me:{x:oe,y:me}),mt.current!==0){let Me=Date.now();Me-dn.current>=200&&(dn.current=Me,it([["mouse_abs",mt.current,oe,me,0,0]],"drag",!0))}},onMouseLeave:()=>{Pe(void 0),fo()},onMouseDown:_r,onMouseUp:Er,onContextMenu:P=>P.preventDefault(),onKeyDown:Ir,onKeyUp:Rr,onBlur:()=>{let P=Object.keys(Q);Se({}),P.length>0&&it(P.map(oe=>["keyboard",oe,!1]),`release ${P.join(",")}`)}},rt?n("div",{className:"kvmflow-screen-stage"},n("video",{ref:le,className:"kvmflow-screen",autoPlay:!0,muted:!0,playsInline:!0,onLoadedMetadata:P=>{let oe=P.currentTarget;Ge({width:oe.videoWidth,height:oe.videoHeight}),an(oe)}}),f(Ee)?null:n("div",{className:"kvmflow-screen-target","aria-hidden":!0,style:{left:`${Ee.left*100}%`,top:`${Ee.top*100}%`,width:`${(Ee.right-Ee.left)*100}%`,height:`${(Ee.bottom-Ee.top)*100}%`}})):be===void 0?n("div",{className:"kvmflow-screen-empty"},Ae===""?E?N("\u6B63\u5728\u83B7\u53D6\u753B\u9762\u2026","Capturing\u2026"):N("\u753B\u9762\u5DF2\u6682\u505C","Screen paused"):N("\u65E0\u753B\u9762\u4FE1\u53F7","No video signal")):n("div",{className:"kvmflow-screen-stage"},n("img",{className:"kvmflow-screen",src:`data:${be.mediaType};base64,${be.data}`,alt:"KVM screen",draggable:!1,onLoad:P=>{an(P.currentTarget)}}),f(Ee)?null:n("div",{className:"kvmflow-screen-target","aria-hidden":!0,style:{left:`${Ee.left*100}%`,top:`${Ee.top*100}%`,width:`${(Ee.right-Ee.left)*100}%`,height:`${(Ee.bottom-Ee.top)*100}%`}}))),G===""?null:n("div",{className:"kvmflow-screen-status"},n("span",{className:d("kvmflow-dot",rt||Ae===""?"on":"err")}),n("span",null,rt?`${Te===void 0?"\u2014":`${Te.width}\xD7${Te.height}`} \xB7 WebRTC`:Ae===""?be===void 0?"\u2014":`${be.width}\xD7${be.height} \xB7 ${(be.bytes/1024).toFixed(0)} KB`:N("\u65E0\u4FE1\u53F7","No signal")),f(Ee)?null:(()=>{let P=rt?Te?.width??0:be?.width??0,oe=rt?Te?.height??0:be?.height??0,me=Math.round((Ee.right-Ee.left)*P),Me=Math.round((Ee.bottom-Ee.top)*oe);return n("span",null,N(`\u76EE\u6807\u533A ${me}\xD7${Me}`,`target ${me}\xD7${Me}`))})(),ze===void 0?null:n("span",{className:"kvmflow-screen-readout"},`${ze.x.toFixed(3)}, ${ze.y.toFixed(3)}`),n("span",null,E?N("\u5B9E\u65F6","LIVE"):N("\u5DF2\u6682\u505C","PAUSED"))),G===""?null:n("div",{className:"kvmflow-actions",style:{marginTop:"10px"}},n(p,{onClick:()=>Rt(["ControlLeft","AltLeft","Delete"])},"Ctrl+Alt+Del"),n(p,{onClick:()=>Rt(["Escape"])},"Esc"),n(p,{onClick:()=>Rt(["Enter"])},"Enter"),n(p,{onClick:()=>Rt(["F2"])},"F2"),n(p,{onClick:()=>Rt(["F12"])},"F12"),n(p,{onClick:()=>Rt(["MetaLeft"])},"Win")),Ae===""?null:n("div",{className:"kvmflow-notice err",style:{marginTop:"10px",marginBottom:0}},Ae),J===""||rt?null:n("div",{className:"kvmflow-notice",style:{marginTop:"10px",marginBottom:0}},n("span",null,N(`\u5B9E\u65F6\u89C6\u9891\u4E0D\u53EF\u7528\uFF1A${J}`,`Live video unavailable: ${J}`)),n("span",{className:"kvmflow-actions"},n(p,{onClick:()=>{ke(""),We(P=>P+1)},disabled:G===""},N("\u91CD\u8BD5","Retry")))),n("div",{className:"kvmflow-row",style:{marginTop:"8px"}},n("input",{className:"kvmflow-input",style:{flex:"1 1 auto"},value:_e,placeholder:N("\u8F93\u5165 ASCII \u6587\u672C\uFF08Linkr \u6587\u672C\u901A\u9053\uFF09","Type ASCII text (Linkr text channel)"),onChange:P=>De(P.target.value),onKeyDown:P=>{P.key==="Enter"&&go()}}),n(p,{onClick:go,disabled:_e===""},N("\u8F93\u5165","Type")))),n(_,{title:N("\u952E\u9F20\u64CD\u4F5C\u65E5\u5FD7","Input log")},n(R,null,n(p,{onClick:()=>V.setLogs([]),disabled:Y.length===0},N("\u6E05\u7A7A","Clear"))),Y.length===0?n("div",{className:"kvmflow-hint"},N("\u5C1A\u65E0\u64CD\u4F5C\u3002","No actions yet.")):n("div",{className:"kvmflow-log"},Y.slice(-80).map((P,oe)=>n("div",{key:oe,className:d("kvmflow-log-row",P.kind==="err"?"err":P.kind==="warn"?"warn":"")},n("span",{className:"kvmflow-log-time"},b(P.at)),n("span",null,P.message)))))),n("div",null,n(_,{title:N("\u5F55\u5236","Recording")},Bt===void 0?n("div",{className:"kvmflow-col"},n(S,{label:N("\u5F55\u5236\u540D\u79F0","Recording name")},n("input",{className:"kvmflow-input",value:vo,placeholder:N("\u4F8B\u5982\uFF1A\u8FDB\u5165 BIOS \u5F00\u542F\u865A\u62DF\u5316","e.g. Enter BIOS and enable virtualization"),onChange:P=>Dr(P.target.value)})),n(S,{label:N("\u5F55\u5236\u8BF4\u660E","Recording description")},n("textarea",{className:"kvmflow-input kvmflow-textarea compact",value:at.description,placeholder:N("\u8FD9\u6B21\u5F55\u5236\u8981\u5B8C\u6210\u4EC0\u4E48\uFF1F","What should this recording accomplish?"),onChange:P=>Wt({...at,description:P.target.value})})),n(p,{kind:"primary",disabled:G==="",onClick:async()=>{await ee(N("\u5F00\u59CB\u5F55\u5236","Start recording"),"record.start",{deviceId:G,name:vo||N("\u672A\u547D\u540D\u5F55\u5236","Untitled recording"),description:at.description})!==void 0&&(V.notify(N("\u5F55\u5236\u5DF2\u5F00\u59CB\uFF0C\u64CD\u4F5C\u753B\u9762\u4F1A\u81EA\u52A8\u8BB0\u5F55\u3002","Recording started; your input is captured."),"ok"),Wt({...at,name:"",description:""}),await Ce())}},N("\u5F00\u59CB\u5F55\u5236","Start recording")),n("p",{className:"kvmflow-hint"},N("\u5F55\u5236\u671F\u95F4\u6240\u6709\u952E\u76D8\u3001\u9F20\u6807\u548C\u6587\u672C\u64CD\u4F5C\u90FD\u4F1A\u5199\u5165\u4E8B\u4EF6\u6D41\uFF0C\u5E76\u5728\u64CD\u4F5C\u524D\u540E\u4FDD\u5B58\u622A\u56FE\u3002","Every keyboard, mouse, and text action is stored with before/after screenshots."))):n("div",{className:"kvmflow-col"},n("div",{className:"kvmflow-kv"},n("dt",null,N("\u540D\u79F0","Name")),n("dd",null,Bt.name),n("dt",null,N("\u4E8B\u4EF6","Events")),n("dd",null,String(Bt.eventCount)),n("dt",null,N("\u6B65\u9AA4","Steps")),n("dd",null,String(Bt.stepCount)),n("dt",null,N("\u5F00\u59CB","Started")),n("dd",null,v(Bt.startedAt))),n("div",{className:"kvmflow-split"}),n(S,{label:N("\u6B65\u9AA4\u540D\u79F0","Step name")},n("input",{className:"kvmflow-input",value:wo,placeholder:N("\u4F8B\u5982\uFF1A\u6253\u5F00 Advanced \u83DC\u5355","e.g. Open the Advanced menu"),onChange:P=>zn(P.target.value)})),n(S,{label:N("\u6B65\u9AA4\u63CF\u8FF0","Step description")},n("textarea",{className:"kvmflow-input kvmflow-textarea compact",value:An,placeholder:N("\u8FD9\u4E00\u6B65\u5B8C\u6210\u4EC0\u4E48\uFF0C\u753B\u9762\u5E94\u8BE5\u51FA\u73B0\u4EC0\u4E48","What this step does and what should appear"),onChange:P=>yo(P.target.value)})),n(p,{onClick:async()=>{await ee(N("\u6807\u8BB0\u6B65\u9AA4","Mark step"),"record.markStep",{deviceId:G,name:wo||N("\u6B65\u9AA4","Step"),description:An})!==void 0&&(zn(""),yo(""),V.notify(N("\u5DF2\u4FDD\u5B58\u6B65\u9AA4\u8FB9\u754C\u3002","Step boundary saved."),"ok"),await Ce())}},N("\u6807\u8BB0\u6B65\u9AA4","Mark step")),n(p,{kind:"primary",onClick:async()=>{await ee(N("\u505C\u6B62\u5F55\u5236","Stop recording"),"record.stop")!==void 0&&(V.notify(N("\u5F55\u5236\u7ED3\u675F\uFF0C\u5DF2\u4FDD\u5B58\u6B65\u9AA4\u4E0E\u622A\u56FE\u3002","Recording stopped; steps and screenshots saved."),"ok",{label:N("\u67E5\u770B\u5F55\u5236","Review recording"),onClick:()=>V.setTab("recorder")}),await Ce())}},N("\u505C\u6B62\u5F55\u5236","Stop recording")))),n(_,{title:N("\u8BBE\u5907\u4E0E\u6570\u636E","Device and data")},n("dl",{className:"kvmflow-kv"},n("dt",null,N("\u8BBE\u5907","Device")),n("dd",null,ie?.name??"\u2014"),n("dt",null,N("\u5730\u5740","Origin")),n("dd",{className:"kvmflow-mono"},ie?.baseUrl??"\u2014"),n("dt",null,N("\u6570\u636E\u76EE\u5F55","Data dir")),n("dd",{className:"kvmflow-mono"},W.dataDir??"\u2014"),n("dt",null,N("\u9A71\u52A8","Driver")),n("dd",null,ie?.driver??"\u2014")))))}function ge(V){let{state:W,deviceId:G,runRpc:ee,rpc:fe,refresh:ce,busy:Y,t:N,notify:Ce}=V,ie=W.activeRecording,xe=W.recordings??[],[ye,se]=r(""),[be,Re]=r(void 0),[Ae,Fe]=r(!1),E=V.recordDraft,$=V.setRecordDraft,Q=E.name,Se=E.description,_e=E.stepName,De=E.stepDesc,Ee=le=>$({...E,name:le}),Be=le=>$({...E,description:le}),ze=le=>$({...E,stepName:le}),Pe=le=>$({...E,stepDesc:le}),[Oe,Le]=r(void 0);i(()=>{ie!==void 0?se(ie.id):ye===""&&xe.length>0&&se(xe[0].id)},[ie?.id,xe.length]);let U=s(async le=>{if(le===""){Re(void 0);return}Fe(!0);try{let tt=await fe("record.get",{id:le});Re(tt.recording)}catch(tt){Ce(tt.message??String(tt),"err")}finally{Fe(!1)}},[fe,Ce]);i(()=>{if(U(ye),ye==="")return;let le=setInterval(()=>{ie!==void 0&&ie.id===ye&&U(ye)},2500);return()=>clearInterval(le)},[ye,ie?.id,U]);let te=async()=>{let le=await ee(N("\u5F00\u59CB\u5F55\u5236","Start recording"),"record.start",{deviceId:G,name:Q||N("\u672A\u547D\u540D\u5F55\u5236","Untitled recording"),description:Se});le!==void 0&&(Ce(N("\u5F55\u5236\u5DF2\u5F00\u59CB\uFF0C\u8BF7\u5728\u5B9E\u65F6\u753B\u9762\u4E2D\u64CD\u4F5C\u3002","Recording started; drive the target from the Live screen."),"ok",{label:N("\u53BB\u5B9E\u65F6\u753B\u9762","Go to Live screen"),onClick:()=>V.setTab("live")}),$({...E,name:"",description:""}),se(le.recording.id),await ce())},J=async()=>{await ee(N("\u6807\u8BB0\u6B65\u9AA4","Mark step"),"record.markStep",{deviceId:G,name:_e||N("\u6B65\u9AA4","Step"),description:De})!==void 0&&(ze(""),Pe(""),await U(ye),await ce())},ke=async()=>{let le=await ee(N("\u505C\u6B62\u5F55\u5236","Stop recording"),"record.stop");le!==void 0&&(Ce(N("\u5F55\u5236\u5DF2\u7ED3\u675F\u3002","Recording stopped."),"ok"),se(le.recording.id),await U(le.recording.id),await ce())},Te=async()=>{if(Oe===void 0)return;await ee(N("\u4FDD\u5B58\u6B65\u9AA4","Save step"),"record.updateStep",{recordingId:ye,stepId:Oe.id,name:Oe.name,description:Oe.description})!==void 0&&(Le(void 0),await U(ye),await ce())},Ge=async()=>{if(ye==="")return;await ee(N("\u5220\u9664\u5F55\u5236","Delete recording"),"record.delete",{id:ye})!==void 0&&(Ce(N("\u5F55\u5236\u5DF2\u5220\u9664\u3002","Recording removed."),"ok"),se(""),Re(void 0),await ce())},rn=async le=>{let an=[`\u8BF7\u4F7F\u7528 KVMFlow \u5DE5\u5177\u628A\u5F55\u5236 ${le.id} \u8F6C\u6362\u6210\u4E00\u4EFD\u53EF\u6267\u884C\u7684\u56FE\u5DE5\u4F5C\u6D41\u3002`,"\u5148\u8C03\u7528 kvmflow_flow_catalog \u4E86\u89E3\u8282\u70B9\u7C7B\u578B\uFF0C\u518D\u8C03\u7528 kvmflow_record_get \u67E5\u770B\u4E8B\u4EF6\u5E8F\u5217\u3001\u4EBA\u5DE5\u6B65\u9AA4\u8FB9\u754C\u548C\u622A\u56FE\uFF08\u5FC5\u8981\u65F6\u8BFB\u53D6\u622A\u56FE\uFF09\u3002","\u7528 kvmflow_workflow_generate \u6309\u4EBA\u5DE5\u6B65\u9AA4\u751F\u6210\u4E3B\u5E72\uFF1A\u6BCF\u6B65\u5199\u660E name\u3001description\uFF0C\u5F15\u7528\u5F55\u5236\u4E8B\u4EF6\u7684 eventRange\uFF0C\u5E76\u8865\u5145 verify\uFF08\u89C6\u89C9\u5224\u65AD\u5199\u5177\u4F53 prompt\uFF0C\u786E\u5B9A\u4F1A\u53D8\u5316\u7684\u753B\u9762\u7528 change\uFF09\u3002","\u7136\u540E\u7528 kvmflow_flow_patch \u8865\u4E0A\u6761\u4EF6\u5206\u652F\uFF1A\u753B\u9762\u53EF\u80FD\u4E0D\u540C\u7684\u5730\u65B9\u7528 vision_classify \u6216 if \u5206\u652F\u5904\u7406\uFF0C\u9700\u8981\u7B49\u5F85\u7684\u5730\u65B9\u7528 wait_until\uFF0C\u53EF\u80FD\u5931\u8D25\u7684\u6B65\u9AA4\u63A5 error \u51FA\u53E3\u6216 human \u8282\u70B9\uFF0C\u6240\u6709\u8DEF\u5F84\u6700\u7EC8\u5230\u8FBE end \u8282\u70B9\u3002","\u5173\u952E\u8282\u70B9\u53EF\u7528 kvmflow_node_test \u5728\u76EE\u6807\u673A\u4E0A\u5148\u5355\u72EC\u9A8C\u8BC1\u3002\u6700\u540E\u544A\u8BC9\u6211\u5DE5\u4F5C\u6D41 id \u548C\u5206\u652F\u8BBE\u8BA1\u3002","",`\u5F55\u5236\u540D\u79F0\uFF1A${le.name}`,le.description?`\u5F55\u5236\u8BF4\u660E\uFF1A${le.description}`:"","\u6211\u7684\u76EE\u6807\u4E0E\u6CE8\u610F\u4E8B\u9879\uFF08\u8BF7\u8BA9\u7528\u6237\u8865\u5145\uFF09\uFF1A"].filter(Boolean).join(`
+`);await V.handPrompt(an,N("\u5DF2\u5728\u65B0\u4F1A\u8BDD\u4E2D\u542F\u52A8 AI \u5DE5\u4F5C\u6D41\u751F\u6210\uFF0C\u8BF7\u8865\u5145\u76EE\u6807\u63CF\u8FF0\u3002","Started a new session for AI workflow generation; add your goal there."),N("\u65E0\u6CD5\u81EA\u52A8\u521B\u5EFA\u4F1A\u8BDD\uFF0C\u63D0\u793A\u8BCD\u5DF2\u663E\u793A\u5728\u4E0B\u65B9\uFF0C\u8BF7\u624B\u52A8\u590D\u5236\u3002","Could not open a session automatically; copy the prompt shown below."))},We=be??(ie!==void 0&&ie.id===ye?{id:ie.id,name:ie.name,status:"recording",events:[],steps:[],createdAt:ie.startedAt}:void 0);return n("div",{className:"kvmflow-grid two"},n("div",null,n(_,{title:N("\u5F55\u5236\u5668","Recorder"),subtitle:ie===void 0?N("\u672A\u5728\u5F55\u5236","idle"):N("\u5F55\u5236\u4E2D","recording")},ie===void 0?null:n(R,null,n(p,{kind:"primary",onClick:()=>{ke()},disabled:Y!==""},N("\u505C\u6B62\u5F55\u5236","Stop"))),ie===void 0?n("div",{className:"kvmflow-col"},n("div",{className:"kvmflow-form-grid"},n(S,{label:N("\u540D\u79F0","Name"),className:"wide"},n("input",{className:"kvmflow-input",value:Q,placeholder:N("\u4F8B\u5982\uFF1ABIOS \u5F00\u542F\u865A\u62DF\u5316","e.g. Enable virtualization in BIOS"),onChange:le=>Ee(le.target.value)})),n(S,{label:N("\u8BF4\u660E","Description"),className:"wide"},n("textarea",{className:"kvmflow-input kvmflow-textarea compact",value:Se,placeholder:N("\u8FD9\u6B21\u5F55\u5236\u8981\u5B8C\u6210\u4EC0\u4E48\uFF1F","What should this recording accomplish?"),onChange:le=>Be(le.target.value)}))),n("div",{className:"kvmflow-actions"},n(p,{kind:"primary",onClick:()=>{te()},disabled:G===""||Y!==""},N("\u5F00\u59CB\u5F55\u5236","Start recording"))),n("p",{className:"kvmflow-hint"},N("\u5F00\u59CB\u540E\uFF0C\u8BF7\u5728\u201C\u5B9E\u65F6\u753B\u9762\u201D\u4E2D\u64CD\u4F5C\u76EE\u6807\u673A\uFF0C\u5E76\u5728\u6BCF\u4E2A\u6709\u610F\u4E49\u7684\u9636\u6BB5\u70B9\u51FB\u201C\u6807\u8BB0\u6B65\u9AA4\u201D\u3002","After starting, drive the target from the Live screen and mark each meaningful stage as a step."))):n("div",{className:"kvmflow-col"},n("div",{className:"kvmflow-kv"},n("dt",null,N("\u540D\u79F0","Name")),n("dd",null,ie.name),n("dt",null,N("\u4E8B\u4EF6","Events")),n("dd",null,String(ie.eventCount)),n("dt",null,N("\u6B65\u9AA4","Steps")),n("dd",null,String(ie.stepCount))),n("div",{className:"kvmflow-split"}),n("div",{className:"kvmflow-form-grid"},n(S,{label:N("\u6B65\u9AA4\u540D\u79F0","Step name"),className:"wide"},n("input",{className:"kvmflow-input",value:_e,placeholder:N("\u4F8B\u5982\uFF1A\u6253\u5F00 Advanced","e.g. Open Advanced"),onChange:le=>ze(le.target.value)})),n(S,{label:N("\u6B65\u9AA4\u63CF\u8FF0","Step description"),className:"wide"},n("textarea",{className:"kvmflow-input kvmflow-textarea compact",value:De,placeholder:N("\u5B8C\u6210\u4EC0\u4E48\uFF0C\u753B\u9762\u5E94\u51FA\u73B0\u4EC0\u4E48","What completes and what should appear"),onChange:le=>Pe(le.target.value)}))),n("div",{className:"kvmflow-actions"},n(p,{onClick:()=>{J()},disabled:Y!==""},N("\u6807\u8BB0\u6B65\u9AA4","Mark step"))))),n(_,{title:N("\u5F55\u5236\u5217\u8868","Recordings"),subtitle:`${xe.length}`},xe.length===0?n(A,null,N("\u8FD8\u6CA1\u6709\u5F55\u5236\u3002\u4ECE\u4E0A\u65B9\u5F00\u59CB\u4E00\u6B21\u5F55\u5236\u3002","No recordings yet. Start one above.")):n("div",{className:"kvmflow-col"},xe.map(le=>n("div",{key:le.id,className:d("kvmflow-device",le.id===ye?"selected":""),onClick:()=>se(le.id),style:{cursor:"pointer"}},n("div",null,n("div",{className:"kvmflow-device-name"},le.name),n("div",{className:"kvmflow-hint"},`${N("\u4E8B\u4EF6","events")} ${le.eventCount} \xB7 ${N("\u6B65\u9AA4","steps")} ${le.stepCount} \xB7 ${v(le.updatedAt)}`)),n(w,{tone:le.status==="recording"?"warn":""},le.status)))))),n("div",null,n(_,{title:N("\u5F55\u5236\u8BE6\u60C5","Recording detail"),subtitle:We===void 0?N("\u672A\u9009\u62E9","none"):We.status},We===void 0?null:n(R,null,n(p,{onClick:()=>{rn(We)}},N("\u8BA9 AI \u751F\u6210\u5DE5\u4F5C\u6D41","Generate with AI")),We.status==="recording"?null:n(Z,{kind:"danger",disabled:Y!=="",confirmLabel:N("\u5220\u9664\u5F55\u5236\u548C\u622A\u56FE\uFF1F","Delete recording and screenshots?"),confirmAction:N("\u5220\u9664","Delete"),cancelLabel:N("\u53D6\u6D88","Cancel"),onConfirm:()=>{Ge()}},N("\u5220\u9664","Delete"))),We===void 0?n(A,null,N("\u9009\u62E9\u4E00\u6761\u5F55\u5236\u67E5\u770B\u6B65\u9AA4\u548C\u4E8B\u4EF6\u3002","Select a recording to inspect steps and events.")):n("div",{className:"kvmflow-col"},n("div",{className:"kvmflow-kv"},n("dt",null,N("ID","ID")),n("dd",{className:"kvmflow-mono"},We.id),n("dt",null,N("\u540D\u79F0","Name")),n("dd",null,We.name),n("dt",null,N("\u8BF4\u660E","Description")),n("dd",null,We.description||"\u2014"),n("dt",null,N("\u5F00\u59CB","Started")),n("dd",null,v(We.createdAt))),n("div",{className:"kvmflow-split"}),n("h3",{className:"kvmflow-card-title"},n("span",null,N("\u4EBA\u5DE5\u6B65\u9AA4","Human steps")),n("span",{className:"kvmflow-hint"},`${We.steps?.length??0}`)),(We.steps??[]).length===0?n("div",{className:"kvmflow-hint"},N("\u5C1A\u672A\u6807\u8BB0\u6B65\u9AA4\u3002","No steps marked.")):n("div",{className:"kvmflow-steps"},(We.steps??[]).map(le=>n("div",{key:le.id,className:"kvmflow-step"},n("div",{className:"kvmflow-step-head"},n("div",{className:"kvmflow-step-name"},le.name),n("div",{className:"kvmflow-actions"},n("span",{className:"kvmflow-hint"},`#${le.startSeq}\u2013${le.endSeq}`),n(p,{small:!0,onClick:()=>Le({...le})},N("\u7F16\u8F91","Edit")))),le.description?n("div",{className:"kvmflow-step-body"},n("div",{className:"kvmflow-muted"},le.description)):null,n("div",{className:"kvmflow-thumb-row"},n(K,{shared:V,path:le.before?`recordings/${We.id}/${le.before}`:void 0,label:N("\u6B65\u9AA4\u524D","before")}),n(K,{shared:V,path:le.after?`recordings/${We.id}/${le.after}`:void 0,label:N("\u6B65\u9AA4\u540E","after")}))))),Oe===void 0?null:n("div",{className:"kvmflow-step",style:{marginTop:"8px"}},n(S,{label:N("\u6B65\u9AA4\u540D\u79F0","Step name")},n("input",{className:"kvmflow-input",value:Oe.name??"",onChange:le=>Le({...Oe,name:le.target.value})})),n(S,{label:N("\u6B65\u9AA4\u63CF\u8FF0","Step description")},n("textarea",{className:"kvmflow-input kvmflow-textarea compact",value:Oe.description??"",onChange:le=>Le({...Oe,description:le.target.value})})),n("div",{className:"kvmflow-actions",style:{marginTop:"8px"}},n(p,{kind:"primary",onClick:()=>{Te()},disabled:Y!==""},N("\u4FDD\u5B58\u6B65\u9AA4","Save step")),n(p,{onClick:()=>Le(void 0)},N("\u53D6\u6D88","Cancel")))),n("div",{className:"kvmflow-split"}),n("h3",{className:"kvmflow-card-title"},n("span",null,N("\u4E8B\u4EF6\u6D41","Events")),n("span",{className:"kvmflow-hint"},`${We.events?.length??0}`)),(We.events??[]).length===0?n("div",{className:"kvmflow-hint"},N("\u5C1A\u65E0\u4E8B\u4EF6\u3002","No events yet.")):n("div",{className:"kvmflow-scroll-y kvmflow-log"},(We.events??[]).map(le=>n("div",{key:le.seq,className:"kvmflow-log-row"},n("span",{className:"kvmflow-log-time"},`#${le.seq} ${b(le.at)}`),n("span",null,JSON.stringify(le.event)))))))))}function ne(V){let{state:W,runRpc:G,rpc:ee,refresh:fe,busy:ce,t:Y,notify:N,setTab:Ce}=V,ie=W.workflows??[],xe=V.workflowDraft,ye=V.setWorkflowDraft,se=xe.id!==""&&ie.some(te=>te.id===xe.id)?xe.id:ie[0]?.id??"",be=s(te=>ye(J=>({...J,id:te})),[ye]),[Re,Ae]=r(""),[Fe,E]=r(!1),[$,Q]=r(!0),Se=te=>{te!==se&&(Fe&&!window.confirm(Y("\u5F53\u524D\u5DE5\u4F5C\u6D41\u8FD8\u6709\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF08\u53EF\u80FD\u6709\u9519\u8BEF\uFF09\uFF0C\u4ECD\u8981\u5207\u6362\u5417\uFF1F","This workflow has unsaved edits (possibly with errors). Switch anyway?"))||be(te))},_e=async()=>{let te=await G(Y("\u65B0\u5EFA\u5DE5\u4F5C\u6D41","Create workflow"),"workflow.create",{name:Y("\u65B0\u5DE5\u4F5C\u6D41","New workflow"),deviceId:V.deviceId||void 0});te!==void 0&&(await fe(),be(te.document.id),N(Y("\u5DF2\u521B\u5EFA\u5DE5\u4F5C\u6D41\uFF1A\u5148\u5224\u65AD\u753B\u9762\uFF0C\u518D\u5728\u753B\u5E03\u4E0A\u63A5\u7740\u642D\u5EFA\u3002","Workflow created: it checks the screen first; build on from there."),"ok"))},De=async te=>{await G(Y("\u5220\u9664\u5DE5\u4F5C\u6D41","Delete workflow"),"workflow.delete",{id:te})!==void 0&&(N(Y("\u5DE5\u4F5C\u6D41\u5DF2\u5220\u9664\u3002","Workflow removed."),"ok"),te===se&&be(""),await fe())},Ee=W.activeRun??void 0,Be=V.deviceId===""?Y("\u5148\u9009\u62E9 KVM \u8BBE\u5907","Select a KVM device first"):Ee!=null?Y("\u5DF2\u6709\u6267\u884C\u8FDB\u884C\u4E2D","A run is already active"):void 0,ze=async te=>{let J=await G(Y("\u542F\u52A8\u6267\u884C","Start run"),"run.start",{workflowId:se,deviceId:V.deviceId,inputs:te});J!==void 0&&(N(J.run.status==="armed"?Y("\u5DF2\u5C31\u7EEA\uFF1A\u73B0\u5728\u6309\u4E0B\u76EE\u6807\u673A\u7535\u6E90\u952E\u3002","Armed: press the target power button now."):Y("\u6267\u884C\u5DF2\u542F\u52A8\u3002","Run started."),"ok",{label:Y("\u67E5\u770B\u6267\u884C","Supervise run"),onClick:()=>Ce("runs")}),await fe())},Pe=async te=>{let J=[`\u8BF7\u7F16\u8F91 KVMFlow \u5DE5\u4F5C\u6D41 ${te.id}\uFF08\u5F53\u524D\u540D\u79F0\uFF1A${te.name}\uFF09\u3002`,"\u5148\u8C03\u7528 kvmflow_flow_catalog \u4E86\u89E3\u8282\u70B9\u7C7B\u578B\uFF0C\u518D\u7528 kvmflow_workflow_get \u8BFB\u53D6\u5F53\u524D\u56FE\u548C\u95EE\u9898\u5217\u8868\u3002","\u7528 kvmflow_flow_patch \u505A\u5C0F\u6B65\u4FEE\u6539\uFF08add_node / update_node / connect / remove_node\uFF09\uFF0C\u4E0D\u8981\u6574\u7BC7\u91CD\u5199\uFF1B\u753B\u9762\u4E0D\u786E\u5B9A\u7684\u5730\u65B9\u7528 vision_classify \u6216 if \u5206\u652F\uFF0C\u7B49\u5F85\u7528 wait_until\uFF0C\u5931\u8D25\u8981\u6709 error \u51FA\u53E3\u6216 human \u8282\u70B9\uFF0C\u6240\u6709\u8DEF\u5F84\u90FD\u8981\u5230\u8FBE end\u3002","\u5FC5\u8981\u65F6\u7528 kvmflow_node_test \u5728\u76EE\u6807\u673A\u4E0A\u5355\u72EC\u9A8C\u8BC1\u5173\u952E\u8282\u70B9\u3002\u5B8C\u6210\u540E\u603B\u7ED3\u4F60\u6539\u4E86\u54EA\u4E9B\u8282\u70B9\u548C\u8FDE\u7EBF\u3002","","\u6211\u7684\u4FEE\u6539\u76EE\u6807\uFF1A"].join(`
+`);await V.handPrompt(J,Y("\u5DF2\u5728\u65B0\u4F1A\u8BDD\u4E2D\u542F\u52A8 AI \u7F16\u8F91\u3002","Started a new session for AI editing."),Y("\u65E0\u6CD5\u81EA\u52A8\u521B\u5EFA\u4F1A\u8BDD\uFF0C\u63D0\u793A\u8BCD\u5DF2\u663E\u793A\u5728\u4E0B\u65B9\uFF0C\u8BF7\u624B\u52A8\u590D\u5236\u3002","Could not open a session automatically; copy the prompt shown below."))},Oe=Re.trim().toLowerCase(),Le=ie.filter(te=>Oe===""||`${te.name} ${te.id} ${te.description??""}`.toLowerCase().includes(Oe)),U=t.FlowEditor;return n("div",{className:d("kvmflow-wf",$?"":"collapsed")},n("aside",{className:"kvmflow-wf-list","aria-label":Y("\u5DE5\u4F5C\u6D41\u5217\u8868","Workflows")},n("div",{className:"kvmflow-wf-list-head"},n("span",{className:"kvmflow-wf-list-title"},Y("\u5DE5\u4F5C\u6D41","Workflows"),n("span",{className:"kvmflow-hint"},` ${ie.length}`)),n(p,{kind:"primary",small:!0,onClick:()=>{_e()},disabled:ce!==""},Y("+ \u65B0\u5EFA","+ New")),n("button",{type:"button",className:"kvmflow-icon-btn",onClick:()=>Q(!1),title:Y("\u6536\u8D77\u5217\u8868","Collapse the list"),"aria-label":Y("\u6536\u8D77\u5217\u8868","Collapse the list")},"\u2039")),ie.length>4?n("input",{className:"kvmflow-input",placeholder:Y("\u641C\u7D22\u2026","Search\u2026"),value:Re,onChange:te=>Ae(te.target.value)}):null,ie.length===0?n("div",{className:"kvmflow-wf-empty"},n("p",null,Y("\u8FD8\u6CA1\u6709\u5DE5\u4F5C\u6D41\u3002","No workflows yet.")),n("p",{className:"kvmflow-hint"},Y("\u65B0\u5EFA\u4E00\u4E2A\u7A7A\u767D\u5DE5\u4F5C\u6D41\u5728\u753B\u5E03\u4E0A\u642D\u5EFA\uFF0C\u6216\u8005\u5148\u5728\u201C\u5F55\u5236\u5668\u201D\u5F55\u4E00\u904D\u64CD\u4F5C\uFF0C\u8BA9 AI \u751F\u6210\u3002","Create one and build it on the canvas, or record a run-through in the Recorder and let the agent generate it.")),n(p,{onClick:()=>Ce("recorder")},Y("\u53BB\u5F55\u5236","Go to Recorder"))):n("div",{className:"kvmflow-wf-items"},Le.map(te=>n("div",{key:te.id,role:"button",tabIndex:0,className:d("kvmflow-wf-item",te.id===se?"selected":"",te.error?"invalid":""),onClick:()=>Se(te.id),onKeyDown:J=>{(J.key==="Enter"||J.key===" ")&&(J.preventDefault(),Se(te.id))}},n("div",{className:"kvmflow-wf-item-name"},Ee?.workflowId===te.id?n("span",{className:"kvmflow-dot on",title:Y("\u6267\u884C\u4E2D","running")}):null,n("span",null,te.name)),te.error?n("div",{className:"kvmflow-wf-item-meta err"},te.error):n("div",{className:"kvmflow-wf-item-meta"},Y(`${te.stepCount} \u4E2A\u8282\u70B9`,`${te.stepCount} nodes`),(te.branchCount??0)>0?` \xB7 ${Y(`${te.branchCount} \u4E2A\u5206\u652F`,`${te.branchCount} branches`)}`:"",te.hasBios?" \xB7 BIOS":"",(te.issueCount??0)>0?n("span",{className:"kvmflow-wf-issues"},` \xB7 ${Y(`${te.issueCount} \u4E2A\u95EE\u9898`,`${te.issueCount} issues`)}`):null),n("div",{className:"kvmflow-wf-item-foot"},n("span",{className:"kvmflow-hint"},v(te.updatedAt)),te.id===se?n(Z,{kind:"danger",small:!0,disabled:ce!=="",confirmLabel:Y("\u5220\u9664\uFF1F","Delete?"),confirmAction:Y("\u5220\u9664","Delete"),cancelLabel:Y("\u53D6\u6D88","Cancel"),onConfirm:()=>{De(te.id)}},Y("\u5220\u9664","Delete")):null))))),n("section",{className:"kvmflow-wf-main"},$?null:n("button",{type:"button",className:"kvmflow-wf-reopen",onClick:()=>Q(!0),"aria-label":Y("\u5C55\u5F00\u5DE5\u4F5C\u6D41\u5217\u8868","Show the workflow list")},`\u203A ${Y("\u5DE5\u4F5C\u6D41","Workflows")}`),se===""?n(A,null,Y("\u4ECE\u5DE6\u4FA7\u9009\u62E9\u6216\u65B0\u5EFA\u5DE5\u4F5C\u6D41\u3002","Select or create a workflow on the left.")):n(U,{key:se,rpc:ee,t:Y,workflowId:se,workflows:ie.filter(te=>!te.error).map(te=>({id:te.id,name:te.name})),deviceId:V.deviceId,run:Ee?.workflowId===se?Ee:void 0,compact:V.compact===!0,runDisabledReason:Be,notify:N,onRun:ze,onAskAi:te=>{Pe(te)},onDelete:()=>{De(se)},onSaved:()=>{fe()},onDirtyChange:E,renderThumb:(te,J)=>n(K,{key:`${te}-${J}`,shared:V,path:te,label:J})})))}let B={resume:["\u7EE7\u7EED","Resume"],retry:["\u91CD\u8BD5\u6B64\u8282\u70B9","Retry node"],skip:["\u8DF3\u8FC7\uFF08\u8D70\u4E3B\u8DEF\u5F84\uFF09","Skip (main path)"],continue:["\u8DF3\u8FC7\uFF08\u8D70\u4E3B\u8DEF\u5F84\uFF09","Skip (main path)"],finish:["\u5728\u6B64\u7ED3\u675F","Finish here"],abort:["\u4E2D\u6B62\u6267\u884C","Abort"],confirm_bios:["\u786E\u8BA4\u5DF2\u8FDB\u5165 BIOS","Confirm BIOS"],pause:["\u6682\u505C","Pause"]};function ae(V){let{state:W,runRpc:G,rpc:ee,refresh:fe,busy:ce,t:Y}=V,[N,Ce]=r(W.activeRun??void 0),[ie,xe]=r(""),[ye,se]=r(""),[be,Re]=r(void 0),Ae=s(async()=>{let U=ie||W.activeRun?.id;try{let te=await ee("run.get",U===void 0||U===""?{}:{id:U});te.run!==null&&te.run!==void 0&&Ce(te.run),se("")}catch(te){se(te?.message??String(te))}},[ee,ie,W.activeRun?.id]);i(()=>{W.activeRun!==void 0&&W.activeRun!==null&&(N===void 0||N.id!==W.activeRun.id)&&(xe(""),Ce(W.activeRun))},[W.activeRun?.id]);let Fe=N!==void 0&&["succeeded","failed","aborted"].includes(N.status);i(()=>{if(Ae(),Fe)return;let U=setInterval(()=>{Ae()},1200);return()=>clearInterval(U)},[Ae,Fe]);let E=async(U,te={})=>{if(N===void 0)return;let J=await G(Y("\u6267\u884C\u63A7\u5236","Run control"),"run.control",{id:N.id,action:U,...te});J!==void 0&&(Ce(J.run),await fe())},$=N??W.activeRun,Q=$?.awaiting,Se=(Q?.actions??[]).filter(U=>U!=="route"),_e=$!==void 0&&!["succeeded","failed","aborted"].includes($.status),De=_e&&($.status==="running"||$.status==="armed")&&Q===void 0,Ee=$?.trace??[],Be=$?.schema===2,ze=U=>($?.steps??[]).find(te=>te.id===U)?.name??U,Pe=be===void 0?void 0:[...Ee].reverse().find(U=>U.nodeId===be),Oe=t.RunGraph,Le=U=>({next:Y("\u4E0B\u4E00\u6B65","next"),error:Y("\u51FA\u9519","error"),true:Y("\u662F","true"),false:Y("\u5426","false"),ok:Y("\u6EE1\u8DB3","ok"),timeout:Y("\u8D85\u65F6","timeout"),body:Y("\u5FAA\u73AF\u4F53","body"),done:Y("\u7ED3\u675F\u5FAA\u73AF","done"),found:Y("\u627E\u5230","found"),not_found:Y("\u672A\u627E\u5230","not found"),unknown:Y("\u65E0\u6CD5\u8BC6\u522B","unknown"),default:Y("\u5176\u4ED6","default"),success:Y("\u6210\u529F","success"),failure:Y("\u5931\u8D25","failure")})[U]??U;return n("div",{className:"kvmflow-grid two"},n("div",null,n(_,{title:$===void 0?Y("\u6267\u884C\u72B6\u6001","Run status"):$.workflowName,subtitle:$===void 0?Y("\u6682\u65E0\u6267\u884C","none"):`${$.id} \xB7 ${v($.createdAt)}`},n(R,null,$===void 0?null:n(w,{tone:C($.status)},q(Y,$.status)),$===void 0?null:n("span",{className:"kvmflow-hint"},$.phase),n("span",{style:{flex:"1 1 auto"}}),De?n(p,{onClick:()=>{E("pause")},disabled:ce!==""},Y("\u6682\u505C","Pause")):null,_e?n(p,{kind:"danger",onClick:()=>{E("abort")},disabled:ce!==""},Y("\u4E2D\u6B62","Abort")):null),ye===""?null:n("div",{className:"kvmflow-notice err"},ye),$===void 0?n(A,null,Y("\u8FD8\u6CA1\u6709\u6267\u884C\u8BB0\u5F55\u3002\u5728\u201C\u5DE5\u4F5C\u6D41\u201D\u9875\u6253\u5F00\u4E00\u4E2A\u5DE5\u4F5C\u6D41\u5E76\u70B9\u51FB\u201C\u6267\u884C\u201D\u3002","No runs yet. Open a workflow on the Workflows tab and press Run.")):n("div",{className:"kvmflow-col"},$.status==="armed"?n("div",{className:"kvmflow-awaiting"},n("div",{className:"kvmflow-awaiting-title"},Y("\u73B0\u5728\u6309\u4E0B\u76EE\u6807\u673A\u7535\u6E90\u952E","Press the target power button now")),n("div",{className:"kvmflow-hint"},Y(`\u6B63\u5728\u6BCF ${$.bios?.intervalMs??1200}ms \u6309\u4E00\u6B21 ${$.bios?.hotkey??"F2"}\uFF0C\u68C0\u6D4B\u5230\u753B\u9762\u540E\u81EA\u52A8\u5F00\u59CB\u3002`,`Tapping ${$.bios?.hotkey??"F2"} every ${$.bios?.intervalMs??1200}ms; the graph starts once video appears.`))):null,Q?n("div",{className:d("kvmflow-awaiting",Q.kind==="human"?"human":"attention")},n("div",{className:"kvmflow-awaiting-title"},Q.kind==="human"?Y("\u9700\u8981\u4F60\u9009\u62E9\u4E0B\u4E00\u6B65","Your decision is needed"):Q.kind==="unrouted"?Y("\u6D41\u7A0B\u8D70\u5230\u4E86\u672A\u8FDE\u63A5\u7684\u51FA\u53E3","The run reached an unconnected port"):Q.kind==="bios_confirm"?Y("\u8BF7\u786E\u8BA4\u5DF2\u8FDB\u5165 BIOS","Confirm the target is in BIOS"):Y("\u9700\u8981\u4EBA\u5DE5\u4ECB\u5165","Intervention needed"),Q.nodeId?n("span",{className:"kvmflow-hint"},` \xB7 ${ze(Q.nodeId)}`):null),n("div",{className:"kvmflow-awaiting-msg"},Q.message),(Q.options??[]).length===0?null:n("div",{className:"kvmflow-actions"},(Q.options??[]).map(U=>n(p,{key:U.name,kind:"primary",onClick:()=>{E("choose",{option:U.name})},disabled:ce!==""},U.label??U.name))),(Q.routes??[]).length===0?null:n("div",{className:"kvmflow-actions"},n("span",{className:"kvmflow-hint"},Y("\u6539\u8D70\uFF1A","Route via:")),(Q.routes??[]).map(U=>n(p,{key:U,onClick:()=>{E("route",{port:U})},disabled:ce!==""},Le(U)))),n("div",{className:"kvmflow-actions"},Se.map(U=>n(p,{key:U,kind:U==="abort"?"danger":U==="confirm_bios"||U==="retry"||U==="resume"?"primary":void 0,onClick:()=>{E(U)},disabled:ce!==""},Y(...B[U]??[U,U]))))):null,!Q&&$.reason&&$.status!=="succeeded"?n("div",{className:"kvmflow-notice err",style:{marginBottom:0}},$.reason):null,$.status==="succeeded"&&$.outputs!==void 0?n("div",{className:"kvmflow-notice ok",style:{marginBottom:0}},`${Y("\u8F93\u51FA","Outputs")}: ${JSON.stringify($.outputs)}`):null,Be?n(Oe,{rpc:ee,t:Y,workflowId:$.workflowId,run:$,height:V.compact?300:380,...be===void 0?{}:{selectedNodeId:be},onSelectNode:U=>Re(U)}):null,Be?n("div",{className:"kvmflow-run-stats"},n("span",null,Y(`\u8282\u70B9\u8BBF\u95EE ${$.visits??0}`,`${$.visits??0} node visits`)),n("span",null,Y(`\u89C6\u89C9\u8C03\u7528 ${$.visionCalls??0}`,`${$.visionCalls??0} vision calls`)),Object.keys($.vars??{}).length===0?null:n("span",{className:"kvmflow-mono",title:JSON.stringify($.vars,null,2)},`vars ${JSON.stringify($.vars).slice(0,80)}`)):null,Pe!==void 0?n("div",{className:"kvmflow-trace-focus"},n("div",{className:"kvmflow-step-head"},n("div",{className:"kvmflow-step-name"},ze(Pe.nodeId)),n(p,{small:!0,onClick:()=>Re(void 0)},Y("\u5173\u95ED","Close"))),Pe.reason?n("div",{className:"kvmflow-muted"},Pe.reason):null,Pe.output===void 0?null:n("pre",{className:"kvmflow-pre"},JSON.stringify(Pe.output,null,2)),n("div",{className:"kvmflow-thumb-row"},Pe.before?n(K,{shared:V,path:Pe.before,label:Y("\u64CD\u4F5C\u524D","before")}):null,Pe.after?n(K,{shared:V,path:Pe.after,label:Y("\u753B\u9762","screen")}):null)):null,Be?n("div",null,n("div",{className:"kvmflow-section-title"},Y(`\u6267\u884C\u8F68\u8FF9\uFF08${Ee.length}\uFF09`,`Trace (${Ee.length})`)),Ee.length===0?n("div",{className:"kvmflow-hint"},_e?Y("\u7B49\u5F85\u7B2C\u4E00\u4E2A\u8282\u70B9\u2026","Waiting for the first node\u2026"):"\u2014"):n("ol",{className:"kvmflow-trace"},[...Ee].reverse().slice(0,120).map(U=>n("li",{key:U.seq,className:d("kvmflow-trace-row",U.status,U.nodeId===be?"focus":""),style:U.depth>0?{paddingLeft:`${8+U.depth*14}px`}:void 0,onClick:()=>Re(U.nodeId)},n("span",{className:"kvmflow-trace-seq"},`#${U.seq}`),n("span",{className:"kvmflow-trace-node"},U.depth>0?`\u21B3 ${U.nodeId}`:ze(U.nodeId)),U.port?n("span",{className:d("kvmflow-trace-port",U.port==="error"?"err":"")},`\u2192 ${Le(U.port)}`):n("span",{className:"kvmflow-trace-port"},Y("\u7ED3\u675F","end")),n("span",{className:"kvmflow-trace-reason",title:U.reason},U.reason??""),n("span",{className:"kvmflow-trace-time"},`${b(U.at)} \xB7 ${U.durationMs}ms`))))):n("div",{className:"kvmflow-steps"},($.steps??[]).map(U=>n("div",{key:U.id,className:d("kvmflow-step",U.status)},n("div",{className:"kvmflow-step-head"},n("div",{className:"kvmflow-step-name"},`${U.index+1}. ${U.name}`),n(X,{status:U.status,t:Y})),U.verify?n("div",{className:"kvmflow-step-body"},n("div",{className:"kvmflow-muted"},`${U.verify.mode}: ${U.verify.reason}`)):null,n("div",{className:"kvmflow-thumb-row"},n(K,{shared:V,path:U.before,label:Y("\u64CD\u4F5C\u524D","before")}),n(K,{shared:V,path:U.after,label:Y("\u64CD\u4F5C\u540E","after")})))))))),n("div",null,n(_,{title:Y("\u6267\u884C\u65E5\u5FD7","Run log"),subtitle:`${$?.log?.length??0}`},$===void 0?n("div",{className:"kvmflow-hint"},"\u2014"):n("div",{className:"kvmflow-log"},($.log??[]).slice(-80).reverse().map((U,te)=>n("div",{key:te,className:d("kvmflow-log-row",U.level==="error"?"err":U.level==="warn"?"warn":"")},n("span",{className:"kvmflow-log-time"},b(U.at)),n("span",null,U.message))))),n(_,{title:Y("\u5386\u53F2\u6267\u884C","Recent runs"),subtitle:`${W.recentRuns?.length??0}`},(W.recentRuns??[]).length===0?n("div",{className:"kvmflow-hint"},Y("\u6682\u65E0\u5386\u53F2\u3002","No history.")):n("div",{className:"kvmflow-col"},(W.recentRuns??[]).map(U=>n("div",{key:U.id,role:"button",tabIndex:0,className:d("kvmflow-device",U.id===$?.id?"selected":""),style:{cursor:"pointer"},onClick:()=>{xe(U.id),Re(void 0),ee("run.get",{id:U.id}).then(te=>{te.run!==null&&Ce(te.run)})}},n("div",null,n("div",{className:"kvmflow-device-name"},U.workflowName),n("div",{className:"kvmflow-hint"},`${v(U.createdAt)}${U.reason?` \xB7 ${U.reason}`:""}`)),n(w,{tone:C(U.status)},q(Y,U.status))))))))}let ve="dsh-kvmflow/sidebar",pe="kvmflow";g.slots.inject("main",()=>g.slots.register({name:"main",key:"kvmflow"},de)),g.slots.inject("sidebar.panellist",()=>g.slots.register({name:"sidebar.panellist",id:"kvmflow",order:5,label:()=>"KVMFlow"},y)),g.effect(()=>g.sidebarRightTabs.register({id:ve,kind:pe,priority:"extension",title:()=>"KVMFlow",guide:[{id:"kvmflow.live",order:40,title:()=>"KVMFlow",description:()=>"Watch and drive the KVM target beside the chat.",icon:y}]}),"kvmflow: right tab type"),g.slots.inject("sidebar.right.pane.tab",()=>g.slots.register({name:"sidebar.right.pane.tab",key:ve},function(){return n(de,{compact:!0})})),g.slots.inject("sidebar.right.pane.tab.title",()=>g.slots.register({name:"sidebar.right.pane.tab.title",key:ve},function(){return n("span",null,"KVMFlow")}))}return{inject:["slots","locale","sidebarRightTabs"],apply:T}}var Ne=require("react");var F=require("react/jsx-runtime"),H=require("react");function Ye(e){if(typeof e=="string"||typeof e=="number")return""+e;let t="";if(Array.isArray(e))for(let o=0,n;o<e.length;o++)(n=Ye(e[o]))!==""&&(t+=(t&&" ")+n);else for(let o in e)e[o]&&(t+=(t&&" ")+o);return t}var jc={value:()=>{}};function Yt(){for(var e=0,t=arguments.length,o={},n;e<t;++e){if(!(n=arguments[e]+"")||n in o||/[\s.]/.test(n))throw new Error("illegal type: "+n);o[n]=[]}return new No(o)}function No(e){this._=e}function Uc(e,t){return e.trim().split(/^|\s+/).map(function(o){var n="",r=o.indexOf(".");if(r>=0&&(n=o.slice(r+1),o=o.slice(0,r)),o&&!t.hasOwnProperty(o))throw new Error("unknown type: "+o);return{type:o,name:n}})}No.prototype=Yt.prototype={constructor:No,on:function(e,t){var o=this._,n=Uc(e+"",o),r,i=-1,a=n.length;if(arguments.length<2){for(;++i<a;)if((r=(e=n[i]).type)&&(r=Gc(o[r],e.name)))return r;return}if(t!=null&&typeof t!="function")throw new Error("invalid callback: "+t);for(;++i<a;)if(r=(e=n[i]).type)o[r]=ia(o[r],e.name,t);else if(t==null)for(r in o)o[r]=ia(o[r],e.name,null);return this},copy:function(){var e={},t=this._;for(var o in t)e[o]=t[o].slice();return new No(e)},call:function(e,t){if((r=arguments.length-2)>0)for(var o=new Array(r),n=0,r,i;n<r;++n)o[n]=arguments[n+2];if(!this._.hasOwnProperty(e))throw new Error("unknown type: "+e);for(i=this._[e],n=0,r=i.length;n<r;++n)i[n].value.apply(t,o)},apply:function(e,t,o){if(!this._.hasOwnProperty(e))throw new Error("unknown type: "+e);for(var n=this._[e],r=0,i=n.length;r<i;++r)n[r].value.apply(t,o)}};function Gc(e,t){for(var o=0,n=e.length,r;o<n;++o)if((r=e[o]).name===t)return r.value}function ia(e,t,o){for(var n=0,r=e.length;n<r;++n)if(e[n].name===t){e[n]=jc,e=e.slice(0,n).concat(e.slice(n+1));break}return o!=null&&e.push({name:t,value:o}),e}var Pr="http://www.w3.org/1999/xhtml",aa={svg:"http://www.w3.org/2000/svg",xhtml:Pr,xlink:"http://www.w3.org/1999/xlink",xml:"http://www.w3.org/XML/1998/namespace",xmlns:"http://www.w3.org/2000/xmlns/"};function On(e){var t=e+="",o=t.indexOf(":");return o>=0&&(t=e.slice(0,o))!=="xmlns"&&(e=e.slice(o+1)),aa.hasOwnProperty(t)?{space:aa[t],local:e}:e}function Qc(e){return function(){var t=this.ownerDocument,o=this.namespaceURI;return o===Pr&&t.documentElement.namespaceURI===Pr?t.createElement(e):t.createElementNS(o,e)}}function Jc(e){return function(){return this.ownerDocument.createElementNS(e.space,e.local)}}function sa(e){var t=On(e);return(t.local?Jc:Qc)(t)}function ed(){}function Co(e){return e==null?ed:function(){return this.querySelector(e)}}function td(e){typeof e!="function"&&(e=Co(e));for(var t=this._groups,o=t.length,n=new Array(o),r=0;r<o;++r)for(var i=t[r],a=i.length,s=n[r]=new Array(a),l,c,d=0;d<a;++d)(l=i[d])&&(c=e.call(l,l.__data__,d,i))&&("__data__"in l&&(c.__data__=l.__data__),s[d]=c);return new nt(n,this._parents)}function nd(e){return e==null?[]:Array.isArray(e)?e:Array.from(e)}function od(){return[]}function Ar(e){return e==null?od:function(){return this.querySelectorAll(e)}}function rd(e){return function(){return nd(e.apply(this,arguments))}}function id(e){typeof e=="function"?e=rd(e):e=Ar(e);for(var t=this._groups,o=t.length,n=[],r=[],i=0;i<o;++i)for(var a=t[i],s=a.length,l,c=0;c<s;++c)(l=a[c])&&(n.push(e.call(l,l.__data__,c,a)),r.push(l));return new nt(n,r)}function zr(e){return function(){return this.matches(e)}}function la(e){return function(t){return t.matches(e)}}var ad=Array.prototype.find;function sd(e){return function(){return ad.call(this.children,e)}}function ld(){return this.firstElementChild}function cd(e){return this.select(e==null?ld:sd(typeof e=="function"?e:la(e)))}var dd=Array.prototype.filter;function ud(){return Array.from(this.children)}function fd(e){return function(){return dd.call(this.children,e)}}function pd(e){return this.selectAll(e==null?ud:fd(typeof e=="function"?e:la(e)))}function md(e){typeof e!="function"&&(e=zr(e));for(var t=this._groups,o=t.length,n=new Array(o),r=0;r<o;++r)for(var i=t[r],a=i.length,s=n[r]=[],l,c=0;c<a;++c)(l=i[c])&&e.call(l,l.__data__,c,i)&&s.push(l);return new nt(n,this._parents)}function ca(e){return new Array(e.length)}function hd(){return new nt(this._enter||this._groups.map(ca),this._parents)}function So(e,t){this.ownerDocument=e.ownerDocument,this.namespaceURI=e.namespaceURI,this._next=null,this._parent=e,this.__data__=t}So.prototype={constructor:So,appendChild:function(e){return this._parent.insertBefore(e,this._next)},insertBefore:function(e,t){return this._parent.insertBefore(e,t)},querySelector:function(e){return this._parent.querySelector(e)},querySelectorAll:function(e){return this._parent.querySelectorAll(e)}};function gd(e){return function(){return e}}function wd(e,t,o,n,r,i){for(var a=0,s,l=t.length,c=i.length;a<c;++a)(s=t[a])?(s.__data__=i[a],n[a]=s):o[a]=new So(e,i[a]);for(;a<l;++a)(s=t[a])&&(r[a]=s)}function vd(e,t,o,n,r,i,a){var s,l,c=new Map,d=t.length,f=i.length,u=new Array(d),m;for(s=0;s<d;++s)(l=t[s])&&(u[s]=m=a.call(l,l.__data__,s,t)+"",c.has(m)?r[s]=l:c.set(m,l));for(s=0;s<f;++s)m=a.call(e,i[s],s,i)+"",(l=c.get(m))?(n[s]=l,l.__data__=i[s],c.delete(m)):o[s]=new So(e,i[s]);for(s=0;s<d;++s)(l=t[s])&&c.get(u[s])===l&&(r[s]=l)}function yd(e){return e.__data__}function bd(e,t){if(!arguments.length)return Array.from(this,yd);var o=t?vd:wd,n=this._parents,r=this._groups;typeof e!="function"&&(e=gd(e));for(var i=r.length,a=new Array(i),s=new Array(i),l=new Array(i),c=0;c<i;++c){var d=n[c],f=r[c],u=f.length,m=xd(e.call(d,d&&d.__data__,c,n)),h=m.length,x=s[c]=new Array(h),b=a[c]=new Array(h),v=l[c]=new Array(u);o(d,f,x,b,v,m,t);for(var C=0,p=0,w,S;C<h;++C)if(w=x[C]){for(C>=p&&(p=C+1);!(S=b[p])&&++p<h;);w._next=S||null}}return a=new nt(a,n),a._enter=s,a._exit=l,a}function xd(e){return typeof e=="object"&&"length"in e?e:Array.from(e)}function kd(){return new nt(this._exit||this._groups.map(ca),this._parents)}function Nd(e,t,o){var n=this.enter(),r=this,i=this.exit();return typeof e=="function"?(n=e(n),n&&(n=n.selection())):n=n.append(e+""),t!=null&&(r=t(r),r&&(r=r.selection())),o==null?i.remove():o(i),n&&r?n.merge(r).order():r}function Sd(e){for(var t=e.selection?e.selection():e,o=this._groups,n=t._groups,r=o.length,i=n.length,a=Math.min(r,i),s=new Array(r),l=0;l<a;++l)for(var c=o[l],d=n[l],f=c.length,u=s[l]=new Array(f),m,h=0;h<f;++h)(m=c[h]||d[h])&&(u[h]=m);for(;l<r;++l)s[l]=o[l];return new nt(s,this._parents)}function Cd(){for(var e=this._groups,t=-1,o=e.length;++t<o;)for(var n=e[t],r=n.length-1,i=n[r],a;--r>=0;)(a=n[r])&&(i&&a.compareDocumentPosition(i)^4&&i.parentNode.insertBefore(a,i),i=a);return this}function _d(e){e||(e=Ed);function t(f,u){return f&&u?e(f.__data__,u.__data__):!f-!u}for(var o=this._groups,n=o.length,r=new Array(n),i=0;i<n;++i){for(var a=o[i],s=a.length,l=r[i]=new Array(s),c,d=0;d<s;++d)(c=a[d])&&(l[d]=c);l.sort(t)}return new nt(r,this._parents).order()}function Ed(e,t){return e<t?-1:e>t?1:e>=t?0:NaN}function Md(){var e=arguments[0];return arguments[0]=this,e.apply(null,arguments),this}function Id(){return Array.from(this)}function Rd(){for(var e=this._groups,t=0,o=e.length;t<o;++t)for(var n=e[t],r=0,i=n.length;r<i;++r){var a=n[r];if(a)return a}return null}function Dd(){let e=0;for(let t of this)++e;return e}function $d(){return!this.node()}function Pd(e){for(var t=this._groups,o=0,n=t.length;o<n;++o)for(var r=t[o],i=0,a=r.length,s;i<a;++i)(s=r[i])&&e.call(s,s.__data__,i,r);return this}function Td(e){return function(){this.removeAttribute(e)}}function Ad(e){return function(){this.removeAttributeNS(e.space,e.local)}}function zd(e,t){return function(){this.setAttribute(e,t)}}function Od(e,t){return function(){this.setAttributeNS(e.space,e.local,t)}}function Ld(e,t){return function(){var o=t.apply(this,arguments);o==null?this.removeAttribute(e):this.setAttribute(e,o)}}function Fd(e,t){return function(){var o=t.apply(this,arguments);o==null?this.removeAttributeNS(e.space,e.local):this.setAttributeNS(e.space,e.local,o)}}function Hd(e,t){var o=On(e);if(arguments.length<2){var n=this.node();return o.local?n.getAttributeNS(o.space,o.local):n.getAttribute(o)}return this.each((t==null?o.local?Ad:Td:typeof t=="function"?o.local?Fd:Ld:o.local?Od:zd)(o,t))}function da(e){return e.ownerDocument&&e.ownerDocument.defaultView||e.document&&e||e.defaultView}function Vd(e){return function(){this.style.removeProperty(e)}}function Bd(e,t,o){return function(){this.style.setProperty(e,t,o)}}function Wd(e,t,o){return function(){var n=t.apply(this,arguments);n==null?this.style.removeProperty(e):this.style.setProperty(e,n,o)}}function Yd(e,t,o){return arguments.length>1?this.each((t==null?Vd:typeof t=="function"?Wd:Bd)(e,t,o??"")):Xt(this.node(),e)}function Xt(e,t){return e.style.getPropertyValue(t)||da(e).getComputedStyle(e,null).getPropertyValue(t)}function Xd(e){return function(){delete this[e]}}function qd(e,t){return function(){this[e]=t}}function Kd(e,t){return function(){var o=t.apply(this,arguments);o==null?delete this[e]:this[e]=o}}function Zd(e,t){return arguments.length>1?this.each((t==null?Xd:typeof t=="function"?Kd:qd)(e,t)):this.node()[e]}function ua(e){return e.trim().split(/^|\s+/)}function Or(e){return e.classList||new fa(e)}function fa(e){this._node=e,this._names=ua(e.getAttribute("class")||"")}fa.prototype={add:function(e){var t=this._names.indexOf(e);t<0&&(this._names.push(e),this._node.setAttribute("class",this._names.join(" ")))},remove:function(e){var t=this._names.indexOf(e);t>=0&&(this._names.splice(t,1),this._node.setAttribute("class",this._names.join(" ")))},contains:function(e){return this._names.indexOf(e)>=0}};function pa(e,t){for(var o=Or(e),n=-1,r=t.length;++n<r;)o.add(t[n])}function ma(e,t){for(var o=Or(e),n=-1,r=t.length;++n<r;)o.remove(t[n])}function jd(e){return function(){pa(this,e)}}function Ud(e){return function(){ma(this,e)}}function Gd(e,t){return function(){(t.apply(this,arguments)?pa:ma)(this,e)}}function Qd(e,t){var o=ua(e+"");if(arguments.length<2){for(var n=Or(this.node()),r=-1,i=o.length;++r<i;)if(!n.contains(o[r]))return!1;return!0}return this.each((typeof t=="function"?Gd:t?jd:Ud)(o,t))}function Jd(){this.textContent=""}function eu(e){return function(){this.textContent=e}}function tu(e){return function(){var t=e.apply(this,arguments);this.textContent=t??""}}function nu(e){return arguments.length?this.each(e==null?Jd:(typeof e=="function"?tu:eu)(e)):this.node().textContent}function ou(){this.innerHTML=""}function ru(e){return function(){this.innerHTML=e}}function iu(e){return function(){var t=e.apply(this,arguments);this.innerHTML=t??""}}function au(e){return arguments.length?this.each(e==null?ou:(typeof e=="function"?iu:ru)(e)):this.node().innerHTML}function su(){this.nextSibling&&this.parentNode.appendChild(this)}function lu(){return this.each(su)}function cu(){this.previousSibling&&this.parentNode.insertBefore(this,this.parentNode.firstChild)}function du(){return this.each(cu)}function uu(e){var t=typeof e=="function"?e:sa(e);return this.select(function(){return this.appendChild(t.apply(this,arguments))})}function fu(){return null}function pu(e,t){var o=typeof e=="function"?e:sa(e),n=t==null?fu:typeof t=="function"?t:Co(t);return this.select(function(){return this.insertBefore(o.apply(this,arguments),n.apply(this,arguments)||null)})}function mu(){var e=this.parentNode;e&&e.removeChild(this)}function hu(){return this.each(mu)}function gu(){var e=this.cloneNode(!1),t=this.parentNode;return t?t.insertBefore(e,this.nextSibling):e}function wu(){var e=this.cloneNode(!0),t=this.parentNode;return t?t.insertBefore(e,this.nextSibling):e}function vu(e){return this.select(e?wu:gu)}function yu(e){return arguments.length?this.property("__data__",e):this.node().__data__}function bu(e){return function(t){e.call(this,t,this.__data__)}}function xu(e){return e.trim().split(/^|\s+/).map(function(t){var o="",n=t.indexOf(".");return n>=0&&(o=t.slice(n+1),t=t.slice(0,n)),{type:t,name:o}})}function ku(e){return function(){var t=this.__on;if(t){for(var o=0,n=-1,r=t.length,i;o<r;++o)i=t[o],(!e.type||i.type===e.type)&&i.name===e.name?this.removeEventListener(i.type,i.listener,i.options):t[++n]=i;++n?t.length=n:delete this.__on}}}function Nu(e,t,o){return function(){var n=this.__on,r,i=bu(t);if(n){for(var a=0,s=n.length;a<s;++a)if((r=n[a]).type===e.type&&r.name===e.name){this.removeEventListener(r.type,r.listener,r.options),this.addEventListener(r.type,r.listener=i,r.options=o),r.value=t;return}}this.addEventListener(e.type,i,o),r={type:e.type,name:e.name,value:t,listener:i,options:o},n?n.push(r):this.__on=[r]}}function Su(e,t,o){var n=xu(e+""),r,i=n.length,a;if(arguments.length<2){var s=this.node().__on;if(s){for(var l=0,c=s.length,d;l<c;++l)for(r=0,d=s[l];r<i;++r)if((a=n[r]).type===d.type&&a.name===d.name)return d.value}return}for(s=t?Nu:ku,r=0;r<i;++r)this.each(s(n[r],t,o));return this}function ha(e,t,o){var n=da(e),r=n.CustomEvent;typeof r=="function"?r=new r(t,o):(r=n.document.createEvent("Event"),o?(r.initEvent(t,o.bubbles,o.cancelable),r.detail=o.detail):r.initEvent(t,!1,!1)),e.dispatchEvent(r)}function Cu(e,t){return function(){return ha(this,e,t)}}function _u(e,t){return function(){return ha(this,e,t.apply(this,arguments))}}function Eu(e,t){return this.each((typeof t=="function"?_u:Cu)(e,t))}function*Mu(){for(var e=this._groups,t=0,o=e.length;t<o;++t)for(var n=e[t],r=0,i=n.length,a;r<i;++r)(a=n[r])&&(yield a)}var ga=[null];function nt(e,t){this._groups=e,this._parents=t}function qt(){return new nt([[document.documentElement]],ga)}function Iu(){return this}nt.prototype=qt.prototype={constructor:nt,select:td,selectAll:id,selectChild:cd,selectChildren:pd,filter:md,data:bd,enter:hd,exit:kd,join:Nd,merge:Sd,selection:Iu,order:Cd,sort:_d,call:Md,nodes:Id,node:Rd,size:Dd,empty:$d,each:Pd,attr:Hd,style:Yd,property:Zd,classed:Qd,text:nu,html:au,raise:lu,lower:du,append:uu,insert:pu,remove:hu,clone:vu,datum:yu,on:Su,dispatch:Eu,[Symbol.iterator]:Mu};function Qe(e){return typeof e=="string"?new nt([[document.querySelector(e)]],[document.documentElement]):new nt([[e]],ga)}var Ru=0;function Du(){return new Tr}function Tr(){this._="@"+(++Ru).toString(36)}Tr.prototype=Du.prototype={constructor:Tr,get:function(e){for(var t=this._;!(t in e);)if(!(e=e.parentNode))return;return e[t]},set:function(e,t){return e[this._]=t},remove:function(e){return this._ in e&&delete e[this._]},toString:function(){return this._}};function $u(e){let t;for(;t=e.sourceEvent;)e=t;return e}function Je(e,t){if(e=$u(e),t===void 0&&(t=e.currentTarget),t){var o=t.ownerSVGElement||t;if(o.createSVGPoint){var n=o.createSVGPoint();return n.x=e.clientX,n.y=e.clientY,n=n.matrixTransform(t.getScreenCTM().inverse()),[n.x,n.y]}if(t.getBoundingClientRect){var r=t.getBoundingClientRect();return[e.clientX-r.left-t.clientLeft,e.clientY-r.top-t.clientTop]}}return[e.pageX,e.pageY]}var Pu={passive:!1},Ln={capture:!0,passive:!1};function Lr(e){e.stopImmediatePropagation()}function un(e){e.preventDefault(),e.stopImmediatePropagation()}function Hr(e){var t=e.document.documentElement,o=Qe(e).on("dragstart.drag",un,Ln);"onselectstart"in t?o.on("selectstart.drag",un,Ln):(t.__noselect=t.style.MozUserSelect,t.style.MozUserSelect="none")}function Vr(e,t){var o=e.document.documentElement,n=Qe(e).on("dragstart.drag",null);t&&(n.on("click.drag",un,Ln),setTimeout(function(){n.on("click.drag",null)},0)),"onselectstart"in o?n.on("selectstart.drag",null):(o.style.MozUserSelect=o.__noselect,delete o.__noselect)}var _o=e=>()=>e;function Fr(e,{sourceEvent:t,subject:o,target:n,identifier:r,active:i,x:a,y:s,dx:l,dy:c,dispatch:d}){Object.defineProperties(this,{type:{value:e,enumerable:!0,configurable:!0},sourceEvent:{value:t,enumerable:!0,configurable:!0},subject:{value:o,enumerable:!0,configurable:!0},target:{value:n,enumerable:!0,configurable:!0},identifier:{value:r,enumerable:!0,configurable:!0},active:{value:i,enumerable:!0,configurable:!0},x:{value:a,enumerable:!0,configurable:!0},y:{value:s,enumerable:!0,configurable:!0},dx:{value:l,enumerable:!0,configurable:!0},dy:{value:c,enumerable:!0,configurable:!0},_:{value:d}})}Fr.prototype.on=function(){var e=this._.on.apply(this._,arguments);return e===this._?this:e};function Tu(e){return!e.ctrlKey&&!e.button}function Au(){return this.parentNode}function zu(e,t){return t??{x:e.x,y:e.y}}function Ou(){return navigator.maxTouchPoints||"ontouchstart"in this}function Br(){var e=Tu,t=Au,o=zu,n=Ou,r={},i=Yt("start","drag","end"),a=0,s,l,c,d,f=0;function u(w){w.on("mousedown.drag",m).filter(n).on("touchstart.drag",b).on("touchmove.drag",v,Pu).on("touchend.drag touchcancel.drag",C).style("touch-action","none").style("-webkit-tap-highlight-color","rgba(0,0,0,0)")}function m(w,S){if(!(d||!e.call(this,w,S))){var _=p(this,t.call(this,w,S),w,S,"mouse");_&&(Qe(w.view).on("mousemove.drag",h,Ln).on("mouseup.drag",x,Ln),Hr(w.view),Lr(w),c=!1,s=w.clientX,l=w.clientY,_("start",w))}}function h(w){if(un(w),!c){var S=w.clientX-s,_=w.clientY-l;c=S*S+_*_>f}r.mouse("drag",w)}function x(w){Qe(w.view).on("mousemove.drag mouseup.drag",null),Vr(w.view,c),un(w),r.mouse("end",w)}function b(w,S){if(e.call(this,w,S)){var _=w.changedTouches,R=t.call(this,w,S),A=_.length,z,Z;for(z=0;z<A;++z)(Z=p(this,R,w,S,_[z].identifier,_[z]))&&(Lr(w),Z("start",w,_[z]))}}function v(w){var S=w.changedTouches,_=S.length,R,A;for(R=0;R<_;++R)(A=r[S[R].identifier])&&(un(w),A("drag",w,S[R]))}function C(w){var S=w.changedTouches,_=S.length,R,A;for(d&&clearTimeout(d),d=setTimeout(function(){d=null},500),R=0;R<_;++R)(A=r[S[R].identifier])&&(Lr(w),A("end",w,S[R]))}function p(w,S,_,R,A,z){var Z=i.copy(),X=Je(z||_,S),K,q,y;if((y=o.call(w,new Fr("beforestart",{sourceEvent:_,target:u,identifier:A,active:a,x:X[0],y:X[1],dx:0,dy:0,dispatch:Z}),R))!=null)return K=y.x-X[0]||0,q=y.y-X[1]||0,function I(D,T,g){var M=X,L;switch(D){case"start":r[A]=I,L=a++;break;case"end":delete r[A],--a;case"drag":X=Je(g||T,S),L=a;break}Z.call(D,w,new Fr(D,{sourceEvent:T,subject:y,target:u,identifier:A,active:L,x:X[0]+K,y:X[1]+q,dx:X[0]-M[0],dy:X[1]-M[1],dispatch:Z}),R)}}return u.filter=function(w){return arguments.length?(e=typeof w=="function"?w:_o(!!w),u):e},u.container=function(w){return arguments.length?(t=typeof w=="function"?w:_o(w),u):t},u.subject=function(w){return arguments.length?(o=typeof w=="function"?w:_o(w),u):o},u.touchable=function(w){return arguments.length?(n=typeof w=="function"?w:_o(!!w),u):n},u.on=function(){var w=i.on.apply(i,arguments);return w===i?u:w},u.clickDistance=function(w){return arguments.length?(f=(w=+w)*w,u):Math.sqrt(f)},u}function hn(e,t,o){e.prototype=t.prototype=o,o.constructor=e}function Vn(e,t){var o=Object.create(e.prototype);for(var n in t)o[n]=t[n];return o}function Dt(){}var Ut=.7,mn=1/Ut,fn="\\s*([+-]?\\d+)\\s*",Fn="\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)\\s*",wt="\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)%\\s*",Lu=/^#([0-9a-f]{3,8})$/,Fu=new RegExp(`^rgb\\(${fn},${fn},${fn}\\)$`),Hu=new RegExp(`^rgb\\(${wt},${wt},${wt}\\)$`),Vu=new RegExp(`^rgba\\(${fn},${fn},${fn},${Fn}\\)$`),Bu=new RegExp(`^rgba\\(${wt},${wt},${wt},${Fn}\\)$`),Wu=new RegExp(`^hsl\\(${Fn},${wt},${wt}\\)$`),Yu=new RegExp(`^hsla\\(${Fn},${wt},${wt},${Fn}\\)$`),wa={aliceblue:15792383,antiquewhite:16444375,aqua:65535,aquamarine:8388564,azure:15794175,beige:16119260,bisque:16770244,black:0,blanchedalmond:16772045,blue:255,blueviolet:9055202,brown:10824234,burlywood:14596231,cadetblue:6266528,chartreuse:8388352,chocolate:13789470,coral:16744272,cornflowerblue:6591981,cornsilk:16775388,crimson:14423100,cyan:65535,darkblue:139,darkcyan:35723,darkgoldenrod:12092939,darkgray:11119017,darkgreen:25600,darkgrey:11119017,darkkhaki:12433259,darkmagenta:9109643,darkolivegreen:5597999,darkorange:16747520,darkorchid:10040012,darkred:9109504,darksalmon:15308410,darkseagreen:9419919,darkslateblue:4734347,darkslategray:3100495,darkslategrey:3100495,darkturquoise:52945,darkviolet:9699539,deeppink:16716947,deepskyblue:49151,dimgray:6908265,dimgrey:6908265,dodgerblue:2003199,firebrick:11674146,floralwhite:16775920,forestgreen:2263842,fuchsia:16711935,gainsboro:14474460,ghostwhite:16316671,gold:16766720,goldenrod:14329120,gray:8421504,green:32768,greenyellow:11403055,grey:8421504,honeydew:15794160,hotpink:16738740,indianred:13458524,indigo:4915330,ivory:16777200,khaki:15787660,lavender:15132410,lavenderblush:16773365,lawngreen:8190976,lemonchiffon:16775885,lightblue:11393254,lightcoral:15761536,lightcyan:14745599,lightgoldenrodyellow:16448210,lightgray:13882323,lightgreen:9498256,lightgrey:13882323,lightpink:16758465,lightsalmon:16752762,lightseagreen:2142890,lightskyblue:8900346,lightslategray:7833753,lightslategrey:7833753,lightsteelblue:11584734,lightyellow:16777184,lime:65280,limegreen:3329330,linen:16445670,magenta:16711935,maroon:8388608,mediumaquamarine:6737322,mediumblue:205,mediumorchid:12211667,mediumpurple:9662683,mediumseagreen:3978097,mediumslateblue:8087790,mediumspringgreen:64154,mediumturquoise:4772300,mediumvioletred:13047173,midnightblue:1644912,mintcream:16121850,mistyrose:16770273,moccasin:16770229,navajowhite:16768685,navy:128,oldlace:16643558,olive:8421376,olivedrab:7048739,orange:16753920,orangered:16729344,orchid:14315734,palegoldenrod:15657130,palegreen:10025880,paleturquoise:11529966,palevioletred:14381203,papayawhip:16773077,peachpuff:16767673,peru:13468991,pink:16761035,plum:14524637,powderblue:11591910,purple:8388736,rebeccapurple:6697881,red:16711680,rosybrown:12357519,royalblue:4286945,saddlebrown:9127187,salmon:16416882,sandybrown:16032864,seagreen:3050327,seashell:16774638,sienna:10506797,silver:12632256,skyblue:8900331,slateblue:6970061,slategray:7372944,slategrey:7372944,snow:16775930,springgreen:65407,steelblue:4620980,tan:13808780,teal:32896,thistle:14204888,tomato:16737095,turquoise:4251856,violet:15631086,wheat:16113331,white:16777215,whitesmoke:16119285,yellow:16776960,yellowgreen:10145074};hn(Dt,Nt,{copy(e){return Object.assign(new this.constructor,this,e)},displayable(){return this.rgb().displayable()},hex:va,formatHex:va,formatHex8:Xu,formatHsl:qu,formatRgb:ya,toString:ya});function va(){return this.rgb().formatHex()}function Xu(){return this.rgb().formatHex8()}function qu(){return Ma(this).formatHsl()}function ya(){return this.rgb().formatRgb()}function Nt(e){var t,o;return e=(e+"").trim().toLowerCase(),(t=Lu.exec(e))?(o=t[1].length,t=parseInt(t[1],16),o===6?ba(t):o===3?new je(t>>8&15|t>>4&240,t>>4&15|t&240,(t&15)<<4|t&15,1):o===8?Eo(t>>24&255,t>>16&255,t>>8&255,(t&255)/255):o===4?Eo(t>>12&15|t>>8&240,t>>8&15|t>>4&240,t>>4&15|t&240,((t&15)<<4|t&15)/255):null):(t=Fu.exec(e))?new je(t[1],t[2],t[3],1):(t=Hu.exec(e))?new je(t[1]*255/100,t[2]*255/100,t[3]*255/100,1):(t=Vu.exec(e))?Eo(t[1],t[2],t[3],t[4]):(t=Bu.exec(e))?Eo(t[1]*255/100,t[2]*255/100,t[3]*255/100,t[4]):(t=Wu.exec(e))?Na(t[1],t[2]/100,t[3]/100,1):(t=Yu.exec(e))?Na(t[1],t[2]/100,t[3]/100,t[4]):wa.hasOwnProperty(e)?ba(wa[e]):e==="transparent"?new je(NaN,NaN,NaN,0):null}function ba(e){return new je(e>>16&255,e>>8&255,e&255,1)}function Eo(e,t,o,n){return n<=0&&(e=t=o=NaN),new je(e,t,o,n)}function Zr(e){return e instanceof Dt||(e=Nt(e)),e?(e=e.rgb(),new je(e.r,e.g,e.b,e.opacity)):new je}function Bn(e,t,o,n){return arguments.length===1?Zr(e):new je(e,t,o,n??1)}function je(e,t,o,n){this.r=+e,this.g=+t,this.b=+o,this.opacity=+n}hn(je,Bn,Vn(Dt,{brighter(e){return e=e==null?mn:Math.pow(mn,e),new je(this.r*e,this.g*e,this.b*e,this.opacity)},darker(e){return e=e==null?Ut:Math.pow(Ut,e),new je(this.r*e,this.g*e,this.b*e,this.opacity)},rgb(){return this},clamp(){return new je(Zt(this.r),Zt(this.g),Zt(this.b),Io(this.opacity))},displayable(){return-.5<=this.r&&this.r<255.5&&-.5<=this.g&&this.g<255.5&&-.5<=this.b&&this.b<255.5&&0<=this.opacity&&this.opacity<=1},hex:xa,formatHex:xa,formatHex8:Ku,formatRgb:ka,toString:ka}));function xa(){return`#${Kt(this.r)}${Kt(this.g)}${Kt(this.b)}`}function Ku(){return`#${Kt(this.r)}${Kt(this.g)}${Kt(this.b)}${Kt((isNaN(this.opacity)?1:this.opacity)*255)}`}function ka(){let e=Io(this.opacity);return`${e===1?"rgb(":"rgba("}${Zt(this.r)}, ${Zt(this.g)}, ${Zt(this.b)}${e===1?")":`, ${e})`}`}function Io(e){return isNaN(e)?1:Math.max(0,Math.min(1,e))}function Zt(e){return Math.max(0,Math.min(255,Math.round(e)||0))}function Kt(e){return e=Zt(e),(e<16?"0":"")+e.toString(16)}function Na(e,t,o,n){return n<=0?e=t=o=NaN:o<=0||o>=1?e=t=NaN:t<=0&&(e=NaN),new ut(e,t,o,n)}function Ma(e){if(e instanceof ut)return new ut(e.h,e.s,e.l,e.opacity);if(e instanceof Dt||(e=Nt(e)),!e)return new ut;if(e instanceof ut)return e;e=e.rgb();var t=e.r/255,o=e.g/255,n=e.b/255,r=Math.min(t,o,n),i=Math.max(t,o,n),a=NaN,s=i-r,l=(i+r)/2;return s?(t===i?a=(o-n)/s+(o<n)*6:o===i?a=(n-t)/s+2:a=(t-o)/s+4,s/=l<.5?i+r:2-i-r,a*=60):s=l>0&&l<1?0:a,new ut(a,s,l,e.opacity)}function Do(e,t,o,n){return arguments.length===1?Ma(e):new ut(e,t,o,n??1)}function ut(e,t,o,n){this.h=+e,this.s=+t,this.l=+o,this.opacity=+n}hn(ut,Do,Vn(Dt,{brighter(e){return e=e==null?mn:Math.pow(mn,e),new ut(this.h,this.s,this.l*e,this.opacity)},darker(e){return e=e==null?Ut:Math.pow(Ut,e),new ut(this.h,this.s,this.l*e,this.opacity)},rgb(){var e=this.h%360+(this.h<0)*360,t=isNaN(e)||isNaN(this.s)?0:this.s,o=this.l,n=o+(o<.5?o:1-o)*t,r=2*o-n;return new je(Wr(e>=240?e-240:e+120,r,n),Wr(e,r,n),Wr(e<120?e+240:e-120,r,n),this.opacity)},clamp(){return new ut(Sa(this.h),Mo(this.s),Mo(this.l),Io(this.opacity))},displayable(){return(0<=this.s&&this.s<=1||isNaN(this.s))&&0<=this.l&&this.l<=1&&0<=this.opacity&&this.opacity<=1},formatHsl(){let e=Io(this.opacity);return`${e===1?"hsl(":"hsla("}${Sa(this.h)}, ${Mo(this.s)*100}%, ${Mo(this.l)*100}%${e===1?")":`, ${e})`}`}}));function Sa(e){return e=(e||0)%360,e<0?e+360:e}function Mo(e){return Math.max(0,Math.min(1,e||0))}function Wr(e,t,o){return(e<60?t+(o-t)*e/60:e<180?o:e<240?t+(o-t)*(240-e)/60:t)*255}var Ia=Math.PI/180,Ra=180/Math.PI,Ro=18,Da=.96422,$a=1,Pa=.82521,Ta=4/29,pn=6/29,Aa=3*pn*pn,Zu=pn*pn*pn;function za(e){if(e instanceof vt)return new vt(e.l,e.a,e.b,e.opacity);if(e instanceof kt)return La(e);e instanceof je||(e=Zr(e));var t=Kr(e.r),o=Kr(e.g),n=Kr(e.b),r=Yr((.2225045*t+.7168786*o+.0606169*n)/$a),i,a;return t===o&&o===n?i=a=r:(i=Yr((.4360747*t+.3850649*o+.1430804*n)/Da),a=Yr((.0139322*t+.0971045*o+.7141733*n)/Pa)),new vt(116*r-16,500*(i-r),200*(r-a),e.opacity)}function Oa(e,t,o,n){return arguments.length===1?za(e):new vt(e,t,o,n??1)}function vt(e,t,o,n){this.l=+e,this.a=+t,this.b=+o,this.opacity=+n}hn(vt,Oa,Vn(Dt,{brighter(e){return new vt(this.l+Ro*(e??1),this.a,this.b,this.opacity)},darker(e){return new vt(this.l-Ro*(e??1),this.a,this.b,this.opacity)},rgb(){var e=(this.l+16)/116,t=isNaN(this.a)?e:e+this.a/500,o=isNaN(this.b)?e:e-this.b/200;return t=Da*Xr(t),e=$a*Xr(e),o=Pa*Xr(o),new je(qr(3.1338561*t-1.6168667*e-.4906146*o),qr(-.9787684*t+1.9161415*e+.033454*o),qr(.0719453*t-.2289914*e+1.4052427*o),this.opacity)}}));function Yr(e){return e>Zu?Math.pow(e,1/3):e/Aa+Ta}function Xr(e){return e>pn?e*e*e:Aa*(e-Ta)}function qr(e){return 255*(e<=.0031308?12.92*e:1.055*Math.pow(e,1/2.4)-.055)}function Kr(e){return(e/=255)<=.04045?e/12.92:Math.pow((e+.055)/1.055,2.4)}function ju(e){if(e instanceof kt)return new kt(e.h,e.c,e.l,e.opacity);if(e instanceof vt||(e=za(e)),e.a===0&&e.b===0)return new kt(NaN,0<e.l&&e.l<100?0:NaN,e.l,e.opacity);var t=Math.atan2(e.b,e.a)*Ra;return new kt(t<0?t+360:t,Math.sqrt(e.a*e.a+e.b*e.b),e.l,e.opacity)}function $o(e,t,o,n){return arguments.length===1?ju(e):new kt(e,t,o,n??1)}function kt(e,t,o,n){this.h=+e,this.c=+t,this.l=+o,this.opacity=+n}function La(e){if(isNaN(e.h))return new vt(e.l,0,0,e.opacity);var t=e.h*Ia;return new vt(e.l,Math.cos(t)*e.c,Math.sin(t)*e.c,e.opacity)}hn(kt,$o,Vn(Dt,{brighter(e){return new kt(this.h,this.c,this.l+Ro*(e??1),this.opacity)},darker(e){return new kt(this.h,this.c,this.l-Ro*(e??1),this.opacity)},rgb(){return La(this).rgb()}}));var Fa=-.14861,jr=1.78277,Ur=-.29227,Po=-.90649,Hn=1.97294,Ca=Hn*Po,_a=Hn*jr,Ea=jr*Ur-Po*Fa;function Uu(e){if(e instanceof jt)return new jt(e.h,e.s,e.l,e.opacity);e instanceof je||(e=Zr(e));var t=e.r/255,o=e.g/255,n=e.b/255,r=(Ea*n+Ca*t-_a*o)/(Ea+Ca-_a),i=n-r,a=(Hn*(o-r)-Ur*i)/Po,s=Math.sqrt(a*a+i*i)/(Hn*r*(1-r)),l=s?Math.atan2(a,i)*Ra-120:NaN;return new jt(l<0?l+360:l,s,r,e.opacity)}function To(e,t,o,n){return arguments.length===1?Uu(e):new jt(e,t,o,n??1)}function jt(e,t,o,n){this.h=+e,this.s=+t,this.l=+o,this.opacity=+n}hn(jt,To,Vn(Dt,{brighter(e){return e=e==null?mn:Math.pow(mn,e),new jt(this.h,this.s,this.l*e,this.opacity)},darker(e){return e=e==null?Ut:Math.pow(Ut,e),new jt(this.h,this.s,this.l*e,this.opacity)},rgb(){var e=isNaN(this.h)?0:(this.h+120)*Ia,t=+this.l,o=isNaN(this.s)?0:this.s*t*(1-t),n=Math.cos(e),r=Math.sin(e);return new je(255*(t+o*(Fa*n+jr*r)),255*(t+o*(Ur*n+Po*r)),255*(t+o*(Hn*n)),this.opacity)}}));function Ba(e,t,o,n,r){var i=e*e,a=i*e;return((1-3*e+3*i-a)*t+(4-6*i+3*a)*o+(1+3*e+3*i-3*a)*n+a*r)/6}function Gu(e){var t=e.length-1;return function(o){var n=o<=0?o=0:o>=1?(o=1,t-1):Math.floor(o*t),r=e[n],i=e[n+1],a=n>0?e[n-1]:2*r-i,s=n<t-1?e[n+2]:2*i-r;return Ba((o-n/t)*t,a,r,i,s)}}function Qu(e){var t=e.length;return function(o){var n=Math.floor(((o%=1)<0?++o:o)*t),r=e[(n+t-1)%t],i=e[n%t],a=e[(n+1)%t],s=e[(n+2)%t];return Ba((o-n/t)*t,r,i,a,s)}}var zo=e=>()=>e;function Wa(e,t){return function(o){return e+o*t}}function Ju(e,t,o){return e=Math.pow(e,o),t=Math.pow(t,o)-e,o=1/o,function(n){return Math.pow(e+n*t,o)}}function ei(e,t){var o=t-e;return o?Wa(e,o>180||o<-180?o-360*Math.round(o/360):o):zo(isNaN(e)?t:e)}function ef(e){return(e=+e)==1?et:function(t,o){return o-t?Ju(t,o,e):zo(isNaN(t)?o:t)}}function et(e,t){var o=t-e;return o?Wa(e,o):zo(isNaN(e)?t:e)}var Wn=(function e(t){var o=ef(t);function n(r,i){var a=o((r=Bn(r)).r,(i=Bn(i)).r),s=o(r.g,i.g),l=o(r.b,i.b),c=et(r.opacity,i.opacity);return function(d){return r.r=a(d),r.g=s(d),r.b=l(d),r.opacity=c(d),r+""}}return n.gamma=e,n})(1);function Ya(e){return function(t){var o=t.length,n=new Array(o),r=new Array(o),i=new Array(o),a,s;for(a=0;a<o;++a)s=Bn(t[a]),n[a]=s.r||0,r[a]=s.g||0,i[a]=s.b||0;return n=e(n),r=e(r),i=e(i),s.opacity=1,function(l){return s.r=n(l),s.g=r(l),s.b=i(l),s+""}}}var xw=Ya(Gu),kw=Ya(Qu);function tf(e,t){t||(t=[]);var o=e?Math.min(t.length,e.length):0,n=t.slice(),r;return function(i){for(r=0;r<o;++r)n[r]=e[r]*(1-i)+t[r]*i;return n}}function nf(e){return ArrayBuffer.isView(e)&&!(e instanceof DataView)}function of(e,t){var o=t?t.length:0,n=e?Math.min(o,e.length):0,r=new Array(n),i=new Array(o),a;for(a=0;a<n;++a)r[a]=gn(e[a],t[a]);for(;a<o;++a)i[a]=t[a];return function(s){for(a=0;a<n;++a)i[a]=r[a](s);return i}}function rf(e,t){var o=new Date;return e=+e,t=+t,function(n){return o.setTime(e*(1-n)+t*n),o}}function ft(e,t){return e=+e,t=+t,function(o){return e*(1-o)+t*o}}function af(e,t){var o={},n={},r;(e===null||typeof e!="object")&&(e={}),(t===null||typeof t!="object")&&(t={});for(r in t)r in e?o[r]=gn(e[r],t[r]):n[r]=t[r];return function(i){for(r in o)n[r]=o[r](i);return n}}var Qr=/[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g,Gr=new RegExp(Qr.source,"g");function sf(e){return function(){return e}}function lf(e){return function(t){return e(t)+""}}function ti(e,t){var o=Qr.lastIndex=Gr.lastIndex=0,n,r,i,a=-1,s=[],l=[];for(e=e+"",t=t+"";(n=Qr.exec(e))&&(r=Gr.exec(t));)(i=r.index)>o&&(i=t.slice(o,i),s[a]?s[a]+=i:s[++a]=i),(n=n[0])===(r=r[0])?s[a]?s[a]+=r:s[++a]=r:(s[++a]=null,l.push({i:a,x:ft(n,r)})),o=Gr.lastIndex;return o<t.length&&(i=t.slice(o),s[a]?s[a]+=i:s[++a]=i),s.length<2?l[0]?lf(l[0].x):sf(t):(t=l.length,function(c){for(var d=0,f;d<t;++d)s[(f=l[d]).i]=f.x(c);return s.join("")})}function gn(e,t){var o=typeof t,n;return t==null||o==="boolean"?zo(t):(o==="number"?ft:o==="string"?(n=Nt(t))?(t=n,Wn):ti:t instanceof Nt?Wn:t instanceof Date?rf:nf(t)?tf:Array.isArray(t)?of:typeof t.valueOf!="function"&&typeof t.toString!="function"||isNaN(t)?af:ft)(e,t)}var Ha=180/Math.PI,Jr={translateX:0,translateY:0,rotate:0,skewX:0,scaleX:1,scaleY:1};function Xa(e,t,o,n,r,i){var a,s,l;return(a=Math.sqrt(e*e+t*t))&&(e/=a,t/=a),(l=e*o+t*n)&&(o-=e*l,n-=t*l),(s=Math.sqrt(o*o+n*n))&&(o/=s,n/=s,l/=s),e*n<t*o&&(e=-e,t=-t,l=-l,a=-a),{translateX:r,translateY:i,rotate:Math.atan2(t,e)*Ha,skewX:Math.atan(l)*Ha,scaleX:a,scaleY:s}}var Ao;function cf(e){let t=new(typeof DOMMatrix=="function"?DOMMatrix:WebKitCSSMatrix)(e+"");return t.isIdentity?Jr:Xa(t.a,t.b,t.c,t.d,t.e,t.f)}function df(e){return e==null||(Ao||(Ao=document.createElementNS("http://www.w3.org/2000/svg","g")),Ao.setAttribute("transform",e),!(e=Ao.transform.baseVal.consolidate()))?Jr:(e=e.matrix,Xa(e.a,e.b,e.c,e.d,e.e,e.f))}function qa(e,t,o,n){function r(c){return c.length?c.pop()+" ":""}function i(c,d,f,u,m,h){if(c!==f||d!==u){var x=m.push("translate(",null,t,null,o);h.push({i:x-4,x:ft(c,f)},{i:x-2,x:ft(d,u)})}else(f||u)&&m.push("translate("+f+t+u+o)}function a(c,d,f,u){c!==d?(c-d>180?d+=360:d-c>180&&(c+=360),u.push({i:f.push(r(f)+"rotate(",null,n)-2,x:ft(c,d)})):d&&f.push(r(f)+"rotate("+d+n)}function s(c,d,f,u){c!==d?u.push({i:f.push(r(f)+"skewX(",null,n)-2,x:ft(c,d)}):d&&f.push(r(f)+"skewX("+d+n)}function l(c,d,f,u,m,h){if(c!==f||d!==u){var x=m.push(r(m)+"scale(",null,",",null,")");h.push({i:x-4,x:ft(c,f)},{i:x-2,x:ft(d,u)})}else(f!==1||u!==1)&&m.push(r(m)+"scale("+f+","+u+")")}return function(c,d){var f=[],u=[];return c=e(c),d=e(d),i(c.translateX,c.translateY,d.translateX,d.translateY,f,u),a(c.rotate,d.rotate,f,u),s(c.skewX,d.skewX,f,u),l(c.scaleX,c.scaleY,d.scaleX,d.scaleY,f,u),c=d=null,function(m){for(var h=-1,x=u.length,b;++h<x;)f[(b=u[h]).i]=b.x(m);return f.join("")}}}var Ka=qa(cf,"px, ","px)","deg)"),Za=qa(df,", ",")",")"),uf=1e-12;function Va(e){return((e=Math.exp(e))+1/e)/2}function ff(e){return((e=Math.exp(e))-1/e)/2}function pf(e){return((e=Math.exp(2*e))-1)/(e+1)}var wn=(function e(t,o,n){function r(i,a){var s=i[0],l=i[1],c=i[2],d=a[0],f=a[1],u=a[2],m=d-s,h=f-l,x=m*m+h*h,b,v;if(x<uf)v=Math.log(u/c)/t,b=function(R){return[s+R*m,l+R*h,c*Math.exp(t*R*v)]};else{var C=Math.sqrt(x),p=(u*u-c*c+n*x)/(2*c*o*C),w=(u*u-c*c-n*x)/(2*u*o*C),S=Math.log(Math.sqrt(p*p+1)-p),_=Math.log(Math.sqrt(w*w+1)-w);v=(_-S)/t,b=function(R){var A=R*v,z=Va(S),Z=c/(o*C)*(z*pf(t*A+S)-ff(S));return[s+Z*m,l+Z*h,c*z/Va(t*A+S)]}}return b.duration=Math.abs(v)*1e3*t/Math.SQRT2,b}return r.rho=function(i){var a=Math.max(.001,+i),s=a*a,l=s*s;return e(a,s,l)},r})(Math.SQRT2,2,4);function ja(e){return function(t,o){var n=e((t=Do(t)).h,(o=Do(o)).h),r=et(t.s,o.s),i=et(t.l,o.l),a=et(t.opacity,o.opacity);return function(s){return t.h=n(s),t.s=r(s),t.l=i(s),t.opacity=a(s),t+""}}}var Nw=ja(ei),Sw=ja(et);function Ua(e){return function(t,o){var n=e((t=$o(t)).h,(o=$o(o)).h),r=et(t.c,o.c),i=et(t.l,o.l),a=et(t.opacity,o.opacity);return function(s){return t.h=n(s),t.c=r(s),t.l=i(s),t.opacity=a(s),t+""}}}var Cw=Ua(ei),_w=Ua(et);function Ga(e){return(function t(o){o=+o;function n(r,i){var a=e((r=To(r)).h,(i=To(i)).h),s=et(r.s,i.s),l=et(r.l,i.l),c=et(r.opacity,i.opacity);return function(d){return r.h=a(d),r.s=s(d),r.l=l(Math.pow(d,o)),r.opacity=c(d),r+""}}return n.gamma=t,n})(1)}var Ew=Ga(ei),Mw=Ga(et);var vn=0,Xn=0,Yn=0,Ja=1e3,Oo,qn,Lo=0,Gt=0,Ho=0,Kn=typeof performance=="object"&&performance.now?performance:Date,es=typeof window=="object"&&window.requestAnimationFrame?window.requestAnimationFrame.bind(window):function(e){setTimeout(e,17)};function Vo(){return Gt||(es(mf),Gt=Kn.now()+Ho)}function mf(){Gt=0}function Fo(){this._call=this._time=this._next=null}Fo.prototype=oi.prototype={constructor:Fo,restart:function(e,t,o){if(typeof e!="function")throw new TypeError("callback is not a function");o=(o==null?Vo():+o)+(t==null?0:+t),!this._next&&qn!==this&&(qn?qn._next=this:Oo=this,qn=this),this._call=e,this._time=o,ni()},stop:function(){this._call&&(this._call=null,this._time=1/0,ni())}};function oi(e,t,o){var n=new Fo;return n.restart(e,t,o),n}function hf(){Vo(),++vn;for(var e=Oo,t;e;)(t=Gt-e._time)>=0&&e._call.call(void 0,t),e=e._next;--vn}function Qa(){Gt=(Lo=Kn.now())+Ho,vn=Xn=0;try{hf()}finally{vn=0,wf(),Gt=0}}function gf(){var e=Kn.now(),t=e-Lo;t>Ja&&(Ho-=t,Lo=e)}function wf(){for(var e,t=Oo,o,n=1/0;t;)t._call?(n>t._time&&(n=t._time),e=t,t=t._next):(o=t._next,t._next=null,t=e?e._next=o:Oo=o);qn=e,ni(n)}function ni(e){if(!vn){Xn&&(Xn=clearTimeout(Xn));var t=e-Gt;t>24?(e<1/0&&(Xn=setTimeout(Qa,Math.ceil(e-Kn.now()-Ho)+1)),Yn&&(Yn=clearInterval(Yn))):(Yn||(Lo=Kn.now(),Yn=setInterval(gf,Ja)),vn=1,es(Qa))}}function ri(e,t,o){var n=new Fo;return t=t==null?0:+t,n.restart(r=>{n.stop(),e(r+t)},t,o),n}function ns(e){return((e*=2)<=1?e*e*e:(e-=2)*e*e+2)/2}var ii=3,Dw=(function e(t){t=+t;function o(n){return Math.pow(n,t)}return o.exponent=e,o})(ii),$w=(function e(t){t=+t;function o(n){return 1-Math.pow(1-n,t)}return o.exponent=e,o})(ii),Pw=(function e(t){t=+t;function o(n){return((n*=2)<=1?Math.pow(n,t):2-Math.pow(2-n,t))/2}return o.exponent=e,o})(ii),vf=Math.PI,Tw=vf/2;function Bo(e){return(Math.pow(2,-10*e)-.0009765625)*1.0009775171065494}var ts=4/11,Aw=6/11,zw=8/11,Ow=3/4,Lw=9/11,Fw=10/11,Hw=15/16,Vw=21/22,Bw=63/64,Ww=1/ts/ts;var ai=1.70158,Yw=(function e(t){t=+t;function o(n){return(n=+n)*n*(t*(n-1)+n)}return o.overshoot=e,o})(ai),Xw=(function e(t){t=+t;function o(n){return--n*n*((n+1)*t+n)+1}return o.overshoot=e,o})(ai),qw=(function e(t){t=+t;function o(n){return((n*=2)<1?n*n*((t+1)*n-t):(n-=2)*n*((t+1)*n+t)+2)/2}return o.overshoot=e,o})(ai),yn=2*Math.PI,si=1,li=.3,Kw=(function e(t,o){var n=Math.asin(1/(t=Math.max(1,t)))*(o/=yn);function r(i){return t*Bo(- --i)*Math.sin((n-i)/o)}return r.amplitude=function(i){return e(i,o*yn)},r.period=function(i){return e(t,i)},r})(si,li),Zw=(function e(t,o){var n=Math.asin(1/(t=Math.max(1,t)))*(o/=yn);function r(i){return 1-t*Bo(i=+i)*Math.sin((i+n)/o)}return r.amplitude=function(i){return e(i,o*yn)},r.period=function(i){return e(t,i)},r})(si,li),jw=(function e(t,o){var n=Math.asin(1/(t=Math.max(1,t)))*(o/=yn);function r(i){return((i=i*2-1)<0?t*Bo(-i)*Math.sin((n-i)/o):2-t*Bo(i)*Math.sin((n+i)/o))/2}return r.amplitude=function(i){return e(i,o*yn)},r.period=function(i){return e(t,i)},r})(si,li);var yf=Yt("start","end","cancel","interrupt"),bf=[],is=0,os=1,ci=2,Wo=3,rs=4,di=5,Yo=6;function Xo(e,t,o,n,r,i){var a=e.__transition;if(!a)e.__transition={};else if(o in a)return;xf(e,o,{name:t,index:n,group:r,on:yf,tween:bf,time:i.time,delay:i.delay,duration:i.duration,ease:i.ease,timer:null,state:is})}function ui(e,t){var o=pt(e,t);if(o.state>is)throw new Error("too late; already scheduled");return o}function yt(e,t){var o=pt(e,t);if(o.state>Wo)throw new Error("too late; already running");return o}function pt(e,t){var o=e.__transition;if(!o||!(o=o[t]))throw new Error("transition not found");return o}function xf(e,t,o){var n=e.__transition,r;n[t]=o,o.timer=oi(i,0,o.time);function i(c){o.state=os,o.timer.restart(a,o.delay,o.time),o.delay<=c&&a(c-o.delay)}function a(c){var d,f,u,m;if(o.state!==os)return l();for(d in n)if(m=n[d],m.name===o.name){if(m.state===Wo)return ri(a);m.state===rs?(m.state=Yo,m.timer.stop(),m.on.call("interrupt",e,e.__data__,m.index,m.group),delete n[d]):+d<t&&(m.state=Yo,m.timer.stop(),m.on.call("cancel",e,e.__data__,m.index,m.group),delete n[d])}if(ri(function(){o.state===Wo&&(o.state=rs,o.timer.restart(s,o.delay,o.time),s(c))}),o.state=ci,o.on.call("start",e,e.__data__,o.index,o.group),o.state===ci){for(o.state=Wo,r=new Array(u=o.tween.length),d=0,f=-1;d<u;++d)(m=o.tween[d].value.call(e,e.__data__,o.index,o.group))&&(r[++f]=m);r.length=f+1}}function s(c){for(var d=c<o.duration?o.ease.call(null,c/o.duration):(o.timer.restart(l),o.state=di,1),f=-1,u=r.length;++f<u;)r[f].call(e,d);o.state===di&&(o.on.call("end",e,e.__data__,o.index,o.group),l())}function l(){o.state=Yo,o.timer.stop(),delete n[t];for(var c in n)return;delete e.__transition}}function Zn(e,t){var o=e.__transition,n,r,i=!0,a;if(o){t=t==null?null:t+"";for(a in o){if((n=o[a]).name!==t){i=!1;continue}r=n.state>ci&&n.state<di,n.state=Yo,n.timer.stop(),n.on.call(r?"interrupt":"cancel",e,e.__data__,n.index,n.group),delete o[a]}i&&delete e.__transition}}function kf(e){return this.each(function(){Zn(this,e)})}function Nf(e,t){var o,n;return function(){var r=yt(this,e),i=r.tween;if(i!==o){n=o=i;for(var a=0,s=n.length;a<s;++a)if(n[a].name===t){n=n.slice(),n.splice(a,1);break}}r.tween=n}}function Sf(e,t,o){var n,r;if(typeof o!="function")throw new Error;return function(){var i=yt(this,e),a=i.tween;if(a!==n){r=(n=a).slice();for(var s={name:t,value:o},l=0,c=r.length;l<c;++l)if(r[l].name===t){r[l]=s;break}l===c&&r.push(s)}i.tween=r}}function Cf(e,t){var o=this._id;if(e+="",arguments.length<2){for(var n=pt(this.node(),o).tween,r=0,i=n.length,a;r<i;++r)if((a=n[r]).name===e)return a.value;return null}return this.each((t==null?Nf:Sf)(o,e,t))}function fi(e,t,o){var n=e._id;return e.each(function(){var r=yt(this,n);(r.value||(r.value={}))[t]=o.apply(this,arguments)}),function(r){return pt(r,n).value[t]}}function as(e,t){var o;return(typeof t=="number"?ft:t instanceof Nt?Wn:(o=Nt(t))?(t=o,Wn):ti)(e,t)}function _f(e){return function(){this.removeAttribute(e)}}function Ef(e){return function(){this.removeAttributeNS(e.space,e.local)}}function Mf(e,t,o){var n,r=o+"",i;return function(){var a=this.getAttribute(e);return a===r?null:a===n?i:i=t(n=a,o)}}function If(e,t,o){var n,r=o+"",i;return function(){var a=this.getAttributeNS(e.space,e.local);return a===r?null:a===n?i:i=t(n=a,o)}}function Rf(e,t,o){var n,r,i;return function(){var a,s=o(this),l;return s==null?void this.removeAttribute(e):(a=this.getAttribute(e),l=s+"",a===l?null:a===n&&l===r?i:(r=l,i=t(n=a,s)))}}function Df(e,t,o){var n,r,i;return function(){var a,s=o(this),l;return s==null?void this.removeAttributeNS(e.space,e.local):(a=this.getAttributeNS(e.space,e.local),l=s+"",a===l?null:a===n&&l===r?i:(r=l,i=t(n=a,s)))}}function $f(e,t){var o=On(e),n=o==="transform"?Za:as;return this.attrTween(e,typeof t=="function"?(o.local?Df:Rf)(o,n,fi(this,"attr."+e,t)):t==null?(o.local?Ef:_f)(o):(o.local?If:Mf)(o,n,t))}function Pf(e,t){return function(o){this.setAttribute(e,t.call(this,o))}}function Tf(e,t){return function(o){this.setAttributeNS(e.space,e.local,t.call(this,o))}}function Af(e,t){var o,n;function r(){var i=t.apply(this,arguments);return i!==n&&(o=(n=i)&&Tf(e,i)),o}return r._value=t,r}function zf(e,t){var o,n;function r(){var i=t.apply(this,arguments);return i!==n&&(o=(n=i)&&Pf(e,i)),o}return r._value=t,r}function Of(e,t){var o="attr."+e;if(arguments.length<2)return(o=this.tween(o))&&o._value;if(t==null)return this.tween(o,null);if(typeof t!="function")throw new Error;var n=On(e);return this.tween(o,(n.local?Af:zf)(n,t))}function Lf(e,t){return function(){ui(this,e).delay=+t.apply(this,arguments)}}function Ff(e,t){return t=+t,function(){ui(this,e).delay=t}}function Hf(e){var t=this._id;return arguments.length?this.each((typeof e=="function"?Lf:Ff)(t,e)):pt(this.node(),t).delay}function Vf(e,t){return function(){yt(this,e).duration=+t.apply(this,arguments)}}function Bf(e,t){return t=+t,function(){yt(this,e).duration=t}}function Wf(e){var t=this._id;return arguments.length?this.each((typeof e=="function"?Vf:Bf)(t,e)):pt(this.node(),t).duration}function Yf(e,t){if(typeof t!="function")throw new Error;return function(){yt(this,e).ease=t}}function Xf(e){var t=this._id;return arguments.length?this.each(Yf(t,e)):pt(this.node(),t).ease}function qf(e,t){return function(){var o=t.apply(this,arguments);if(typeof o!="function")throw new Error;yt(this,e).ease=o}}function Kf(e){if(typeof e!="function")throw new Error;return this.each(qf(this._id,e))}function Zf(e){typeof e!="function"&&(e=zr(e));for(var t=this._groups,o=t.length,n=new Array(o),r=0;r<o;++r)for(var i=t[r],a=i.length,s=n[r]=[],l,c=0;c<a;++c)(l=i[c])&&e.call(l,l.__data__,c,i)&&s.push(l);return new Ct(n,this._parents,this._name,this._id)}function jf(e){if(e._id!==this._id)throw new Error;for(var t=this._groups,o=e._groups,n=t.length,r=o.length,i=Math.min(n,r),a=new Array(n),s=0;s<i;++s)for(var l=t[s],c=o[s],d=l.length,f=a[s]=new Array(d),u,m=0;m<d;++m)(u=l[m]||c[m])&&(f[m]=u);for(;s<n;++s)a[s]=t[s];return new Ct(a,this._parents,this._name,this._id)}function Uf(e){return(e+"").trim().split(/^|\s+/).every(function(t){var o=t.indexOf(".");return o>=0&&(t=t.slice(0,o)),!t||t==="start"})}function Gf(e,t,o){var n,r,i=Uf(t)?ui:yt;return function(){var a=i(this,e),s=a.on;s!==n&&(r=(n=s).copy()).on(t,o),a.on=r}}function Qf(e,t){var o=this._id;return arguments.length<2?pt(this.node(),o).on.on(e):this.each(Gf(o,e,t))}function Jf(e){return function(){var t=this.parentNode;for(var o in this.__transition)if(+o!==e)return;t&&t.removeChild(this)}}function ep(){return this.on("end.remove",Jf(this._id))}function tp(e){var t=this._name,o=this._id;typeof e!="function"&&(e=Co(e));for(var n=this._groups,r=n.length,i=new Array(r),a=0;a<r;++a)for(var s=n[a],l=s.length,c=i[a]=new Array(l),d,f,u=0;u<l;++u)(d=s[u])&&(f=e.call(d,d.__data__,u,s))&&("__data__"in d&&(f.__data__=d.__data__),c[u]=f,Xo(c[u],t,o,u,c,pt(d,o)));return new Ct(i,this._parents,t,o)}function np(e){var t=this._name,o=this._id;typeof e!="function"&&(e=Ar(e));for(var n=this._groups,r=n.length,i=[],a=[],s=0;s<r;++s)for(var l=n[s],c=l.length,d,f=0;f<c;++f)if(d=l[f]){for(var u=e.call(d,d.__data__,f,l),m,h=pt(d,o),x=0,b=u.length;x<b;++x)(m=u[x])&&Xo(m,t,o,x,u,h);i.push(u),a.push(d)}return new Ct(i,a,t,o)}var op=qt.prototype.constructor;function rp(){return new op(this._groups,this._parents)}function ip(e,t){var o,n,r;return function(){var i=Xt(this,e),a=(this.style.removeProperty(e),Xt(this,e));return i===a?null:i===o&&a===n?r:r=t(o=i,n=a)}}function ss(e){return function(){this.style.removeProperty(e)}}function ap(e,t,o){var n,r=o+"",i;return function(){var a=Xt(this,e);return a===r?null:a===n?i:i=t(n=a,o)}}function sp(e,t,o){var n,r,i;return function(){var a=Xt(this,e),s=o(this),l=s+"";return s==null&&(l=s=(this.style.removeProperty(e),Xt(this,e))),a===l?null:a===n&&l===r?i:(r=l,i=t(n=a,s))}}function lp(e,t){var o,n,r,i="style."+t,a="end."+i,s;return function(){var l=yt(this,e),c=l.on,d=l.value[i]==null?s||(s=ss(t)):void 0;(c!==o||r!==d)&&(n=(o=c).copy()).on(a,r=d),l.on=n}}function cp(e,t,o){var n=(e+="")=="transform"?Ka:as;return t==null?this.styleTween(e,ip(e,n)).on("end.style."+e,ss(e)):typeof t=="function"?this.styleTween(e,sp(e,n,fi(this,"style."+e,t))).each(lp(this._id,e)):this.styleTween(e,ap(e,n,t),o).on("end.style."+e,null)}function dp(e,t,o){return function(n){this.style.setProperty(e,t.call(this,n),o)}}function up(e,t,o){var n,r;function i(){var a=t.apply(this,arguments);return a!==r&&(n=(r=a)&&dp(e,a,o)),n}return i._value=t,i}function fp(e,t,o){var n="style."+(e+="");if(arguments.length<2)return(n=this.tween(n))&&n._value;if(t==null)return this.tween(n,null);if(typeof t!="function")throw new Error;return this.tween(n,up(e,t,o??""))}function pp(e){return function(){this.textContent=e}}function mp(e){return function(){var t=e(this);this.textContent=t??""}}function hp(e){return this.tween("text",typeof e=="function"?mp(fi(this,"text",e)):pp(e==null?"":e+""))}function gp(e){return function(t){this.textContent=e.call(this,t)}}function wp(e){var t,o;function n(){var r=e.apply(this,arguments);return r!==o&&(t=(o=r)&&gp(r)),t}return n._value=e,n}function vp(e){var t="text";if(arguments.length<1)return(t=this.tween(t))&&t._value;if(e==null)return this.tween(t,null);if(typeof e!="function")throw new Error;return this.tween(t,wp(e))}function yp(){for(var e=this._name,t=this._id,o=ls(),n=this._groups,r=n.length,i=0;i<r;++i)for(var a=n[i],s=a.length,l,c=0;c<s;++c)if(l=a[c]){var d=pt(l,t);Xo(l,e,o,c,a,{time:d.time+d.delay+d.duration,delay:0,duration:d.duration,ease:d.ease})}return new Ct(n,this._parents,e,o)}function bp(){var e,t,o=this,n=o._id,r=o.size();return new Promise(function(i,a){var s={value:a},l={value:function(){--r===0&&i()}};o.each(function(){var c=yt(this,n),d=c.on;d!==e&&(t=(e=d).copy(),t._.cancel.push(s),t._.interrupt.push(s),t._.end.push(l)),c.on=t}),r===0&&i()})}var xp=0;function Ct(e,t,o,n){this._groups=e,this._parents=t,this._name=o,this._id=n}function kp(e){return qt().transition(e)}function ls(){return++xp}var St=qt.prototype;Ct.prototype=kp.prototype={constructor:Ct,select:tp,selectAll:np,selectChild:St.selectChild,selectChildren:St.selectChildren,filter:Zf,merge:jf,selection:rp,transition:yp,call:St.call,nodes:St.nodes,node:St.node,size:St.size,empty:St.empty,each:St.each,on:Qf,attr:$f,attrTween:Of,style:cp,styleTween:fp,text:hp,textTween:vp,remove:ep,tween:Cf,delay:Hf,duration:Wf,ease:Xf,easeVarying:Kf,end:bp,[Symbol.iterator]:St[Symbol.iterator]};var Np={time:null,delay:0,duration:250,ease:ns};function Sp(e,t){for(var o;!(o=e.__transition)||!(o=o[t]);)if(!(e=e.parentNode))throw new Error(`transition ${t} not found`);return o}function Cp(e){var t,o;e instanceof Ct?(t=e._id,e=e._name):(t=ls(),(o=Np).time=Vo(),e=e==null?null:e+"");for(var n=this._groups,r=n.length,i=0;i<r;++i)for(var a=n[i],s=a.length,l,c=0;c<s;++c)(l=a[c])&&Xo(l,e,t,c,a,o||Sp(l,t));return new Ct(n,this._parents,e,t)}qt.prototype.interrupt=kf;qt.prototype.transition=Cp;var qo=e=>()=>e;function _p(e,{sourceEvent:t,target:o,transform:n,dispatch:r}){Object.defineProperties(this,{type:{value:e,enumerable:!0,configurable:!0},sourceEvent:{value:t,enumerable:!0,configurable:!0},target:{value:o,enumerable:!0,configurable:!0},transform:{value:n,enumerable:!0,configurable:!0},_:{value:r}})}function _t(e,t,o){this.k=e,this.x=t,this.y=o}_t.prototype={constructor:_t,scale:function(e){return e===1?this:new _t(this.k*e,this.x,this.y)},translate:function(e,t){return e===0&t===0?this:new _t(this.k,this.x+this.k*e,this.y+this.k*t)},apply:function(e){return[e[0]*this.k+this.x,e[1]*this.k+this.y]},applyX:function(e){return e*this.k+this.x},applyY:function(e){return e*this.k+this.y},invert:function(e){return[(e[0]-this.x)/this.k,(e[1]-this.y)/this.k]},invertX:function(e){return(e-this.x)/this.k},invertY:function(e){return(e-this.y)/this.k},rescaleX:function(e){return e.copy().domain(e.range().map(this.invertX,this).map(e.invert,e))},rescaleY:function(e){return e.copy().domain(e.range().map(this.invertY,this).map(e.invert,e))},toString:function(){return"translate("+this.x+","+this.y+") scale("+this.k+")"}};var Un=new _t(1,0,0);mi.prototype=_t.prototype;function mi(e){for(;!e.__zoom;)if(!(e=e.parentNode))return Un;return e.__zoom}function pi(e){e.stopImmediatePropagation()}function jn(e){e.preventDefault(),e.stopImmediatePropagation()}function Ep(e){return(!e.ctrlKey||e.type==="wheel")&&!e.button}function Mp(){var e=this;return e instanceof SVGElement?(e=e.ownerSVGElement||e,e.hasAttribute("viewBox")?(e=e.viewBox.baseVal,[[e.x,e.y],[e.x+e.width,e.y+e.height]]):[[0,0],[e.width.baseVal.value,e.height.baseVal.value]]):[[0,0],[e.clientWidth,e.clientHeight]]}function cs(){return this.__zoom||Un}function Ip(e){return-e.deltaY*(e.deltaMode===1?.05:e.deltaMode?1:.002)*(e.ctrlKey?10:1)}function Rp(){return navigator.maxTouchPoints||"ontouchstart"in this}function Dp(e,t,o){var n=e.invertX(t[0][0])-o[0][0],r=e.invertX(t[1][0])-o[1][0],i=e.invertY(t[0][1])-o[0][1],a=e.invertY(t[1][1])-o[1][1];return e.translate(r>n?(n+r)/2:Math.min(0,n)||Math.max(0,r),a>i?(i+a)/2:Math.min(0,i)||Math.max(0,a))}function hi(){var e=Ep,t=Mp,o=Dp,n=Ip,r=Rp,i=[0,1/0],a=[[-1/0,-1/0],[1/0,1/0]],s=250,l=wn,c=Yt("start","zoom","end"),d,f,u,m=500,h=150,x=0,b=10;function v(y){y.property("__zoom",cs).on("wheel.zoom",A,{passive:!1}).on("mousedown.zoom",z).on("dblclick.zoom",Z).filter(r).on("touchstart.zoom",X).on("touchmove.zoom",K).on("touchend.zoom touchcancel.zoom",q).style("-webkit-tap-highlight-color","rgba(0,0,0,0)")}v.transform=function(y,I,D,T){var g=y.selection?y.selection():y;g.property("__zoom",cs),y!==g?S(y,I,D,T):g.interrupt().each(function(){_(this,arguments).event(T).start().zoom(null,typeof I=="function"?I.apply(this,arguments):I).end()})},v.scaleBy=function(y,I,D,T){v.scaleTo(y,function(){var g=this.__zoom.k,M=typeof I=="function"?I.apply(this,arguments):I;return g*M},D,T)},v.scaleTo=function(y,I,D,T){v.transform(y,function(){var g=t.apply(this,arguments),M=this.__zoom,L=D==null?w(g):typeof D=="function"?D.apply(this,arguments):D,O=M.invert(L),j=typeof I=="function"?I.apply(this,arguments):I;return o(p(C(M,j),L,O),g,a)},D,T)},v.translateBy=function(y,I,D,T){v.transform(y,function(){return o(this.__zoom.translate(typeof I=="function"?I.apply(this,arguments):I,typeof D=="function"?D.apply(this,arguments):D),t.apply(this,arguments),a)},null,T)},v.translateTo=function(y,I,D,T,g){v.transform(y,function(){var M=t.apply(this,arguments),L=this.__zoom,O=T==null?w(M):typeof T=="function"?T.apply(this,arguments):T;return o(Un.translate(O[0],O[1]).scale(L.k).translate(typeof I=="function"?-I.apply(this,arguments):-I,typeof D=="function"?-D.apply(this,arguments):-D),M,a)},T,g)};function C(y,I){return I=Math.max(i[0],Math.min(i[1],I)),I===y.k?y:new _t(I,y.x,y.y)}function p(y,I,D){var T=I[0]-D[0]*y.k,g=I[1]-D[1]*y.k;return T===y.x&&g===y.y?y:new _t(y.k,T,g)}function w(y){return[(+y[0][0]+ +y[1][0])/2,(+y[0][1]+ +y[1][1])/2]}function S(y,I,D,T){y.on("start.zoom",function(){_(this,arguments).event(T).start()}).on("interrupt.zoom end.zoom",function(){_(this,arguments).event(T).end()}).tween("zoom",function(){var g=this,M=arguments,L=_(g,M).event(T),O=t.apply(g,M),j=D==null?w(O):typeof D=="function"?D.apply(g,M):D,de=Math.max(O[1][0]-O[0][0],O[1][1]-O[0][1]),re=g.__zoom,he=typeof I=="function"?I.apply(g,M):I,ge=l(re.invert(j).concat(de/re.k),he.invert(j).concat(de/he.k));return function(ne){if(ne===1)ne=he;else{var B=ge(ne),ae=de/B[2];ne=new _t(ae,j[0]-B[0]*ae,j[1]-B[1]*ae)}L.zoom(null,ne)}})}function _(y,I,D){return!D&&y.__zooming||new R(y,I)}function R(y,I){this.that=y,this.args=I,this.active=0,this.sourceEvent=null,this.extent=t.apply(y,I),this.taps=0}R.prototype={event:function(y){return y&&(this.sourceEvent=y),this},start:function(){return++this.active===1&&(this.that.__zooming=this,this.emit("start")),this},zoom:function(y,I){return this.mouse&&y!=="mouse"&&(this.mouse[1]=I.invert(this.mouse[0])),this.touch0&&y!=="touch"&&(this.touch0[1]=I.invert(this.touch0[0])),this.touch1&&y!=="touch"&&(this.touch1[1]=I.invert(this.touch1[0])),this.that.__zoom=I,this.emit("zoom"),this},end:function(){return--this.active===0&&(delete this.that.__zooming,this.emit("end")),this},emit:function(y){var I=Qe(this.that).datum();c.call(y,this.that,new _p(y,{sourceEvent:this.sourceEvent,target:v,transform:this.that.__zoom,dispatch:c}),I)}};function A(y,...I){if(!e.apply(this,arguments))return;var D=_(this,I).event(y),T=this.__zoom,g=Math.max(i[0],Math.min(i[1],T.k*Math.pow(2,n.apply(this,arguments)))),M=Je(y);if(D.wheel)(D.mouse[0][0]!==M[0]||D.mouse[0][1]!==M[1])&&(D.mouse[1]=T.invert(D.mouse[0]=M)),clearTimeout(D.wheel);else{if(T.k===g)return;D.mouse=[M,T.invert(M)],Zn(this),D.start()}jn(y),D.wheel=setTimeout(L,h),D.zoom("mouse",o(p(C(T,g),D.mouse[0],D.mouse[1]),D.extent,a));function L(){D.wheel=null,D.end()}}function z(y,...I){if(u||!e.apply(this,arguments))return;var D=y.currentTarget,T=_(this,I,!0).event(y),g=Qe(y.view).on("mousemove.zoom",j,!0).on("mouseup.zoom",de,!0),M=Je(y,D),L=y.clientX,O=y.clientY;Hr(y.view),pi(y),T.mouse=[M,this.__zoom.invert(M)],Zn(this),T.start();function j(re){if(jn(re),!T.moved){var he=re.clientX-L,ge=re.clientY-O;T.moved=he*he+ge*ge>x}T.event(re).zoom("mouse",o(p(T.that.__zoom,T.mouse[0]=Je(re,D),T.mouse[1]),T.extent,a))}function de(re){g.on("mousemove.zoom mouseup.zoom",null),Vr(re.view,T.moved),jn(re),T.event(re).end()}}function Z(y,...I){if(e.apply(this,arguments)){var D=this.__zoom,T=Je(y.changedTouches?y.changedTouches[0]:y,this),g=D.invert(T),M=D.k*(y.shiftKey?.5:2),L=o(p(C(D,M),T,g),t.apply(this,I),a);jn(y),s>0?Qe(this).transition().duration(s).call(S,L,T,y):Qe(this).call(v.transform,L,T,y)}}function X(y,...I){if(e.apply(this,arguments)){var D=y.touches,T=D.length,g=_(this,I,y.changedTouches.length===T).event(y),M,L,O,j;for(pi(y),L=0;L<T;++L)O=D[L],j=Je(O,this),j=[j,this.__zoom.invert(j),O.identifier],g.touch0?!g.touch1&&g.touch0[2]!==j[2]&&(g.touch1=j,g.taps=0):(g.touch0=j,M=!0,g.taps=1+!!d);d&&(d=clearTimeout(d)),M&&(g.taps<2&&(f=j[0],d=setTimeout(function(){d=null},m)),Zn(this),g.start())}}function K(y,...I){if(this.__zooming){var D=_(this,I).event(y),T=y.changedTouches,g=T.length,M,L,O,j;for(jn(y),M=0;M<g;++M)L=T[M],O=Je(L,this),D.touch0&&D.touch0[2]===L.identifier?D.touch0[0]=O:D.touch1&&D.touch1[2]===L.identifier&&(D.touch1[0]=O);if(L=D.that.__zoom,D.touch1){var de=D.touch0[0],re=D.touch0[1],he=D.touch1[0],ge=D.touch1[1],ne=(ne=he[0]-de[0])*ne+(ne=he[1]-de[1])*ne,B=(B=ge[0]-re[0])*B+(B=ge[1]-re[1])*B;L=C(L,Math.sqrt(ne/B)),O=[(de[0]+he[0])/2,(de[1]+he[1])/2],j=[(re[0]+ge[0])/2,(re[1]+ge[1])/2]}else if(D.touch0)O=D.touch0[0],j=D.touch0[1];else return;D.zoom("touch",o(p(L,O,j),D.extent,a))}}function q(y,...I){if(this.__zooming){var D=_(this,I).event(y),T=y.changedTouches,g=T.length,M,L;for(pi(y),u&&clearTimeout(u),u=setTimeout(function(){u=null},m),M=0;M<g;++M)L=T[M],D.touch0&&D.touch0[2]===L.identifier?delete D.touch0:D.touch1&&D.touch1[2]===L.identifier&&delete D.touch1;if(D.touch1&&!D.touch0&&(D.touch0=D.touch1,delete D.touch1),D.touch0)D.touch0[1]=this.__zoom.invert(D.touch0[0]);else if(D.end(),D.taps===2&&(L=Je(L,this),Math.hypot(f[0]-L[0],f[1]-L[1])<b)){var O=Qe(this).on("dblclick.zoom");O&&O.apply(this,arguments)}}}return v.wheelDelta=function(y){return arguments.length?(n=typeof y=="function"?y:qo(+y),v):n},v.filter=function(y){return arguments.length?(e=typeof y=="function"?y:qo(!!y),v):e},v.touchable=function(y){return arguments.length?(r=typeof y=="function"?y:qo(!!y),v):r},v.extent=function(y){return arguments.length?(t=typeof y=="function"?y:qo([[+y[0][0],+y[0][1]],[+y[1][0],+y[1][1]]]),v):t},v.scaleExtent=function(y){return arguments.length?(i[0]=+y[0],i[1]=+y[1],v):[i[0],i[1]]},v.translateExtent=function(y){return arguments.length?(a[0][0]=+y[0][0],a[1][0]=+y[1][0],a[0][1]=+y[0][1],a[1][1]=+y[1][1],v):[[a[0][0],a[0][1]],[a[1][0],a[1][1]]]},v.constrain=function(y){return arguments.length?(o=y,v):o},v.duration=function(y){return arguments.length?(s=+y,v):s},v.interpolate=function(y){return arguments.length?(l=y,v):l},v.on=function(){var y=c.on.apply(c,arguments);return y===c?v:y},v.clickDistance=function(y){return arguments.length?(x=(y=+y)*y,v):Math.sqrt(x)},v.tapDistance=function(y){return arguments.length?(b=+y,v):b},v}var ot={error001:(e="react")=>`Seems like you have not used ${e==="svelte"?"SvelteFlowProvider":"ReactFlowProvider"} as an ancestor. Help: https://${e}flow.dev/error#001`,error002:()=>"It looks like you've created a new nodeTypes or edgeTypes object. If this wasn't on purpose please define the nodeTypes/edgeTypes outside of the component or memoize them.",error003:e=>`Node type "${e}" not found. Using fallback type "default".`,error004:()=>"The parent container needs a width and a height to render the graph.",error005:()=>"Only child nodes can use a parent extent.",error006:()=>"Can't create edge. An edge needs a source and a target.",error007:e=>`The old edge with id=${e} does not exist.`,error009:e=>`Marker type "${e}" doesn't exist.`,error008:(e,{id:t,sourceHandle:o,targetHandle:n})=>`Couldn't create edge for ${e} handle id: "${e==="source"?o:n}", edge id: ${t}.`,error010:()=>"Handle: No node id found. Make sure to only use a Handle inside a custom Node.",error011:e=>`Edge type "${e}" not found. Using fallback type "default".`,error012:e=>`Node with id "${e}" does not exist, it may have been removed. This can happen when a node is deleted before the "onNodeClick" handler is called.`,error013:(e="react")=>`It seems that you haven't loaded the styles. Please import '@xyflow/${e}/dist/style.css' or base.css to make sure everything is working properly.`,error014:()=>"useNodeConnections: No node ID found. Call useNodeConnections inside a custom Node or provide a node ID.",error015:()=>"It seems that you are trying to drag a node that is not initialized. Please use onNodesChange as explained in the docs.",error016:e=>`Edge with id "${e}" does not exist, it may have been removed. This can happen when an edge is deleted before the "onEdgeClick" handler is called.`},kn=[[Number.NEGATIVE_INFINITY,Number.NEGATIVE_INFINITY],[Number.POSITIVE_INFINITY,Number.POSITIVE_INFINITY]],bi=["Enter"," ","Escape"],xi={"node.a11yDescription.default":"Press enter or space to select a node. Press delete to remove it and escape to cancel.","node.a11yDescription.keyboardDisabled":"Press enter or space to select a node. You can then use the arrow keys to move the node around. Press delete to remove it and escape to cancel.","node.a11yDescription.ariaLiveMessage":({direction:e,x:t,y:o})=>`Moved selected node ${e}. New position, x: ${t}, y: ${o}`,"edge.a11yDescription.default":"Press enter or space to select an edge. You can then press delete to remove it or escape to cancel.","controls.ariaLabel":"Control Panel","controls.zoomIn.ariaLabel":"Zoom In","controls.zoomOut.ariaLabel":"Zoom Out","controls.fitView.ariaLabel":"Fit View","controls.interactive.ariaLabel":"Toggle Interactivity","minimap.ariaLabel":"Mini Map","handle.ariaLabel":"Handle"},At;(function(e){e.Strict="strict",e.Loose="loose"})(At||(At={}));var Et;(function(e){e.Free="free",e.Vertical="vertical",e.Horizontal="horizontal"})(Et||(Et={}));var Qt;(function(e){e.Partial="partial",e.Full="full"})(Qt||(Qt={}));var ki={inProgress:!1,isValid:null,from:null,fromHandle:null,fromPosition:null,fromNode:null,to:null,toHandle:null,toPosition:null,toNode:null,pointer:null},bt;(function(e){e.Bezier="default",e.Straight="straight",e.Step="step",e.SmoothStep="smoothstep",e.SimpleBezier="simplebezier"})(bt||(bt={}));var zt;(function(e){e.Arrow="arrow",e.ArrowClosed="arrowclosed"})(zt||(zt={}));var we;(function(e){e.Left="left",e.Top="top",e.Right="right",e.Bottom="bottom"})(we||(we={}));var ds={[we.Left]:we.Right,[we.Right]:we.Left,[we.Top]:we.Bottom,[we.Bottom]:we.Top},Ni=e=>!!e&&typeof e=="object"&&"id"in e&&"source"in e&&"target"in e,Ns=e=>!!e&&typeof e=="object"&&"id"in e&&"position"in e&&!("source"in e)&&!("target"in e),Si=e=>!!e&&typeof e=="object"&&"id"in e&&"internals"in e&&!("source"in e)&&!("target"in e);var Qn=(e,t=[0,0])=>{let{width:o,height:n}=ct(e),r=e.origin??t,i=o*r[0],a=n*r[1];return{x:e.position.x-i,y:e.position.y-a}},Ci=(e,t={nodeOrigin:[0,0]})=>{if(e.length===0)return{x:0,y:0,width:0,height:0};let o=!1,n=e.reduce((r,i)=>{let a=typeof i=="string",s=!t.nodeLookup&&!a?i:void 0;return t.nodeLookup&&(s=a?t.nodeLookup.get(i):Si(i)?i:t.nodeLookup.get(i.id)),s?(o=!0,Qo(r,jo(s,t.nodeOrigin))):r},{x:1/0,y:1/0,x2:-1/0,y2:-1/0});return o?Jo(n):{x:0,y:0,width:0,height:0}},Nn=(e,t={})=>{let o={x:1/0,y:1/0,x2:-1/0,y2:-1/0},n=!1;return e.forEach(r=>{(t.filter===void 0||t.filter(r))&&(o=Qo(o,jo(r)),n=!0)}),n?Jo(o):{x:0,y:0,width:0,height:0}},Uo=(e,t,[o,n,r]=[0,0,1],i=!1,a=!1)=>{let s=(t.x-o)/r,l=(t.y-n)/r,c=t.width/r,d=t.height/r,f=[];for(let u of e.values()){let{measured:m,selectable:h=!0,hidden:x=!1}=u;if(a&&!h||x)continue;let b=m.width??u.width??u.initialWidth??0,v=m.height??u.height??u.initialHeight??0,{x:C,y:p}=u.internals.positionAbsolute,w=Ms(s,l,c,d,C,p,b,v),S=b*v,_=i&&w>0;(!u.internals.handleBounds||_||w>=S||u.dragging)&&f.push(u)}return f},Ss=(e,t)=>{let o=new Set;return e.forEach(n=>{o.add(n.id)}),t.filter(n=>o.has(n.source)||o.has(n.target))};function $p(e,t){let o=new Map,n=t?.nodes?new Set(t.nodes.map(r=>r.id)):null;return e.forEach(r=>{let i;if(t?.includeHiddenNodes){let{width:a,height:s}=ct(r);i=a>0&&s>0}else i=!!(r.measured.width&&r.measured.height&&!r.hidden);i&&(!n||n.has(r.id))&&o.set(r.id,r)}),o}async function Cs({nodes:e,width:t,height:o,panZoom:n,minZoom:r,maxZoom:i},a){if(e.size===0)return!0;let s=$p(e,a),l=Nn(s),c=eo(l,t,o,a?.minZoom??r,a?.maxZoom??i,a?.padding??.1);return await n.setViewport(c,{duration:a?.duration,ease:a?.ease,interpolate:a?.interpolate}),!0}function _i({nodeId:e,nextPosition:t,nodeLookup:o,nodeOrigin:n=[0,0],nodeExtent:r,onError:i}){let a=o.get(e),s=a.parentId?o.get(a.parentId):void 0,{x:l,y:c}=s?s.internals.positionAbsolute:{x:0,y:0},d=a.origin??n,f=a.extent||r;if(a.extent==="parent"&&!a.expandParent)if(!s)i?.("005",ot.error005());else{let{width:m,height:h}=ct(s);m&&h&&(f=[[l,c],[l+m,c+h]])}else s&&tn(a.extent)&&(f=[[a.extent[0][0]+l,a.extent[0][1]+c],[a.extent[1][0]+l,a.extent[1][1]+c]]);let u=tn(f)?Jt(t,f,a.measured):t;return(a.measured.width===void 0||a.measured.height===void 0)&&i?.("015",ot.error015()),{position:{x:u.x-l+(a.measured.width??0)*d[0],y:u.y-c+(a.measured.height??0)*d[1]},positionAbsolute:u}}async function _s({nodesToRemove:e=[],edgesToRemove:t=[],nodes:o,edges:n,onBeforeDelete:r}){let i=new Set(e.map(u=>u.id)),a=[];for(let u of o){if(u.deletable===!1)continue;let m=i.has(u.id),h=!m&&u.parentId&&a.find(x=>x.id===u.parentId);(m||h)&&a.push(u)}let s=new Set(t.map(u=>u.id)),l=n.filter(u=>u.deletable!==!1),d=Ss(a,l);for(let u of l)s.has(u.id)&&!d.find(h=>h.id===u.id)&&d.push(u);if(!r)return{edges:d,nodes:a};let f=await r({nodes:a,edges:d});return typeof f=="boolean"?f?{edges:d,nodes:a}:{edges:[],nodes:[]}:f}var xn=(e,t=0,o=1)=>Math.min(Math.max(e,t),o),Jt=(e={x:0,y:0},t,o)=>({x:xn(e.x,t[0][0],t[1][0]-(o?.width??0)),y:xn(e.y,t[0][1],t[1][1]-(o?.height??0))});function Es(e,t,o){let{width:n,height:r}=ct(o),{x:i,y:a}=o.internals.positionAbsolute;return Jt(e,[[i,a],[i+n,a+r]],t)}var us=(e,t,o)=>e<t?xn(Math.abs(e-t),1,t)/t:e>o?-xn(Math.abs(e-o),1,t)/t:0,Go=(e,t,o=15,n=40)=>{let r=us(e.x,n,t.width-n)*o,i=us(e.y,n,t.height-n)*o;return[r,i]},Qo=(e,t)=>({x:Math.min(e.x,t.x),y:Math.min(e.y,t.y),x2:Math.max(e.x2,t.x2),y2:Math.max(e.y2,t.y2)}),yi=({x:e,y:t,width:o,height:n})=>({x:e,y:t,x2:e+o,y2:t+n}),Jo=({x:e,y:t,x2:o,y2:n})=>({x:e,y:t,width:o-e,height:n-t}),Sn=(e,t=[0,0])=>{let{x:o,y:n}=Si(e)?e.internals.positionAbsolute:Qn(e,t);return{x:o,y:n,width:e.measured?.width??e.width??e.initialWidth??0,height:e.measured?.height??e.height??e.initialHeight??0}},jo=(e,t=[0,0])=>{let{x:o,y:n}=Si(e)?e.internals.positionAbsolute:Qn(e,t);return{x:o,y:n,x2:o+(e.measured?.width??e.width??e.initialWidth??0),y2:n+(e.measured?.height??e.height??e.initialHeight??0)}},Ei=(e,t)=>Jo(Qo(yi(e),yi(t))),Ms=(e,t,o,n,r,i,a,s)=>{let l=Math.max(0,Math.min(e+o,r+a)-Math.max(e,r)),c=Math.max(0,Math.min(t+n,i+s)-Math.max(t,i));return Math.ceil(l*c)},Jn=(e,t)=>Ms(e.x,e.y,e.width,e.height,t.x,t.y,t.width,t.height),Mi=e=>st(e.width)&&st(e.height)&&st(e.x)&&st(e.y),st=e=>!isNaN(e)&&isFinite(e),Ii=(e,t)=>(o,n)=>{},Cn=(e,t=[1,1])=>({x:t[0]*Math.round(e.x/t[0]),y:t[1]*Math.round(e.y/t[1])}),_n=({x:e,y:t},[o,n,r],i=!1,a=[1,1])=>{let s={x:(e-o)/r,y:(t-n)/r};return i?Cn(s,a):s},en=({x:e,y:t},[o,n,r])=>({x:e*r+o,y:t*r+n});function bn(e,t){if(typeof e=="number")return Math.floor((t-t/(1+e))*.5);if(typeof e=="string"&&e.endsWith("px")){let o=parseFloat(e);if(!Number.isNaN(o))return Math.floor(o)}if(typeof e=="string"&&e.endsWith("%")){let o=parseFloat(e);if(!Number.isNaN(o))return Math.floor(t*o*.01)}return console.error(`The padding value "${e}" is invalid. Please provide a number or a string with a valid unit (px or %).`),0}function Pp(e,t,o){if(typeof e=="string"||typeof e=="number"){let n=bn(e,o),r=bn(e,t);return{top:n,right:r,bottom:n,left:r,x:r*2,y:n*2}}if(typeof e=="object"){let n=bn(e.top??e.y??0,o),r=bn(e.bottom??e.y??0,o),i=bn(e.left??e.x??0,t),a=bn(e.right??e.x??0,t);return{top:n,right:a,bottom:r,left:i,x:i+a,y:n+r}}return{top:0,right:0,bottom:0,left:0,x:0,y:0}}function Tp(e,t,o,n,r,i){let{x:a,y:s}=en(e,[t,o,n]),{x:l,y:c}=en({x:e.x+e.width,y:e.y+e.height},[t,o,n]),d=r-l,f=i-c;return{left:Math.floor(a),top:Math.floor(s),right:Math.floor(d),bottom:Math.floor(f)}}var eo=(e,t,o,n,r,i)=>{let a=Pp(i,t,o),s=(t-a.x)/e.width,l=(o-a.y)/e.height,c=Math.min(s,l),d=xn(c,n,r),f=e.x+e.width/2,u=e.y+e.height/2,m=t/2-f*d,h=o/2-u*d,x=Tp(e,m,h,d,t,o),b={left:Math.min(x.left-a.left,0),top:Math.min(x.top-a.top,0),right:Math.min(x.right-a.right,0),bottom:Math.min(x.bottom-a.bottom,0)};return{x:m-b.left+b.right,y:h-b.top+b.bottom,zoom:d}},En=()=>typeof navigator<"u"&&navigator?.userAgent?.indexOf("Mac")>=0;function tn(e){return e!=null&&e!=="parent"}function ct(e){return{width:e.measured?.width??e.width??e.initialWidth??0,height:e.measured?.height??e.height??e.initialHeight??0}}function Ri(e){return(e.measured?.width??e.width??e.initialWidth)!==void 0&&(e.measured?.height??e.height??e.initialHeight)!==void 0}function Di(e,t={width:0,height:0},o,n,r){let i={...e},a=n.get(o);if(a){let s=a.origin||r;i.x+=a.internals.positionAbsolute.x-(t.width??0)*s[0],i.y+=a.internals.positionAbsolute.y-(t.height??0)*s[1]}return i}function $i(e,t){if(e.size!==t.size)return!1;for(let o of e)if(!t.has(o))return!1;return!0}function Is(){let e,t;return{promise:new Promise((n,r)=>{e=n,t=r}),resolve:e,reject:t}}function Rs(e){return{...xi,...e||{}}}function Pi(e){return e===null?null:e?"valid":"invalid"}function Gn(e,{snapGrid:t=[0,0],snapToGrid:o=!1,transform:n,containerBounds:r}){let{x:i,y:a}=lt(e),s=_n({x:i-(r?.left??0),y:a-(r?.top??0)},n),{x:l,y:c}=o?Cn(s,t):s;return{xSnapped:l,ySnapped:c,...s}}var er=e=>({width:e.offsetWidth,height:e.offsetHeight}),Ti=e=>e?.getRootNode?.()||window?.document,Ap=["INPUT","SELECT","TEXTAREA"];function Ai(e){let t=e.composedPath?.()?.[0]||e.target;return t?.nodeType!==1?!1:Ap.includes(t.nodeName)||t.hasAttribute("contenteditable")||!!t.closest(".nokey")}var zi=e=>"clientX"in e,lt=(e,t)=>{let o=zi(e),n=o?e.clientX:e.touches?.[0].clientX,r=o?e.clientY:e.touches?.[0].clientY;return{x:n-(t?.left??0),y:r-(t?.top??0)}},fs=(e,t,o,n,r)=>{let i=t.querySelectorAll(`.${e}`);return!i||!i.length?null:Array.from(i).map(a=>{let s=a.getBoundingClientRect();return{id:a.getAttribute("data-handleid"),type:e,nodeId:r,position:a.getAttribute("data-handlepos"),x:(s.left-o.left)/n,y:(s.top-o.top)/n,...er(a)}})};function tr({sourceX:e,sourceY:t,targetX:o,targetY:n,sourceControlX:r,sourceControlY:i,targetControlX:a,targetControlY:s}){let l=e*.125+r*.375+a*.375+o*.125,c=t*.125+i*.375+s*.375+n*.125,d=Math.abs(l-e),f=Math.abs(c-t);return[l,c,d,f]}function Ko(e,t){return e>=0?.5*e:t*25*Math.sqrt(-e)}function ps({pos:e,x1:t,y1:o,x2:n,y2:r,c:i}){switch(e){case we.Left:return[t-Ko(t-n,i),o];case we.Right:return[t+Ko(n-t,i),o];case we.Top:return[t,o-Ko(o-r,i)];case we.Bottom:return[t,o+Ko(r-o,i)]}}function nr({sourceX:e,sourceY:t,sourcePosition:o=we.Bottom,targetX:n,targetY:r,targetPosition:i=we.Top,curvature:a=.25}){let[s,l]=ps({pos:o,x1:e,y1:t,x2:n,y2:r,c:a}),[c,d]=ps({pos:i,x1:n,y1:r,x2:e,y2:t,c:a}),[f,u,m,h]=tr({sourceX:e,sourceY:t,targetX:n,targetY:r,sourceControlX:s,sourceControlY:l,targetControlX:c,targetControlY:d});return[`M${e},${t} C${s},${l} ${c},${d} ${n},${r}`,f,u,m,h]}function Oi({sourceX:e,sourceY:t,targetX:o,targetY:n}){let r=Math.abs(o-e)/2,i=o<e?o+r:o-r,a=Math.abs(n-t)/2,s=n<t?n+a:n-a;return[i,s,r,a]}function Ds({sourceNode:e,targetNode:t,selected:o=!1,zIndex:n=0,elevateOnSelect:r=!1,zIndexMode:i="basic"}){if(i==="manual")return n;let a=r&&o?n+1e3:n,s=Math.max(e.parentId||r&&e.selected?e.internals.z:0,t.parentId||r&&t.selected?t.internals.z:0);return a+s}function $s({sourceNode:e,targetNode:t,width:o,height:n,transform:r}){let i=Qo(jo(e),jo(t));i.x===i.x2&&(i.x2+=1),i.y===i.y2&&(i.y2+=1);let a={x:-r[0]/r[2],y:-r[1]/r[2],width:o/r[2],height:n/r[2]};return Jn(a,Jo(i))>0}var zp=({source:e,sourceHandle:t,target:o,targetHandle:n})=>`xy-edge__${e}${t||""}-${o}${n||""}`,Op=(e,t)=>t.some(o=>o.source===e.source&&o.target===e.target&&(o.sourceHandle===e.sourceHandle||!o.sourceHandle&&!e.sourceHandle)&&(o.targetHandle===e.targetHandle||!o.targetHandle&&!e.targetHandle)),Ps=(e,t,o={})=>{if(!e.source||!e.target)return o.onError?.("006",ot.error006()),t;let n=o.getEdgeId||zp,r;return Ni(e)?r={...e}:r={...e,id:n(e)},Op(r,t)?t:(r.sourceHandle===null&&delete r.sourceHandle,r.targetHandle===null&&delete r.targetHandle,t.concat(r))};function or({sourceX:e,sourceY:t,targetX:o,targetY:n}){let[r,i,a,s]=Oi({sourceX:e,sourceY:t,targetX:o,targetY:n});return[`M ${e},${t}L ${o},${n}`,r,i,a,s]}var ms={[we.Left]:{x:-1,y:0},[we.Right]:{x:1,y:0},[we.Top]:{x:0,y:-1},[we.Bottom]:{x:0,y:1}},Lp=({source:e,sourcePosition:t=we.Bottom,target:o})=>t===we.Left||t===we.Right?e.x<o.x?{x:1,y:0}:{x:-1,y:0}:e.y<o.y?{x:0,y:1}:{x:0,y:-1},hs=(e,t)=>Math.sqrt(Math.pow(t.x-e.x,2)+Math.pow(t.y-e.y,2)),Fp=(e,t,o)=>e.x===t.x&&t.x===o.x&&(t.y-e.y)*(o.y-t.y)>=0||e.y===t.y&&t.y===o.y&&(t.x-e.x)*(o.x-t.x)>=0;function Hp({source:e,sourcePosition:t=we.Bottom,target:o,targetPosition:n=we.Top,center:r,offset:i,stepPosition:a}){let s=ms[t],l=ms[n],c={x:e.x+s.x*i,y:e.y+s.y*i},d={x:o.x+l.x*i,y:o.y+l.y*i},f=Lp({source:c,sourcePosition:t,target:d}),u=f.x!==0?"x":"y",m=f[u],h=[],x,b,v={x:0,y:0},C={x:0,y:0},[,,p,w]=Oi({sourceX:e.x,sourceY:e.y,targetX:o.x,targetY:o.y});if(s[u]*l[u]===-1){u==="x"?(x=r.x??c.x+(d.x-c.x)*a,b=r.y??(c.y+d.y)/2):(x=r.x??(c.x+d.x)/2,b=r.y??c.y+(d.y-c.y)*a);let A=[{x,y:c.y},{x,y:d.y}],z=[{x:c.x,y:b},{x:d.x,y:b}];s[u]===m?h=u==="x"?A:z:h=u==="x"?z:A}else{let A=[{x:c.x,y:d.y}],z=[{x:d.x,y:c.y}];if(u==="x"?h=s.x===m?z:A:h=s.y===m?A:z,t===n){let y=Math.abs(e[u]-o[u]);if(y<=i){let I=Math.min(i-1,i-y);s[u]===m?v[u]=(c[u]>e[u]?-1:1)*I:C[u]=(d[u]>o[u]?-1:1)*I}}if(t!==n){let y=u==="x"?"y":"x",I=s[u]===l[y],D=c[y]>d[y],T=c[y]<d[y];(s[u]===1&&(!I&&D||I&&T)||s[u]!==1&&(!I&&T||I&&D))&&(h=u==="x"?A:z)}let Z={x:c.x+v.x,y:c.y+v.y},X={x:d.x+C.x,y:d.y+C.y},K=Math.max(Math.abs(Z.x-h[0].x),Math.abs(X.x-h[0].x)),q=Math.max(Math.abs(Z.y-h[0].y),Math.abs(X.y-h[0].y));K>=q?(x=(Z.x+X.x)/2,b=h[0].y):(x=h[0].x,b=(Z.y+X.y)/2)}let S={x:c.x+v.x,y:c.y+v.y},_={x:d.x+C.x,y:d.y+C.y},R=[];for(let A of[e,S,...h,_,o]){let[z,Z]=R.slice(-2);Z&&Fp(z,Z,A)&&R.pop(),R.push(A)}return[R,x,b,p,w]}function Vp(e,t,o,n){let r=Math.min(hs(e,t)/2,hs(t,o)/2,n),{x:i,y:a}=t;if(e.x===i&&i===o.x||e.y===a&&a===o.y)return`L${i} ${a}`;if(e.y===a){let c=e.x<o.x?-1:1,d=e.y<o.y?1:-1;return`L ${i+r*c},${a}Q ${i},${a} ${i},${a+r*d}`}let s=e.x<o.x?1:-1,l=e.y<o.y?-1:1;return`L ${i},${a+r*l}Q ${i},${a} ${i+r*s},${a}`}function to({sourceX:e,sourceY:t,sourcePosition:o=we.Bottom,targetX:n,targetY:r,targetPosition:i=we.Top,borderRadius:a=5,centerX:s,centerY:l,offset:c=20,stepPosition:d=.5}){let[f,u,m,h,x]=Hp({source:{x:e,y:t},sourcePosition:o,target:{x:n,y:r},targetPosition:i,center:{x:s,y:l},offset:c,stepPosition:d}),b=`M${f[0].x} ${f[0].y}`;for(let v=1;v<f.length-1;v++)b+=Vp(f[v-1],f[v],f[v+1],a);return b+=`L${f[f.length-1].x} ${f[f.length-1].y}`,[b,u,m,h,x]}function gs(e){return e&&!!(e.internals.handleBounds||e.handles?.length)&&!!(e.measured.width||e.width||e.initialWidth)}function Ts(e){let{sourceNode:t,targetNode:o}=e;if(!gs(t)||!gs(o))return null;let n=t.internals.handleBounds||ws(t.handles),r=o.internals.handleBounds||ws(o.handles),i=vs(n?.source??[],e.sourceHandle),a=vs(e.connectionMode===At.Strict?r?.target??[]:(r?.target??[]).concat(r?.source??[]),e.targetHandle);if(!i||!a)return e.onError?.("008",ot.error008(i?"target":"source",{id:e.id,sourceHandle:e.sourceHandle,targetHandle:e.targetHandle})),null;let s=i?.position||we.Bottom,l=a?.position||we.Top,c=Ot(t,i,s),d=Ot(o,a,l);return{sourceX:c.x,sourceY:c.y,targetX:d.x,targetY:d.y,sourcePosition:s,targetPosition:l}}function ws(e){if(!e)return null;let t=[],o=[];for(let n of e)n.width=n.width??1,n.height=n.height??1,n.type==="source"?t.push(n):n.type==="target"&&o.push(n);return{source:t,target:o}}function Ot(e,t,o=we.Left,n=!1){let r=(t?.x??0)+e.internals.positionAbsolute.x,i=(t?.y??0)+e.internals.positionAbsolute.y,{width:a,height:s}=t??ct(e);if(n)return{x:r+a/2,y:i+s/2};switch(t?.position??o){case we.Top:return{x:r+a/2,y:i};case we.Right:return{x:r+a,y:i+s/2};case we.Bottom:return{x:r+a/2,y:i+s};case we.Left:return{x:r,y:i+s/2}}}function vs(e,t){return e&&(t?e.find(o=>o.id===t):e[0])||null}function rr(e,t){return e?typeof e=="string"?e:`${t?`${t}__`:""}${Object.keys(e).sort().map(n=>`${n}=${e[n]}`).join("&")}`:""}function As(e,{id:t,defaultColor:o,defaultMarkerStart:n,defaultMarkerEnd:r}){let i=new Set;return e.reduce((a,s)=>([s.markerStart||n,s.markerEnd||r].forEach(l=>{if(l&&typeof l=="object"){let c=rr(l,t);i.has(c)||(a.push({id:c,color:l.color||o,...l}),i.add(c))}}),a),[]).sort((a,s)=>a.id.localeCompare(s.id))}var zs=1e3,Bp=10,Li={nodeOrigin:[0,0],nodeExtent:kn,elevateNodesOnSelect:!0,zIndexMode:"basic",defaults:{}},Wp={...Li,checkEquality:!0};function Fi(e,t){let o={...e};for(let n in t)t[n]!==void 0&&(o[n]=t[n]);return o}function Os(e,t,o){let n=Fi(Li,o);for(let r of e.values())if(r.parentId)Vi(r,e,t,n);else{let i=Qn(r,n.nodeOrigin),a=tn(r.extent)?r.extent:n.nodeExtent,s=Jt(i,a,ct(r));r.internals.positionAbsolute=s}}function Yp(e,t){if(!e.handles)return e.measured?t?.internals.handleBounds:void 0;let o=[],n=[];for(let r of e.handles){let i={id:r.id,width:r.width??1,height:r.height??1,nodeId:e.id,x:r.x,y:r.y,position:r.position,type:r.type};r.type==="source"?o.push(i):r.type==="target"&&n.push(i)}return{source:o,target:n}}function Hi(e){return e==="manual"}function ir(e,t,o,n={}){let r=Fi(Wp,n),i={i:0},a=new Map(t),s=r?.elevateNodesOnSelect&&!Hi(r.zIndexMode)?zs:0,l=e.length>0,c=!1;t.clear(),o.clear();for(let d of e){let f=a.get(d.id);if(r.checkEquality&&d===f?.internals.userNode)t.set(d.id,f);else{let u=Qn(d,r.nodeOrigin),m=tn(d.extent)?d.extent:r.nodeExtent,h=Jt(u,m,ct(d));f={...r.defaults,...d,measured:{width:d.measured?.width,height:d.measured?.height},internals:{positionAbsolute:h,handleBounds:Yp(d,f),z:Ls(d,s,r.zIndexMode),userNode:d}},t.set(d.id,f)}(f.measured===void 0||f.measured.width===void 0||f.measured.height===void 0)&&!f.hidden&&(l=!1),d.parentId&&Vi(f,t,o,n,i),c||=d.selected??!1}return{nodesInitialized:l,hasSelectedNodes:c}}function Xp(e,t){if(!e.parentId)return;let o=t.get(e.parentId);o?o.set(e.id,e):t.set(e.parentId,new Map([[e.id,e]]))}function Vi(e,t,o,n,r){let{elevateNodesOnSelect:i,nodeOrigin:a,nodeExtent:s,zIndexMode:l}=Fi(Li,n),c=e.parentId,d=t.get(c);if(!d){console.warn(`Parent node ${c} not found. Please make sure that parent nodes are in front of their child nodes in the nodes array.`);return}Xp(e,o),r&&!d.parentId&&d.internals.rootParentIndex===void 0&&l==="auto"&&(d.internals.rootParentIndex=++r.i,d.internals.z=d.internals.z+r.i*Bp),r&&d.internals.rootParentIndex!==void 0&&(r.i=d.internals.rootParentIndex);let f=i&&!Hi(l)?zs:0,{x:u,y:m,z:h}=qp(e,d,a,s,f,l),{positionAbsolute:x}=e.internals,b=u!==x.x||m!==x.y;(b||h!==e.internals.z)&&t.set(e.id,{...e,internals:{...e.internals,positionAbsolute:b?{x:u,y:m}:x,z:h}})}function Ls(e,t,o){let n=st(e.zIndex)?e.zIndex:0;return Hi(o)?n:n+(e.selected?t:0)}function qp(e,t,o,n,r,i){let{x:a,y:s}=t.internals.positionAbsolute,l=ct(e),c=Qn(e,o),d=tn(e.extent)?Jt(c,e.extent,l):c,f=Jt({x:a+d.x,y:s+d.y},n,l);e.extent==="parent"&&(f=Es(f,l,t));let u=Ls(e,r,i),m=t.internals.z??0;return{x:f.x,y:f.y,z:m>=u?m+1:u}}function ar(e,t,o,n=[0,0]){let r=[],i=new Map;for(let a of e){let s=t.get(a.parentId);if(!s)continue;let l=i.get(a.parentId)?.expandedRect??Sn(s),c=Ei(l,a.rect);i.set(a.parentId,{expandedRect:c,parent:s})}return i.size>0&&i.forEach(({expandedRect:a,parent:s},l)=>{let c=s.internals.positionAbsolute,d=ct(s),f=s.origin??n,u=a.x<c.x?Math.round(Math.abs(c.x-a.x)):0,m=a.y<c.y?Math.round(Math.abs(c.y-a.y)):0,h=Math.max(d.width,Math.round(a.width)),x=Math.max(d.height,Math.round(a.height)),b=(h-d.width)*f[0],v=(x-d.height)*f[1];(u>0||m>0||b||v)&&(r.push({id:l,type:"position",position:{x:s.position.x-u+b,y:s.position.y-m+v}}),o.get(l)?.forEach(C=>{e.some(p=>p.id===C.id)||r.push({id:C.id,type:"position",position:{x:C.position.x+u,y:C.position.y+m}})})),(d.width<a.width||d.height<a.height||u||m)&&r.push({id:l,type:"dimensions",setAttributes:!0,dimensions:{width:h+(u?f[0]*u-b:0),height:x+(m?f[1]*m-v:0)}})}),r}function Fs(e,t,o,n,r,i,a){let s=n?.querySelector(".xyflow__viewport"),l=!1;if(!s)return{changes:[],updatedInternals:l};let c=[],d=window.getComputedStyle(s),{m22:f}=new window.DOMMatrixReadOnly(d.transform),u=[];for(let m of e.values()){let h=t.get(m.id);if(!h)continue;if(h.hidden){t.set(h.id,{...h,internals:{...h.internals,handleBounds:void 0}}),l=!0;continue}let x=er(m.nodeElement),b=h.measured.width!==x.width||h.measured.height!==x.height;if(!!(x.width&&x.height&&(b||!h.internals.handleBounds||m.force))){let C=m.nodeElement.getBoundingClientRect(),p=tn(h.extent)?h.extent:i,{positionAbsolute:w}=h.internals;if(h.parentId&&h.extent==="parent"){let _=t.get(h.parentId);_&&(w=Es(w,x,_))}else p&&(w=Jt(w,p,x));let S={...h,measured:x,internals:{...h.internals,positionAbsolute:w,handleBounds:{source:fs("source",m.nodeElement,C,f,h.id),target:fs("target",m.nodeElement,C,f,h.id)}}};t.set(h.id,S),h.parentId&&Vi(S,t,o,{nodeOrigin:r,zIndexMode:a}),l=!0,b&&(c.push({id:h.id,type:"dimensions",dimensions:x}),h.expandParent&&h.parentId&&u.push({id:h.id,parentId:h.parentId,rect:Sn(S,r)}))}}if(u.length>0){let m=ar(u,t,o,r);c.push(...m)}return{changes:c,updatedInternals:l}}async function Hs({delta:e,panZoom:t,transform:o,translateExtent:n,width:r,height:i}){if(!t||!e.x&&!e.y)return!1;let a=await t.setViewportConstrained({x:o[0]+e.x,y:o[1]+e.y,zoom:o[2]},[[0,0],[r,i]],n);return!!a&&(a.x!==o[0]||a.y!==o[1]||a.k!==o[2])}function ys(e,t,o,n,r,i){let a=r,s=n.get(a)||new Map;n.set(a,s.set(o,t)),a=`${r}-${e}`;let l=n.get(a)||new Map;if(n.set(a,l.set(o,t)),i){a=`${r}-${e}-${i}`;let c=n.get(a)||new Map;n.set(a,c.set(o,t))}}function Bi(e,t,o){e.clear(),t.clear();for(let n of o){let{source:r,target:i,sourceHandle:a=null,targetHandle:s=null}=n,l={edgeId:n.id,source:r,target:i,sourceHandle:a,targetHandle:s},c=`${r}-${a}--${i}-${s}`,d=`${i}-${s}--${r}-${a}`;ys("source",l,d,e,r,a),ys("target",l,c,e,i,s),t.set(n.id,n)}}function Vs(e,t){if(!e.parentId)return!1;let o=t.get(e.parentId);return o?o.selected?!0:Vs(o,t):!1}function bs(e,t,o){let n=e;do{if(n?.matches?.(t))return!0;if(n===o)return!1;n=n?.parentElement}while(n);return!1}function Kp(e,t,o,n,r){let i=new Map;for(let[a,s]of e)if((r?s.id===n:s.selected||s.id===n)&&(r||!s.parentId||!Vs(s,e))&&(s.draggable||t&&typeof s.draggable>"u")){let c=e.get(a);c&&i.set(a,{id:a,position:c.position||{x:0,y:0},distance:{x:o.x-c.internals.positionAbsolute.x,y:o.y-c.internals.positionAbsolute.y},extent:c.extent,parentId:c.parentId,origin:c.origin,expandParent:c.expandParent,internals:{positionAbsolute:c.internals.positionAbsolute||{x:0,y:0}},measured:{width:c.measured.width??0,height:c.measured.height??0}})}return i}function gi({nodeId:e,dragItems:t,nodeLookup:o,dragging:n=!0}){let r=[];for(let[a,s]of t){let l=o.get(a)?.internals.userNode;l&&r.push({...l,position:s.position,dragging:n})}if(!e)return[r[0],r];let i=o.get(e)?.internals.userNode;return[i?{...i,position:t.get(e)?.position||i.position,dragging:n}:r[0],r]}function Zp({dragItems:e,snapGrid:t,x:o,y:n}){let r=e.values().next().value;if(!r)return null;let i={x:o-r.distance.x,y:n-r.distance.y},a=Cn(i,t);return{x:a.x-i.x,y:a.y-i.y}}function Bs({onNodeMouseDown:e,getStoreItems:t,onDragStart:o,onDrag:n,onDragStop:r}){let i={x:null,y:null},a=0,s=new Map,l=!1,c={x:0,y:0},d=null,f=!1,u=null,m=!1,h=!1,x=null;function b({noDragClassName:C,handleSelector:p,domNode:w,isSelectable:S,nodeId:_,nodeClickDistance:R=0}){u=Qe(w);function A({x:K,y:q}){let{nodeLookup:y,nodeExtent:I,snapGrid:D,snapToGrid:T,nodeOrigin:g,onNodeDrag:M,onSelectionDrag:L,onError:O,updateNodePositions:j}=t();i={x:K,y:q};let de=!1,re=s.size>1,he=re&&I?yi(Nn(s)):null,ge=re&&T?Zp({dragItems:s,snapGrid:D,x:K,y:q}):null;for(let[ne,B]of s){if(!y.has(ne))continue;let ae={x:K-B.distance.x,y:q-B.distance.y};T&&(ae=ge?{x:Math.round(ae.x+ge.x),y:Math.round(ae.y+ge.y)}:Cn(ae,D));let ve=null;if(re&&I&&!B.extent&&he){let{positionAbsolute:W}=B.internals,G=W.x-he.x+I[0][0],ee=W.x+B.measured.width-he.x2+I[1][0],fe=W.y-he.y+I[0][1],ce=W.y+B.measured.height-he.y2+I[1][1];ve=[[G,fe],[ee,ce]]}let{position:pe,positionAbsolute:V}=_i({nodeId:ne,nextPosition:ae,nodeLookup:y,nodeExtent:ve||I,nodeOrigin:g,onError:O});de=de||B.position.x!==pe.x||B.position.y!==pe.y,B.position=pe,B.internals.positionAbsolute=V}if(h=h||de,!!de&&(j(s,!0),x&&(n||M||!_&&L))){let[ne,B]=gi({nodeId:_,dragItems:s,nodeLookup:y});n?.(x,s,ne,B),M?.(x,ne,B),_||L?.(x,B)}}async function z(){if(!d)return;let{transform:K,panBy:q,autoPanSpeed:y,autoPanOnNodeDrag:I}=t();if(!I){l=!1,cancelAnimationFrame(a);return}let[D,T]=Go(c,d,y);(D!==0||T!==0)&&(i.x=(i.x??0)-D/K[2],i.y=(i.y??0)-T/K[2],await q({x:D,y:T})&&A(i)),a=requestAnimationFrame(z)}function Z(K){let{nodeLookup:q,multiSelectionActive:y,nodesDraggable:I,transform:D,snapGrid:T,snapToGrid:g,selectNodesOnDrag:M,onNodeDragStart:L,onSelectionDragStart:O,unselectNodesAndEdges:j}=t();f=!0;let de=!!_&&!y&&!q.get(_)?.selected;(!M||!S)&&!y&&_&&(q.get(_)?.selected||j()),S&&M&&_&&e?.(_);let re=Gn(K.sourceEvent,{transform:D,snapGrid:T,snapToGrid:g,containerBounds:d});if(i=re,s=Kp(q,I,re,_,de),s.size>0&&(o||L||!_&&O)){let[he,ge]=gi({nodeId:_,dragItems:s,nodeLookup:q});o?.(K.sourceEvent,s,he,ge),L?.(K.sourceEvent,he,ge),_||O?.(K.sourceEvent,ge)}}let X=Br().clickDistance(R).on("start",K=>{let{domNode:q,nodeDragThreshold:y,transform:I,snapGrid:D,snapToGrid:T}=t();d=q?.getBoundingClientRect()||null,m=!1,h=!1,x=K.sourceEvent,y===0&&Z(K),i=Gn(K.sourceEvent,{transform:I,snapGrid:D,snapToGrid:T,containerBounds:d}),c=lt(K.sourceEvent,d)}).on("drag",K=>{let{autoPanOnNodeDrag:q,transform:y,snapGrid:I,snapToGrid:D,nodeDragThreshold:T,nodeLookup:g}=t(),M=Gn(K.sourceEvent,{transform:y,snapGrid:I,snapToGrid:D,containerBounds:d});if(x=K.sourceEvent,(K.sourceEvent.type==="touchmove"&&K.sourceEvent.touches.length>1||_&&!g.has(_))&&(m=!0),!m){if(!l&&q&&f&&(l=!0,z()),!f){let L=lt(K.sourceEvent,d),O=L.x-c.x,j=L.y-c.y;Math.sqrt(O*O+j*j)>T&&Z(K)}(i.x!==M.xSnapped||i.y!==M.ySnapped)&&s&&f&&(c=lt(K.sourceEvent,d),A(M))}}).on("end",K=>{if(!f||m){m&&s.size>0&&t().updateNodePositions(s,!1);return}if(l=!1,f=!1,cancelAnimationFrame(a),s.size>0){let{nodeLookup:q,updateNodePositions:y,onNodeDragStop:I,onSelectionDragStop:D}=t();if(h&&(y(s,!1),h=!1),r||I||!_&&D){let[T,g]=gi({nodeId:_,dragItems:s,nodeLookup:q,dragging:!1});r?.(K.sourceEvent,s,T,g),I?.(K.sourceEvent,T,g),_||D?.(K.sourceEvent,g)}}}).filter(K=>{let q=K.target;return!K.button&&(!C||!bs(q,`.${C}`,w))&&(!p||bs(q,p,w))});u.call(X)}function v(){u?.on(".drag",null)}return{update:b,destroy:v}}function jp(e,t,o){let n=[],r={x:e.x-o,y:e.y-o,width:o*2,height:o*2};for(let i of t.values())Jn(r,Sn(i))>0&&n.push(i);return n}var Up=250;function Gp(e,t,o,n){let r=[],i=1/0,a=jp(e,o,t+Up);for(let s of a){let l=[...s.internals.handleBounds?.source??[],...s.internals.handleBounds?.target??[]];for(let c of l){if(n.nodeId===c.nodeId&&n.type===c.type&&n.id===c.id)continue;let{x:d,y:f}=Ot(s,c,c.position,!0),u=Math.sqrt(Math.pow(d-e.x,2)+Math.pow(f-e.y,2));u>t||(u<i?(r=[{...c,x:d,y:f}],i=u):u===i&&r.push({...c,x:d,y:f}))}}if(!r.length)return null;if(r.length>1){let s=n.type==="source"?"target":"source";return r.find(l=>l.type===s)??r[0]}return r[0]}function Ws(e,t,o,n,r,i=!1){let a=n.get(e);if(!a)return null;let s=r==="strict"?a.internals.handleBounds?.[t]:[...a.internals.handleBounds?.source??[],...a.internals.handleBounds?.target??[]],l=(o?s?.find(c=>c.id===o):s?.[0])??null;return l&&i?{...l,...Ot(a,l,l.position,!0)}:l}function Ys(e,t){return e||(t?.classList.contains("target")?"target":t?.classList.contains("source")?"source":null)}function Qp(e,t){let o=null;return t?o=!0:e&&!t&&(o=!1),o}var Xs=()=>!0;function Jp(e,{connectionMode:t,connectionRadius:o,handleId:n,nodeId:r,edgeUpdaterType:i,isTarget:a,domNode:s,nodeLookup:l,lib:c,autoPanOnConnect:d,flowId:f,panBy:u,cancelConnection:m,onConnectStart:h,onConnect:x,onConnectEnd:b,isValidConnection:v=Xs,onReconnectEnd:C,updateConnection:p,getTransform:w,getFromHandle:S,autoPanSpeed:_,dragThreshold:R=1,handleDomNode:A}){let z=Ti(e.target),Z=0,X,{x:K,y:q}=lt(e),y=Ys(i,A),I=s?.getBoundingClientRect(),D=!1;if(!I||!y)return;let T=Ws(r,y,n,l,t);if(!T)return;let g=lt(e,I),M=!1,L=null,O=!1,j=null;function de(){if(!d||!I)return;let[pe,V]=Go(g,I,_);u({x:pe,y:V}),Z=requestAnimationFrame(de)}let re={...T,nodeId:r,type:y,position:T.position},he=l.get(r),ne={inProgress:!0,isValid:null,from:Ot(he,re,we.Left,!0),fromHandle:re,fromPosition:re.position,fromNode:he,to:g,toHandle:null,toPosition:ds[re.position],toNode:null,pointer:g};function B(){D=!0,p(ne),h?.(e,{nodeId:r,handleId:n,handleType:y})}R===0&&B();function ae(pe){if(!D){let{x:ce,y:Y}=lt(pe),N=ce-K,Ce=Y-q;if(!(N*N+Ce*Ce>R*R))return;B()}if(!S()||!re){ve(pe);return}let V=w();g=lt(pe,I),X=Gp(_n(g,V,!1,[1,1]),o,l,re),M||(de(),M=!0);let W=qs(pe,{handle:X,connectionMode:t,fromNodeId:r,fromHandleId:n,fromType:a?"target":"source",isValidConnection:v,doc:z,lib:c,flowId:f,nodeLookup:l});j=W.handleDomNode,L=W.connection,O=Qp(!!X,W.isValid);let G=l.get(r),ee=G?Ot(G,re,we.Left,!0):ne.from,fe={...ne,from:ee,isValid:O,to:W.toHandle&&O?en({x:W.toHandle.x,y:W.toHandle.y},V):g,toHandle:W.toHandle,toPosition:O&&W.toHandle?W.toHandle.position:ds[re.position],toNode:W.toHandle?l.get(W.toHandle.nodeId):null,pointer:g};p(fe),ne=fe}function ve(pe){if(!("touches"in pe&&pe.touches.length>0)){if(D){(X||j)&&L&&O&&x?.(L);let{inProgress:V,...W}=ne,G={...W,toPosition:ne.toHandle?ne.toPosition:null};b?.(pe,G),i&&C?.(pe,G)}m(),cancelAnimationFrame(Z),M=!1,O=!1,L=null,j=null,z.removeEventListener("mousemove",ae),z.removeEventListener("mouseup",ve),z.removeEventListener("touchmove",ae),z.removeEventListener("touchend",ve)}}z.addEventListener("mousemove",ae),z.addEventListener("mouseup",ve),z.addEventListener("touchmove",ae),z.addEventListener("touchend",ve)}function qs(e,{handle:t,connectionMode:o,fromNodeId:n,fromHandleId:r,fromType:i,doc:a,lib:s,flowId:l,isValidConnection:c=Xs,nodeLookup:d}){let f=i==="target",u=t?a.querySelector(`.${s}-flow__handle[data-id="${l}-${t?.nodeId}-${t?.id}-${t?.type}"]`):null,{x:m,y:h}=lt(e),x=a.elementFromPoint(m,h),b=x?.classList.contains(`${s}-flow__handle`)?x:u,v={handleDomNode:b,isValid:!1,connection:null,toHandle:null};if(b){let C=Ys(void 0,b),p=b.getAttribute("data-nodeid"),w=b.getAttribute("data-handleid"),S=b.classList.contains("connectable"),_=b.classList.contains("connectableend");if(!p||!C)return v;let R={source:f?p:n,sourceHandle:f?w:r,target:f?n:p,targetHandle:f?r:w};v.connection=R;let z=S&&_&&(o===At.Strict?f&&C==="source"||!f&&C==="target":p!==n||w!==r);v.isValid=z&&c(R),v.toHandle=Ws(p,C,w,d,o,!0)}return v}var sr={onPointerDown:Jp,isValid:qs};function Ks({domNode:e,panZoom:t,getTransform:o,getViewScale:n}){let r=Qe(e);function i({translateExtent:s,width:l,height:c,zoomStep:d=1,pannable:f=!0,zoomable:u=!0,inversePan:m=!1}){let h=p=>{if(p.sourceEvent.type!=="wheel"||!t)return;let w=o(),S=p.sourceEvent.ctrlKey&&En()?10:1,_=-p.sourceEvent.deltaY*(p.sourceEvent.deltaMode===1?.05:p.sourceEvent.deltaMode?1:.002)*d,R=w[2]*Math.pow(2,_*S);t.scaleTo(R)},x=[0,0],b=p=>{(p.sourceEvent.type==="mousedown"||p.sourceEvent.type==="touchstart")&&(x=[p.sourceEvent.clientX??p.sourceEvent.touches[0].clientX,p.sourceEvent.clientY??p.sourceEvent.touches[0].clientY])},v=p=>{let w=o();if(p.sourceEvent.type!=="mousemove"&&p.sourceEvent.type!=="touchmove"||!t)return;let S=[p.sourceEvent.clientX??p.sourceEvent.touches[0].clientX,p.sourceEvent.clientY??p.sourceEvent.touches[0].clientY],_=[S[0]-x[0],S[1]-x[1]];x=S;let R=n()*Math.max(w[2],Math.log(w[2]))*(m?-1:1),A={x:w[0]-_[0]*R,y:w[1]-_[1]*R},z=[[0,0],[l,c]];t.setViewportConstrained({x:A.x,y:A.y,zoom:w[2]},z,s)},C=hi().on("start",b).on("zoom",f?v:null).on("zoom.wheel",u?h:null);r.call(C,{})}function a(){r.on("zoom",null)}return{update:i,destroy:a,pointer:Je}}var lr=e=>({x:e.x,y:e.y,zoom:e.k}),wi=({x:e,y:t,zoom:o})=>Un.translate(e,t).scale(o),Tt=(e,t)=>e.target.closest(`.${t}`),Zs=(e,t)=>t===2&&Array.isArray(e)&&e.includes(2),em=e=>((e*=2)<=1?e*e*e:(e-=2)*e*e+2)/2,vi=(e,t=0,o=em,n=()=>{})=>{let r=typeof t=="number"&&t>0;return r||n(),r?e.transition().duration(t).ease(o).on("end",n):e},js=e=>{let t=e.ctrlKey&&En()?10:1;return-e.deltaY*(e.deltaMode===1?.05:e.deltaMode?1:.002)*t};function tm({zoomPanValues:e,noWheelClassName:t,d3Selection:o,d3Zoom:n,panOnScrollMode:r,panOnScrollSpeed:i,zoomOnPinch:a,onPanZoomStart:s,onPanZoom:l,onPanZoomEnd:c}){return d=>{if(Tt(d,t))return d.ctrlKey&&d.preventDefault(),!1;d.preventDefault(),d.stopImmediatePropagation();let f=o.property("__zoom").k||1;if(d.ctrlKey&&a){let b=Je(d),v=js(d),C=f*Math.pow(2,v);n.scaleTo(o,C,b,d);return}let u=d.deltaMode===1?20:1,m=r===Et.Vertical?0:d.deltaX*u,h=r===Et.Horizontal?0:d.deltaY*u;!En()&&d.shiftKey&&r!==Et.Vertical&&(m=d.deltaY*u,h=0),n.translateBy(o,-(m/f)*i,-(h/f)*i,{internal:!0});let x=lr(o.property("__zoom"));clearTimeout(e.panScrollTimeout),e.isPanScrolling?l?.(d,x):(e.isPanScrolling=!0,s?.(d,x)),e.panScrollTimeout=setTimeout(()=>{c?.(d,x),e.isPanScrolling=!1},150)}}function nm({noWheelClassName:e,preventScrolling:t,d3ZoomHandler:o}){return function(n,r){let i=n.type==="wheel",a=!t&&i&&!n.ctrlKey,s=Tt(n,e);if(n.ctrlKey&&i&&s&&n.preventDefault(),a||s)return null;n.preventDefault(),o.call(this,n,r)}}function om({zoomPanValues:e,onDraggingChange:t,onPanZoomStart:o}){return n=>{if(n.sourceEvent?.internal)return;let r=lr(n.transform);e.mouseButton=n.sourceEvent?.button||0,e.isZoomingOrPanning=!0,e.prevViewport=r,n.sourceEvent?.type==="mousedown"&&t(!0),o&&o?.(n.sourceEvent,r)}}function rm({zoomPanValues:e,panOnDrag:t,onPaneContextMenu:o,onTransformChange:n,onPanZoom:r}){return i=>{e.usedRightMouseButton=!!(o&&Zs(t,e.mouseButton??0)),i.sourceEvent?.sync||n([i.transform.x,i.transform.y,i.transform.k]),r&&!i.sourceEvent?.internal&&r?.(i.sourceEvent,lr(i.transform))}}function im({zoomPanValues:e,panOnDrag:t,panOnScroll:o,onDraggingChange:n,onPanZoomEnd:r,onPaneContextMenu:i}){return a=>{if(!a.sourceEvent?.internal&&(e.isZoomingOrPanning=!1,i&&Zs(t,e.mouseButton??0)&&!e.usedRightMouseButton&&a.sourceEvent&&i(a.sourceEvent),e.usedRightMouseButton=!1,n(!1),r)){let s=lr(a.transform);e.prevViewport=s,clearTimeout(e.timerId),e.timerId=setTimeout(()=>{r?.(a.sourceEvent,s)},o?150:0)}}}function am({panActivationKeyPressed:e,zoomActivationKeyPressed:t,zoomOnScroll:o,zoomOnPinch:n,panOnDrag:r,panOnScroll:i,zoomOnDoubleClick:a,userSelectionActive:s,noWheelClassName:l,noPanClassName:c,lib:d,connectionInProgress:f}){return u=>{let m=t||o,h=n&&u.ctrlKey,x=u.type==="wheel";if(u.button===1&&u.type==="mousedown"&&(Tt(u,`${d}-flow__node`)||Tt(u,`${d}-flow__edge`)||Tt(u,`${d}-flow__selection`)||Tt(u,`${d}-flow__nodesselection`)))return!0;if(!r&&!m&&!i&&!a&&!n||s||f&&!x||Tt(u,l)&&x||Tt(u,c)&&(!x||i&&x&&!t)||!n&&u.ctrlKey&&x)return!1;if(!n&&u.type==="touchstart"&&u.touches?.length>1)return u.preventDefault(),!1;if(!m&&!i&&!h&&x||!r&&(u.type==="mousedown"||u.type==="touchstart")||Array.isArray(r)&&!r.includes(u.button)&&u.type==="mousedown")return!1;let b=Array.isArray(r)&&r.includes(u.button)||!u.button||u.button<=1;return(!u.ctrlKey||x||e)&&b}}function Us({domNode:e,minZoom:t,maxZoom:o,translateExtent:n,viewport:r,onPanZoom:i,onPanZoomStart:a,onPanZoomEnd:s,onDraggingChange:l}){let c={isZoomingOrPanning:!1,usedRightMouseButton:!1,prevViewport:{},mouseButton:0,timerId:void 0,panScrollTimeout:void 0,isPanScrolling:!1},d=e.getBoundingClientRect(),f=[[0,0],[d.width,d.height]],u=typeof ResizeObserver<"u"?new ResizeObserver(q=>{let y=q[0];y?.contentRect&&(f=[[0,0],[y.contentRect.width,y.contentRect.height]])}):null;u?.observe(e);let m=hi().extent(()=>f).scaleExtent([t,o]).translateExtent(n),h=Qe(e).call(m);w({x:r.x,y:r.y,zoom:xn(r.zoom,t,o)},[[0,0],[d.width,d.height]],n);let x=h.on("wheel.zoom"),b=h.on("dblclick.zoom");m.wheelDelta(js);async function v(q,y){return h?new Promise(I=>{m?.interpolate(y?.interpolate==="linear"?gn:wn).transform(vi(h,y?.duration,y?.ease,()=>I(!0)),q)}):!1}function C({noWheelClassName:q,noPanClassName:y,onPaneContextMenu:I,userSelectionActive:D,panOnScroll:T,panOnDrag:g,panOnScrollMode:M,panOnScrollSpeed:L,preventScrolling:O,zoomOnPinch:j,zoomOnScroll:de,zoomOnDoubleClick:re,panActivationKeyPressed:he=!1,zoomActivationKeyPressed:ge,lib:ne,onTransformChange:B,connectionInProgress:ae,paneClickDistance:ve,selectionOnDrag:pe}){D&&!c.isZoomingOrPanning&&m.on("zoom",null);let V=T&&!ge&&!D;m.clickDistance(pe?1/0:!st(ve)||ve<0?0:ve);let W=V?tm({zoomPanValues:c,noWheelClassName:q,d3Selection:h,d3Zoom:m,panOnScrollMode:M,panOnScrollSpeed:L,zoomOnPinch:j,onPanZoomStart:a,onPanZoom:i,onPanZoomEnd:s}):nm({noWheelClassName:q,preventScrolling:O,d3ZoomHandler:x});h.on("wheel.zoom",W,{passive:!1});let G=om({zoomPanValues:c,onDraggingChange:l,onPanZoomStart:a});m.on("start",G);let ee=rm({zoomPanValues:c,panOnDrag:g,onPaneContextMenu:!!I,onPanZoom:i,onTransformChange:B});m.on("zoom",ee);let fe=im({zoomPanValues:c,panOnDrag:g,panOnScroll:T,onPaneContextMenu:I,onPanZoomEnd:s,onDraggingChange:l});m.on("end",fe);let ce=am({panActivationKeyPressed:he,zoomActivationKeyPressed:ge,panOnDrag:g,zoomOnScroll:de,panOnScroll:T,zoomOnDoubleClick:re,zoomOnPinch:j,userSelectionActive:D,noPanClassName:y,noWheelClassName:q,lib:ne,connectionInProgress:ae});m.filter(ce),re?h.on("dblclick.zoom",b):h.on("dblclick.zoom",null)}function p(){m.on("zoom",null),u?.disconnect()}async function w(q,y,I){let D=wi(q),T=m?.constrain()(D,y,I);return T&&await v(T),T}async function S(q,y){let I=wi(q);return await v(I,y),I}function _(q){if(h){let y=wi(q),I=h.property("__zoom");(I.k!==q.zoom||I.x!==q.x||I.y!==q.y)&&m?.transform(h,y,null,{sync:!0})}}function R(){let q=h?mi(h.node()):{x:0,y:0,k:1};return{x:q.x,y:q.y,zoom:q.k}}async function A(q,y){return h?new Promise(I=>{m?.interpolate(y?.interpolate==="linear"?gn:wn).scaleTo(vi(h,y?.duration,y?.ease,()=>I(!0)),q)}):!1}async function z(q,y){return h?new Promise(I=>{m?.interpolate(y?.interpolate==="linear"?gn:wn).scaleBy(vi(h,y?.duration,y?.ease,()=>I(!0)),q)}):!1}function Z(q){m?.scaleExtent(q)}function X(q){m?.translateExtent(q)}function K(q){let y=!st(q)||q<0?0:q;m?.clickDistance(y)}return{update:C,destroy:p,setViewport:S,setViewportConstrained:w,getViewport:R,scaleTo:A,scaleBy:z,setScaleExtent:Z,setTranslateExtent:X,syncViewport:_,setClickDistance:K}}var Lt;(function(e){e.Line="line",e.Handle="handle"})(Lt||(Lt={}));function sm({width:e,prevWidth:t,height:o,prevHeight:n,affectsX:r,affectsY:i}){let a=e-t,s=o-n,l=[a>0?1:a<0?-1:0,s>0?1:s<0?-1:0];return a&&r&&(l[0]=l[0]*-1),s&&i&&(l[1]=l[1]*-1),l}function xs(e){let t=e.includes("right")||e.includes("left"),o=e.includes("bottom")||e.includes("top"),n=e.includes("left"),r=e.includes("top");return{isHorizontal:t,isVertical:o,affectsX:n,affectsY:r}}function $t(e,t){return Math.max(0,t-e)}function Pt(e,t){return Math.max(0,e-t)}function Zo(e,t,o){return Math.max(0,t-e,e-o)}function ks(e,t){return e?!t:t}function lm(e,t,o,n,r,i,a,s){let{affectsX:l,affectsY:c}=t,{isHorizontal:d,isVertical:f}=t,u=d&&f,{xSnapped:m,ySnapped:h}=o,{minWidth:x,maxWidth:b,minHeight:v,maxHeight:C}=n,{x:p,y:w,width:S,height:_,aspectRatio:R}=e,A=Math.floor(d?m-e.pointerX:0),z=Math.floor(f?h-e.pointerY:0),Z=S+(l?-A:A),X=_+(c?-z:z),K=-i[0]*S,q=-i[1]*_,y=Zo(Z,x,b),I=Zo(X,v,C);if(a){let g=0,M=0;l&&A<0?g=$t(p+A+K,a[0][0]):!l&&A>0&&(g=Pt(p+Z+K,a[1][0])),c&&z<0?M=$t(w+z+q,a[0][1]):!c&&z>0&&(M=Pt(w+X+q,a[1][1])),y=Math.max(y,g),I=Math.max(I,M)}if(s){let g=0,M=0;l&&A>0?g=Pt(p+A,s[0][0]):!l&&A<0&&(g=$t(p+Z,s[1][0])),c&&z>0?M=Pt(w+z,s[0][1]):!c&&z<0&&(M=$t(w+X,s[1][1])),y=Math.max(y,g),I=Math.max(I,M)}if(r){if(d){let g=Zo(Z/R,v,C)*R;if(y=Math.max(y,g),a){let M=0;!l&&!c||l&&!c&&u?M=Pt(w+q+Z/R,a[1][1])*R:M=$t(w+q+(l?A:-A)/R,a[0][1])*R,y=Math.max(y,M)}if(s){let M=0;!l&&!c||l&&!c&&u?M=$t(w+Z/R,s[1][1])*R:M=Pt(w+(l?A:-A)/R,s[0][1])*R,y=Math.max(y,M)}}if(f){let g=Zo(X*R,x,b)/R;if(I=Math.max(I,g),a){let M=0;!l&&!c||c&&!l&&u?M=Pt(p+X*R+K,a[1][0])/R:M=$t(p+(c?z:-z)*R+K,a[0][0])/R,I=Math.max(I,M)}if(s){let M=0;!l&&!c||c&&!l&&u?M=$t(p+X*R,s[1][0])/R:M=Pt(p+(c?z:-z)*R,s[0][0])/R,I=Math.max(I,M)}}}z=z+(z<0?I:-I),A=A+(A<0?y:-y),r&&(u?Z>X*R?z=(ks(l,c)?-A:A)/R:A=(ks(l,c)?-z:z)*R:d?(z=A/R,c=l):(A=z*R,l=c));let D=l?p+A:p,T=c?w+z:w;return{width:S+(l?-A:A),height:_+(c?-z:z),x:i[0]*A*(l?-1:1)+D,y:i[1]*z*(c?-1:1)+T}}var Gs={width:0,height:0,x:0,y:0},cm={...Gs,pointerX:0,pointerY:0,aspectRatio:1};function dm(e,t,o){let n=t.position.x+e.position.x,r=t.position.y+e.position.y,i=e.measured.width??0,a=e.measured.height??0,s=o[0]*i,l=o[1]*a;return[[n-s,r-l],[n+i-s,r+a-l]]}function Qs({domNode:e,nodeId:t,getStoreItems:o,onChange:n,onEnd:r}){let i=Qe(e),a={controlDirection:xs("bottom-right"),boundaries:{minWidth:0,minHeight:0,maxWidth:Number.MAX_VALUE,maxHeight:Number.MAX_VALUE},resizeDirection:void 0,keepAspectRatio:!1};function s({controlPosition:c,boundaries:d,keepAspectRatio:f,resizeDirection:u,onResizeStart:m,onResize:h,onResizeEnd:x,shouldResize:b}){let v={...Gs},C={...cm};a={boundaries:d,resizeDirection:u,keepAspectRatio:f,controlDirection:xs(c)};let p,w=null,S=[],_,R,A,z=Br().on("start",Z=>{let{nodeLookup:X,transform:K,snapGrid:q,snapToGrid:y,nodeOrigin:I,paneDomNode:D}=o();if(p=X.get(t),!p)return;w=D?.getBoundingClientRect()??null;let{xSnapped:T,ySnapped:g}=Gn(Z.sourceEvent,{transform:K,snapGrid:q,snapToGrid:y,containerBounds:w});v={width:p.measured.width??0,height:p.measured.height??0,x:p.position.x??0,y:p.position.y??0},C={...v,pointerX:T,pointerY:g,aspectRatio:v.width/v.height},_=void 0,R=tn(p.extent)?p.extent:void 0,p.parentId&&(p.extent==="parent"||p.expandParent)&&(_=X.get(p.parentId)),_&&p.extent==="parent"&&(R=[[0,0],[_.measured.width,_.measured.height]]),S=[],A=void 0;for(let[M,L]of X)if(L.parentId===t&&(S.push({id:M,position:{...L.position},extent:L.extent}),L.extent==="parent"||L.expandParent)){let O=dm(L,p,L.origin??I);A?A=[[Math.min(O[0][0],A[0][0]),Math.min(O[0][1],A[0][1])],[Math.max(O[1][0],A[1][0]),Math.max(O[1][1],A[1][1])]]:A=O}m?.(Z,{...v})}).on("drag",Z=>{let{transform:X,snapGrid:K,snapToGrid:q,nodeOrigin:y}=o(),I=Gn(Z.sourceEvent,{transform:X,snapGrid:K,snapToGrid:q,containerBounds:w}),D=[];if(!p)return;let{x:T,y:g,width:M,height:L}=v,O={},j=p.origin??y,{width:de,height:re,x:he,y:ge}=lm(C,a.controlDirection,I,a.boundaries,a.keepAspectRatio,j,R,A),ne=de!==M,B=re!==L,ae=he!==T&&ne,ve=ge!==g&&B;if(!ae&&!ve&&!ne&&!B)return;let pe={prevValues:{...v},startX:C.x,startY:C.y,childNodes:S.map(ee=>({...ee,position:{...ee.position}}))};if((ae||ve||j[0]===1||j[1]===1)&&(O.x=ae?he:v.x,O.y=ve?ge:v.y,v.x=O.x,v.y=O.y,S.length>0)){let ee=he-T,fe=ge-g;for(let ce of S)ce.position={x:ce.position.x-ee+j[0]*(de-M),y:ce.position.y-fe+j[1]*(re-L)},D.push(ce)}if((ne||B)&&(O.width=ne&&(!a.resizeDirection||a.resizeDirection==="horizontal")?de:v.width,O.height=B&&(!a.resizeDirection||a.resizeDirection==="vertical")?re:v.height,v.width=O.width,v.height=O.height),_&&p.expandParent){let ee=j[0]*(O.width??0);O.x&&O.x<ee&&(v.x=ee,C.x=C.x-(O.x-ee));let fe=j[1]*(O.height??0);O.y&&O.y<fe&&(v.y=fe,C.y=C.y-(O.y-fe))}let V=sm({width:v.width,prevWidth:M,height:v.height,prevHeight:L,affectsX:a.controlDirection.affectsX,affectsY:a.controlDirection.affectsY}),W={...v,direction:V};if(b?.(Z,W)===!1){v=pe.prevValues,C.x=pe.startX,C.y=pe.startY,S.forEach((ee,fe)=>{ee.position=pe.childNodes[fe].position});return}h?.(Z,W),n(O,D)}).on("end",Z=>{x?.(Z,{...v}),r?.({...v})});i.call(z)}function l(){i.on(".drag",null)}return{update:s,destroy:l}}var ul=$r(require("react"),1),fl=$r(al(),1);var ll={},sl=e=>{let t,o=new Set,n=(d,f)=>{let u=typeof d=="function"?d(t):d;if(!Object.is(u,t)){let m=t;t=f??(typeof u!="object"||u===null)?u:Object.assign({},t,u),o.forEach(h=>h(t,m))}},r=()=>t,l={setState:n,getState:r,getInitialState:()=>c,subscribe:d=>(o.add(d),()=>o.delete(d)),destroy:()=>{(ll.env?ll.env.MODE:void 0)!=="production"&&console.warn("[DEPRECATED] The `destroy` method will be unsupported in a future version. Instead use unsubscribe function returned by subscribe. Everything will be garbage-collected if store is garbage-collected."),o.clear()}},c=t=e(n,r,l);return l},cl=e=>e?sl(e):sl;var{useDebugValue:Mm}=ul.default,{useSyncExternalStoreWithSelector:Im}=fl.default,Rm=e=>e;function Yi(e,t=Rm,o){let n=Im(e.subscribe,e.getState,e.getServerState||e.getInitialState,t,o);return Mm(n),n}var dl=(e,t)=>{let o=cl(e),n=(r,i=t)=>Yi(o,r,i);return Object.assign(n,o),n},pl=(e,t)=>e?dl(e,t):dl;function Ve(e,t){if(Object.is(e,t))return!0;if(typeof e!="object"||e===null||typeof t!="object"||t===null)return!1;if(e instanceof Map&&t instanceof Map){if(e.size!==t.size)return!1;for(let[n,r]of e)if(!Object.is(r,t.get(n)))return!1;return!0}if(e instanceof Set&&t instanceof Set){if(e.size!==t.size)return!1;for(let n of e)if(!t.has(n))return!1;return!0}let o=Object.keys(e);if(o.length!==Object.keys(t).length)return!1;for(let n of o)if(!Object.prototype.hasOwnProperty.call(t,n)||!Object.is(e[n],t[n]))return!1;return!0}var Dm=require("react-dom"),pr=(0,H.createContext)(null),$m=pr.Provider,Hl=ot.error001("react");function $e(e,t){let o=(0,H.useContext)(pr);if(o===null)throw new Error(Hl);return Yi(o,e,t)}function He(){let e=(0,H.useContext)(pr);if(e===null)throw new Error(Hl);return(0,H.useMemo)(()=>({getState:e.getState,setState:e.setState,subscribe:e.subscribe}),[e])}var ml={display:"none"},Pm={position:"absolute",width:1,height:1,margin:-1,border:0,padding:0,overflow:"hidden",clip:"rect(0px, 0px, 0px, 0px)",clipPath:"inset(100%)"},Vl="react-flow__node-desc",Bl="react-flow__edge-desc",Tm="react-flow__aria-live",Am=e=>e.ariaLiveMessage,zm=e=>e.ariaLabelConfig;function Om({rfId:e}){let t=$e(Am);return(0,F.jsx)("div",{id:`${Tm}-${e}`,"aria-live":"assertive","aria-atomic":"true",style:Pm,children:t})}function Lm({rfId:e,disableKeyboardA11y:t}){let o=$e(zm);return(0,F.jsxs)(F.Fragment,{children:[(0,F.jsx)("div",{id:`${Vl}-${e}`,style:ml,children:t?o["node.a11yDescription.default"]:o["node.a11yDescription.keyboardDisabled"]}),(0,F.jsx)("div",{id:`${Bl}-${e}`,style:ml,children:o["edge.a11yDescription.default"]}),!t&&(0,F.jsx)(Om,{rfId:e})]})}var mr=(0,H.forwardRef)(({position:e="top-left",children:t,className:o,style:n,...r},i)=>{let a=`${e}`.split("-");return(0,F.jsx)("div",{className:Ye(["react-flow__panel",o,...a]),style:n,ref:i,...r,children:t})});mr.displayName="Panel";var hl="https://reactflow.dev?utm_source=attribution";function Fm({proOptions:e,position:t="bottom-right"}){return(0,H.useEffect)(()=>{},[]),e?.hideAttribution?null:(0,F.jsx)(mr,{position:t,className:"react-flow__attribution","data-message":`Please only hide this attribution when you are subscribed to React Flow Pro: ${hl}`,children:(0,F.jsx)("a",{href:hl,target:"_blank",rel:"noopener noreferrer","aria-label":"React Flow attribution",children:"React Flow"})})}var Hm=e=>{let t=[],o=[];for(let[,n]of e.nodeLookup)n.selected&&t.push(n.internals.userNode);for(let[,n]of e.edgeLookup)n.selected&&o.push(n);return{selectedNodes:t,selectedEdges:o}},dr=e=>e.id;function Vm(e,t){return Ve(e.selectedNodes.map(dr),t.selectedNodes.map(dr))&&Ve(e.selectedEdges.map(dr),t.selectedEdges.map(dr))}function Bm({onSelectionChange:e}){let t=He(),{selectedNodes:o,selectedEdges:n}=$e(Hm,Vm);return(0,H.useEffect)(()=>{let r={nodes:o,edges:n};e?.(r),t.getState().onSelectionChangeHandlers.forEach(i=>i(r))},[o,n,e]),null}var Wm=e=>!!e.onSelectionChangeHandlers;function Ym({onSelectionChange:e}){let t=$e(Wm);return e||t?(0,F.jsx)(Bm,{onSelectionChange:e}):null}var Wl=[0,0],Xm={x:0,y:0,zoom:1},qm=["nodes","edges","defaultNodes","defaultEdges","onConnect","onConnectStart","onConnectEnd","onClickConnectStart","onClickConnectEnd","nodesDraggable","autoPanOnNodeFocus","nodesConnectable","nodesFocusable","edgesFocusable","edgesReconnectable","elevateNodesOnSelect","elevateEdgesOnSelect","minZoom","maxZoom","nodeExtent","onNodesChange","onEdgesChange","elementsSelectable","connectionMode","snapGrid","snapToGrid","translateExtent","connectOnClick","defaultEdgeOptions","fitView","fitViewOptions","onNodesDelete","onEdgesDelete","onDelete","onNodeDrag","onNodeDragStart","onNodeDragStop","onSelectionDrag","onSelectionDragStart","onSelectionDragStop","onMoveStart","onMove","onMoveEnd","noPanClassName","nodeOrigin","autoPanOnConnect","autoPanOnNodeDrag","onError","connectionRadius","isValidConnection","selectNodesOnDrag","nodeDragThreshold","connectionDragThreshold","onBeforeDelete","debug","autoPanSpeed","ariaLabelConfig","zIndexMode"],gl=[...qm,"rfId"],Km=e=>({setNodes:e.setNodes,setEdges:e.setEdges,setMinZoom:e.setMinZoom,setMaxZoom:e.setMaxZoom,setTranslateExtent:e.setTranslateExtent,setNodeExtent:e.setNodeExtent,reset:e.reset,setDefaultNodesAndEdges:e.setDefaultNodesAndEdges}),wl={translateExtent:kn,nodeOrigin:Wl,minZoom:.5,maxZoom:2,elementsSelectable:!0,noPanClassName:"nopan",rfId:"1"};function Zm(e){let{setNodes:t,setEdges:o,setMinZoom:n,setMaxZoom:r,setTranslateExtent:i,setNodeExtent:a,reset:s,setDefaultNodesAndEdges:l}=$e(Km,Ve),c=He();(0,H.useEffect)(()=>(l(e.defaultNodes,e.defaultEdges),()=>{d.current=wl,s()}),[]);let d=(0,H.useRef)(wl);return(0,H.useEffect)(()=>{for(let f of gl){let u=e[f],m=d.current[f];u!==m&&(typeof e[f]>"u"||(f==="nodes"?t(u):f==="edges"?o(u):f==="minZoom"?n(u):f==="maxZoom"?r(u):f==="translateExtent"?i(u):f==="nodeExtent"?a(u):f==="ariaLabelConfig"?c.setState({ariaLabelConfig:Rs(u)}):f==="fitView"?c.setState({fitViewQueued:u}):f==="fitViewOptions"?c.setState({fitViewOptions:u}):c.setState({[f]:u})))}d.current=e},gl.map(f=>e[f])),null}function vl(){return typeof window>"u"||!window.matchMedia?null:window.matchMedia("(prefers-color-scheme: dark)")}function jm(e){let[t,o]=(0,H.useState)(e==="system"?null:e);return(0,H.useEffect)(()=>{if(e!=="system"){o(e);return}let n=vl(),r=()=>o(n?.matches?"dark":"light");return r(),n?.addEventListener("change",r),()=>{n?.removeEventListener("change",r)}},[e]),t!==null?t:vl()?.matches?"dark":"light"}var yl=typeof document<"u"?document:null;function no(e=null,t={target:yl,actInsideInputWithModifier:!0}){let[o,n]=(0,H.useState)(!1),r=(0,H.useRef)(!1),i=(0,H.useRef)(new Set([])),[a,s]=(0,H.useMemo)(()=>{if(e!==null){let c=(Array.isArray(e)?e:[e]).filter(f=>typeof f=="string").map(f=>f.replace(/\+/g,`
+`).replace(`
+
+`,`
++`).split(`
+`)),d=c.reduce((f,u)=>f.concat(...u),[]);return[c,d]}return[[],[]]},[e]);return(0,H.useEffect)(()=>{let l=t?.target??yl,c=t?.actInsideInputWithModifier??!0;if(e!==null){let d=m=>{if(r.current=m.ctrlKey||m.metaKey||m.shiftKey||m.altKey,(!r.current||r.current&&!c)&&Ai(m))return!1;let x=xl(m.code,s);if(i.current.add(m[x]),bl(a,i.current,!1)){let b=m.composedPath?.()?.[0]||m.target,v=b?.nodeName==="BUTTON"||b?.nodeName==="A";t.preventDefault!==!1&&(r.current||!v)&&m.preventDefault(),n(!0)}},f=m=>{let h=xl(m.code,s);bl(a,i.current,!0)?(n(!1),i.current.clear()):i.current.delete(m[h]),m.key==="Meta"&&i.current.clear(),r.current=!1},u=()=>{i.current.clear(),n(!1)};return l?.addEventListener("keydown",d),l?.addEventListener("keyup",f),window.addEventListener("blur",u),window.addEventListener("contextmenu",u),()=>{l?.removeEventListener("keydown",d),l?.removeEventListener("keyup",f),window.removeEventListener("blur",u),window.removeEventListener("contextmenu",u)}}},[e,n]),o}function bl(e,t,o){return e.filter(n=>o||n.length===t.size).some(n=>n.every(r=>t.has(r)))}function xl(e,t){return t.includes(e)?"code":"key"}var Um=()=>{let e=He();return(0,H.useMemo)(()=>({zoomIn:async t=>{let{panZoom:o}=e.getState();return o?o.scaleBy(1.2,t):!1},zoomOut:async t=>{let{panZoom:o}=e.getState();return o?o.scaleBy(1/1.2,t):!1},zoomTo:async(t,o)=>{let{panZoom:n}=e.getState();return n?n.scaleTo(t,o):!1},getZoom:()=>e.getState().transform[2],setViewport:async(t,o)=>{let{transform:[n,r,i],panZoom:a}=e.getState();return a?(await a.setViewport({x:t.x??n,y:t.y??r,zoom:t.zoom??i},o),!0):!1},getViewport:()=>{let[t,o,n]=e.getState().transform;return{x:t,y:o,zoom:n}},setCenter:async(t,o,n)=>e.getState().setCenter(t,o,n),fitBounds:async(t,o)=>{let{width:n,height:r,minZoom:i,maxZoom:a,panZoom:s}=e.getState(),l=eo(t,n,r,i,a,o?.padding??.1);return s?(await s.setViewport(l,{duration:o?.duration,ease:o?.ease,interpolate:o?.interpolate}),!0):!1},screenToFlowPosition:(t,o={})=>{let{transform:n,snapGrid:r,snapToGrid:i,domNode:a}=e.getState();if(!a)return t;let{x:s,y:l}=a.getBoundingClientRect(),c={x:t.x-s,y:t.y-l},d=o.snapGrid??r,f=o.snapToGrid??i;return _n(c,n,f,d)},flowToScreenPosition:t=>{let{transform:o,domNode:n}=e.getState();if(!n)return t;let{x:r,y:i}=n.getBoundingClientRect(),a=en(t,o);return{x:a.x+r,y:a.y+i}}}),[])};function Yl(e,t){let o=[],n=new Map,r=[];for(let i of e)if(i.type==="add"){r.push(i);continue}else if(i.type==="remove"||i.type==="replace")n.set(i.id,[i]);else{let a=n.get(i.id);a?a.push(i):n.set(i.id,[i])}for(let i of t){let a=n.get(i.id);if(!a){o.push(i);continue}if(a[0].type==="remove")continue;if(a[0].type==="replace"){o.push({...a[0].item});continue}let s={...i};for(let l of a)Gm(l,s);o.push(s)}return r.length&&r.forEach(i=>{i.index!==void 0?o.splice(i.index,0,{...i.item}):o.push({...i.item})}),o}function Gm(e,t){switch(e.type){case"select":{t.selected=e.selected;break}case"position":{typeof e.position<"u"&&(t.position=e.position),typeof e.dragging<"u"&&(t.dragging=e.dragging);break}case"dimensions":{typeof e.dimensions<"u"&&(t.measured={...e.dimensions},e.setAttributes&&((e.setAttributes===!0||e.setAttributes==="width")&&(t.width=e.dimensions.width),(e.setAttributes===!0||e.setAttributes==="height")&&(t.height=e.dimensions.height))),typeof e.resizing=="boolean"&&(t.resizing=e.resizing);break}}}function Zi(e,t){return Yl(e,t)}function Qm(e,t){return Yl(e,t)}function nn(e,t){return{id:e,type:"select",selected:t}}function In(e,t=new Set){let o=[];for(let[n,r]of e){let i=t.has(n);!(r.selected===void 0&&!i)&&r.selected!==i&&o.push(nn(r.id,i))}return o}function kl({items:e=[],lookup:t}){let o=[],n=new Map(e.map(r=>[r.id,r]));for(let[r,i]of e.entries()){let a=t.get(i.id),s=a?.internals?.userNode??a;s!==void 0&&s!==i&&o.push({id:i.id,item:i,type:"replace"}),s===void 0&&o.push({item:i,type:"add",index:r})}for(let[r]of t)n.get(r)===void 0&&o.push({id:r,type:"remove"});return o}function Nl(e){return{id:e.id,type:"remove"}}var Jm=Ii("React Flow","https://reactflow.dev/");function eh(e,t,o={}){return Ps(e,t,{...o,onError:o.onError??Jm})}var Sl=e=>Ns(e),th=e=>Ni(e);function Xl(e){return(0,H.forwardRef)(e)}var ql=typeof window<"u"?H.useLayoutEffect:H.useEffect;function Cl(e){let[t,o]=(0,H.useState)(BigInt(0)),[n]=(0,H.useState)(()=>nh(()=>o(r=>r+BigInt(1))));return ql(()=>{let r=n.get();r.length&&(e(r),n.reset())},[t]),n}function nh(e){let t=[];return{get:()=>t,reset:()=>{t=[]},push:o=>{t.push(o),e()}}}var Kl=(0,H.createContext)(null);function oh({children:e}){let t=He(),o=(0,H.useCallback)(s=>{let{nodes:l=[],setNodes:c,hasDefaultNodes:d,onNodesChange:f,nodeLookup:u,fitViewQueued:m,onNodesChangeMiddlewareMap:h}=t.getState(),x=l;for(let v of s)x=typeof v=="function"?v(x):v;let b=kl({items:x,lookup:u});for(let v of h.values())b=v(b);d&&c(x),b.length>0?f?.(b):m&&window.requestAnimationFrame(()=>{let{fitViewQueued:v,nodes:C,setNodes:p}=t.getState();v&&p(C)})},[]),n=Cl(o),r=(0,H.useCallback)(s=>{let{edges:l=[],setEdges:c,hasDefaultEdges:d,onEdgesChange:f,edgeLookup:u}=t.getState(),m=l;for(let h of s)m=typeof h=="function"?h(m):h;d?c(m):f&&f(kl({items:m,lookup:u}))},[]),i=Cl(r),a=(0,H.useMemo)(()=>({nodeQueue:n,edgeQueue:i}),[]);return(0,F.jsx)(Kl.Provider,{value:a,children:e})}function rh(){let e=(0,H.useContext)(Kl);if(!e)throw new Error("useBatchContext must be used within a BatchProvider");return e}var ih=e=>!!e.panZoom;function oo(){let e=Um(),t=He(),o=rh(),n=$e(ih),r=(0,H.useMemo)(()=>{let i=f=>t.getState().nodeLookup.get(f),a=f=>{o.nodeQueue.push(f)},s=f=>{o.edgeQueue.push(f)},l=f=>{let{nodeLookup:u,nodeOrigin:m}=t.getState(),h=Sl(f)?f:u.get(f.id),x=h.parentId?Di(h.position,h.measured,h.parentId,u,m):h.position,b={...h,position:x,width:h.measured?.width??h.width,height:h.measured?.height??h.height};return Sn(b,h.parentId?void 0:m)},c=(f,u,m={replace:!1})=>{a(h=>h.map(x=>{if(x.id===f){let b=typeof u=="function"?u(x):u;return m.replace&&Sl(b)?b:{...x,...b}}return x}))},d=(f,u,m={replace:!1})=>{s(h=>h.map(x=>{if(x.id===f){let b=typeof u=="function"?u(x):u;return m.replace&&th(b)?b:{...x,...b}}return x}))};return{getNodes:()=>t.getState().nodes.map(f=>({...f})),getNode:f=>i(f)?.internals.userNode,getInternalNode:i,getEdges:()=>{let{edges:f=[]}=t.getState();return f.map(u=>({...u}))},getEdge:f=>t.getState().edgeLookup.get(f),setNodes:a,setEdges:s,addNodes:f=>{let u=Array.isArray(f)?f:[f];o.nodeQueue.push(m=>[...m,...u])},addEdges:f=>{let u=Array.isArray(f)?f:[f];o.edgeQueue.push(m=>[...m,...u])},toObject:()=>{let{nodes:f=[],edges:u=[],transform:m}=t.getState(),[h,x,b]=m;return{nodes:f.map(v=>({...v})),edges:u.map(v=>({...v})),viewport:{x:h,y:x,zoom:b}}},deleteElements:async({nodes:f=[],edges:u=[]})=>{let{nodes:m,edges:h,onNodesDelete:x,onEdgesDelete:b,triggerNodeChanges:v,triggerEdgeChanges:C,onDelete:p,onBeforeDelete:w}=t.getState(),{nodes:S,edges:_}=await _s({nodesToRemove:f,edgesToRemove:u,nodes:m,edges:h,onBeforeDelete:w}),R=_.length>0,A=S.length>0;if(R){let z=_.map(Nl);b?.(_),C(z)}if(A){let z=S.map(Nl);x?.(S),v(z)}return(A||R)&&p?.({nodes:S,edges:_}),{deletedNodes:S,deletedEdges:_}},getIntersectingNodes:(f,u=!0,m)=>{let h=Mi(f),x=h?f:l(f),b=m!==void 0;if(!x)return[];let{nodeOrigin:v}=t.getState();return(m||t.getState().nodes).filter(C=>{let p=t.getState().nodeLookup.get(C.id);if(p&&!h&&(C.id===f.id||!p.internals.positionAbsolute))return!1;let w=Sn(b?C:p,v),S=Jn(w,x);return u&&S>0||S>=w.width*w.height||S>=x.width*x.height})},isNodeIntersecting:(f,u,m=!0)=>{let x=Mi(f)?f:l(f);if(!x)return!1;let b=Jn(x,u);return m&&b>0||b>=u.width*u.height||b>=x.width*x.height},updateNode:c,updateNodeData:(f,u,m={replace:!1})=>{c(f,h=>{let x=typeof u=="function"?u(h):u;return m.replace?{...h,data:x}:{...h,data:{...h.data,...x}}},m)},updateEdge:d,updateEdgeData:(f,u,m={replace:!1})=>{d(f,h=>{let x=typeof u=="function"?u(h):u;return m.replace?{...h,data:x}:{...h,data:{...h.data,...x}}},m)},getNodesBounds:f=>{let{nodeLookup:u,nodeOrigin:m}=t.getState();return Ci(f,{nodeLookup:u,nodeOrigin:m})},getHandleConnections:({type:f,id:u,nodeId:m})=>Array.from(t.getState().connectionLookup.get(`${m}-${f}${u?`-${u}`:""}`)?.values()??[]),getNodeConnections:({type:f,handleId:u,nodeId:m})=>Array.from(t.getState().connectionLookup.get(`${m}${f?u?`-${f}-${u}`:`-${f}`:""}`)?.values()??[]),fitView:async f=>{let u=t.getState().fitViewResolver??Is();return t.setState({fitViewQueued:!0,fitViewOptions:f,fitViewResolver:u}),o.nodeQueue.push(m=>[...m]),u.promise}}},[]);return(0,H.useMemo)(()=>({...r,...e,viewportInitialized:n}),[n])}var _l=e=>e.selected,ah=typeof window<"u"?window:void 0;function sh({deleteKeyCode:e,multiSelectionKeyCode:t}){let o=He(),{deleteElements:n}=oo(),r=no(e,{actInsideInputWithModifier:!1}),i=no(t,{target:ah});(0,H.useEffect)(()=>{if(r){let{edges:a,nodes:s}=o.getState();n({nodes:s.filter(_l),edges:a.filter(_l)}),o.setState({nodesSelectionActive:!1})}},[r]),(0,H.useEffect)(()=>{o.setState({multiSelectionActive:i})},[i])}function lh(e){let t=He();(0,H.useEffect)(()=>{let o=()=>{if(!e.current||!(e.current.checkVisibility?.()??!0))return!1;let n=er(e.current);(n.height===0||n.width===0)&&t.getState().onError?.("004",ot.error004()),t.setState({width:n.width||500,height:n.height||500})};if(e.current){o(),window.addEventListener("resize",o);let n=new ResizeObserver(()=>o());return n.observe(e.current),()=>{window.removeEventListener("resize",o),n.disconnect()}}},[])}var hr={position:"absolute",width:"100%",height:"100%",top:0,left:0},ch=e=>({userSelectionActive:e.userSelectionActive,lib:e.lib,connectionInProgress:e.connection.inProgress});function dh({onPaneContextMenu:e,zoomOnScroll:t=!0,zoomOnPinch:o=!0,panOnScroll:n=!1,panActivationKeyPressed:r,panOnScrollSpeed:i=.5,panOnScrollMode:a=Et.Free,zoomOnDoubleClick:s=!0,panOnDrag:l=!0,defaultViewport:c,translateExtent:d,minZoom:f,maxZoom:u,zoomActivationKeyCode:m,preventScrolling:h=!0,children:x,noWheelClassName:b,noPanClassName:v,onViewportChange:C,isControlledViewport:p,paneClickDistance:w,selectionOnDrag:S}){let _=He(),R=(0,H.useRef)(null),{userSelectionActive:A,lib:z,connectionInProgress:Z}=$e(ch,Ve),X=no(m),K=(0,H.useRef)();lh(R);let q=(0,H.useCallback)(y=>{C?.({x:y[0],y:y[1],zoom:y[2]}),p||_.setState({transform:y})},[C,p]);return(0,H.useEffect)(()=>{if(R.current){K.current=Us({domNode:R.current,minZoom:f,maxZoom:u,translateExtent:d,viewport:c,onDraggingChange:T=>_.setState(g=>g.paneDragging===T?g:{paneDragging:T}),onPanZoomStart:(T,g)=>{let{onViewportChangeStart:M,onMoveStart:L}=_.getState();L?.(T,g),M?.(g)},onPanZoom:(T,g)=>{let{onViewportChange:M,onMove:L}=_.getState();L?.(T,g),M?.(g)},onPanZoomEnd:(T,g)=>{let{onViewportChangeEnd:M,onMoveEnd:L}=_.getState();L?.(T,g),M?.(g)}});let{x:y,y:I,zoom:D}=K.current.getViewport();return _.setState({panZoom:K.current,transform:[y,I,D],domNode:R.current.closest(".react-flow")}),()=>{K.current?.destroy()}}},[]),(0,H.useEffect)(()=>{K.current?.update({onPaneContextMenu:e,zoomOnScroll:t,zoomOnPinch:o,panOnScroll:n,panActivationKeyPressed:r,panOnScrollSpeed:i,panOnScrollMode:a,zoomOnDoubleClick:s,panOnDrag:l,zoomActivationKeyPressed:X,preventScrolling:h,noPanClassName:v,userSelectionActive:A,noWheelClassName:b,lib:z,onTransformChange:q,connectionInProgress:Z,selectionOnDrag:S,paneClickDistance:w})},[e,t,o,n,r,i,a,s,l,X,h,v,A,b,z,q,Z,S,w]),(0,F.jsx)("div",{className:"react-flow__renderer",ref:R,style:hr,children:x})}var uh=e=>({userSelectionActive:e.userSelectionActive,userSelectionRect:e.userSelectionRect});function fh(){let{userSelectionActive:e,userSelectionRect:t}=$e(uh,Ve);return e&&t?(0,F.jsx)("div",{className:"react-flow__selection react-flow__container",style:{width:t.width,height:t.height,transform:`translate(${t.x}px, ${t.y}px)`}}):null}var Xi=(e,t)=>o=>{o.target===t.current&&e?.(o)},ph=e=>({userSelectionActive:e.userSelectionActive,elementsSelectable:e.elementsSelectable,dragging:e.paneDragging,panBy:e.panBy,autoPanSpeed:e.autoPanSpeed});function mh({isSelecting:e,selectionKeyPressed:t,selectionMode:o=Qt.Full,panOnDrag:n,autoPanOnSelection:r,paneClickDistance:i,selectionOnDrag:a,onSelectionStart:s,onSelectionEnd:l,onPaneClick:c,onPaneContextMenu:d,onPaneScroll:f,onPaneMouseEnter:u,onPaneMouseMove:m,onPaneMouseLeave:h,children:x}){let b=(0,H.useRef)(0),v=He(),{userSelectionActive:C,elementsSelectable:p,dragging:w,panBy:S,autoPanSpeed:_}=$e(ph,Ve),R=p&&(e||C),A=(0,H.useRef)(null),z=(0,H.useRef)(),Z=(0,H.useRef)(new Set),X=(0,H.useRef)(new Set),K=(0,H.useRef)(!1),q=(0,H.useRef)(!1),y=(0,H.useRef)({x:0,y:0}),I=(0,H.useRef)(!1),D=B=>{if(q.current||K.current||v.getState().connection.inProgress){q.current=!1,K.current=!1;return}let{connectionClickStartHandle:ae,connection:ve,onClickConnectEnd:pe,resetSelectedElements:V}=v.getState();if(ae){let W=structuredClone(ve);delete W.inProgress,W.toPosition=W.toHandle?W.toHandle.position:null,pe?.(B.nativeEvent,W),v.setState({connectionClickStartHandle:null})}c?.(B),V(),v.setState({nodesSelectionActive:!1})},T=B=>{if(Array.isArray(n)&&n?.includes(2)){B.preventDefault();return}d?.(B)},g=f?B=>f(B):void 0,M=B=>{q.current&&(B.stopPropagation(),q.current=!1)},L=B=>{if(B.pointerType==="touch"&&n!==!1&&!t)return;let{domNode:ae,transform:ve}=v.getState();if(z.current=ae?.getBoundingClientRect(),!z.current)return;let pe=B.target===A.current;if(!pe&&!!B.target.closest(".nokey")||!e||!(a&&pe||t)||B.button!==0||!B.isPrimary)return;B.target?.setPointerCapture?.(B.pointerId),q.current=!1;let{x:G,y:ee}=lt(B.nativeEvent,z.current),fe=_n({x:G,y:ee},ve);v.setState({userSelectionRect:{width:0,height:0,startX:fe.x,startY:fe.y,x:G,y:ee}}),pe||(B.stopPropagation(),B.preventDefault())};function O(B,ae){let{userSelectionRect:ve}=v.getState();if(!ve)return;let{transform:pe,nodeLookup:V,edgeLookup:W,connectionLookup:G,triggerNodeChanges:ee,triggerEdgeChanges:fe,defaultEdgeOptions:ce}=v.getState(),Y={x:ve.startX,y:ve.startY},{x:N,y:Ce}=en(Y,pe),ie={startX:Y.x,startY:Y.y,x:B<N?B:N,y:ae<Ce?ae:Ce,width:Math.abs(B-N),height:Math.abs(ae-Ce)},xe=Z.current,ye=X.current;Z.current=new Set(Uo(V,ie,pe,o===Qt.Partial,!0).map(be=>be.id)),X.current=new Set;let se=ce?.selectable??!0;for(let be of Z.current){let Re=G.get(be);if(Re)for(let{edgeId:Ae}of Re.values()){let Fe=W.get(Ae);Fe&&(Fe.selectable??se)&&X.current.add(Ae)}}if(!$i(xe,Z.current)){let be=In(V,Z.current);ee(be)}if(!$i(ye,X.current)){let be=In(W,X.current);fe(be)}v.setState({userSelectionRect:ie,userSelectionActive:!0,nodesSelectionActive:!1})}function j(){if(!r||!z.current)return;let[B,ae]=Go(y.current,z.current,_);S({x:B,y:ae}).then(ve=>{if(!q.current||!ve){b.current=requestAnimationFrame(j);return}let{x:pe,y:V}=y.current;O(pe,V),b.current=requestAnimationFrame(j)})}let de=()=>{cancelAnimationFrame(b.current),b.current=0,I.current=!1};(0,H.useEffect)(()=>()=>de(),[]);let re=B=>{let{userSelectionRect:ae,transform:ve,resetSelectedElements:pe}=v.getState();if(!z.current||!ae)return;let{x:V,y:W}=lt(B.nativeEvent,z.current);y.current={x:V,y:W};let G=en({x:ae.startX,y:ae.startY},ve);if(!q.current){let ee=t?0:i;if(Math.hypot(V-G.x,W-G.y)<=ee)return;pe(),s?.(B)}q.current=!0,I.current||(j(),I.current=!0),O(V,W)},he=B=>{if(!R){B.target===A.current&&v.getState().connection.inProgress&&(K.current=!0);return}B.button===0&&(B.target?.releasePointerCapture?.(B.pointerId),!C&&B.target===A.current&&v.getState().userSelectionRect&&D?.(B),v.setState({userSelectionActive:!1,userSelectionRect:null}),q.current&&(l?.(B),v.setState({nodesSelectionActive:Z.current.size>0})),de())},ge=B=>{B.target?.releasePointerCapture?.(B.pointerId),de()},ne=n===!0||Array.isArray(n)&&n.includes(0);return(0,F.jsxs)("div",{className:Ye(["react-flow__pane",{draggable:ne,dragging:w,selection:e}]),onClick:R?void 0:Xi(D,A),onContextMenu:Xi(T,A),onWheel:Xi(g,A),onPointerEnter:R?void 0:u,onPointerMove:R?re:m,onPointerUp:he,onPointerCancel:R?ge:void 0,onPointerDownCapture:R?L:void 0,onClickCapture:R?M:void 0,onPointerLeave:h,ref:A,style:hr,children:[x,(0,F.jsx)(fh,{})]})}function Ki({id:e,store:t,unselect:o=!1,nodeRef:n}){let{addSelectedNodes:r,unselectNodesAndEdges:i,multiSelectionActive:a,nodeLookup:s,onError:l}=t.getState(),c=s.get(e);if(!c){l?.("012",ot.error012(e));return}t.setState({nodesSelectionActive:!1}),c.selected?(o||c.selected&&a)&&(i({nodes:[c],edges:[]}),requestAnimationFrame(()=>n?.current?.blur())):r([e])}function Zl({nodeRef:e,disabled:t=!1,noDragClassName:o,handleSelector:n,nodeId:r,isSelectable:i,nodeClickDistance:a}){let s=He(),[l,c]=(0,H.useState)(!1),d=(0,H.useRef)();return(0,H.useEffect)(()=>{if(!t)return d.current=Bs({getStoreItems:()=>s.getState(),onNodeMouseDown:f=>{Ki({id:f,store:s,nodeRef:e})},onDragStart:()=>{c(!0)},onDragStop:()=>{c(!1)}}),()=>{d.current?.destroy(),d.current=void 0}},[t,s,e]),(0,H.useEffect)(()=>{t||!e.current||!d.current||d.current.update({noDragClassName:o,handleSelector:n,domNode:e.current,isSelectable:i,nodeId:r,nodeClickDistance:a})},[o,n,t,i,e,r,a]),l}var hh=e=>t=>t.selected&&(t.draggable||e&&typeof t.draggable>"u");function jl(){let e=He();return(0,H.useCallback)(o=>{let{nodeExtent:n,snapToGrid:r,snapGrid:i,nodesDraggable:a,onError:s,updateNodePositions:l,nodeLookup:c,nodeOrigin:d}=e.getState(),f=new Map,u=hh(a),m=r?i[0]:5,h=r?i[1]:5,x=o.direction.x*m*o.factor,b=o.direction.y*h*o.factor;for(let[,v]of c){if(!u(v))continue;let C={x:v.internals.positionAbsolute.x+x,y:v.internals.positionAbsolute.y+b};r&&(C=Cn(C,i));let{position:p,positionAbsolute:w}=_i({nodeId:v.id,nextPosition:C,nodeLookup:c,nodeExtent:n,nodeOrigin:d,onError:s});v.position=p,v.internals.positionAbsolute=w,f.set(v.id,v)}l(f)},[])}var ji=(0,H.createContext)(null),gh=ji.Provider;ji.Consumer;var Ul=()=>(0,H.useContext)(ji),wh=e=>({connectOnClick:e.connectOnClick,noPanClassName:e.noPanClassName,rfId:e.rfId}),Gl=(0,H.createContext)(null);function vh({children:e}){let t=$e(wh,Ve);return(0,F.jsx)(Gl.Provider,{value:t,children:e})}function yh(){let e=(0,H.useContext)(Gl);if(!e)throw new Error("useHandleConfig must be used within a HandleConfigProvider");return e}var bh={connectingFrom:!1,connectingTo:!1,clickConnecting:!1,isPossibleEndHandle:!0,connectionInProcess:!1,clickConnectionInProcess:!1,valid:!1},xh=(e,t,o)=>n=>{let{connectionClickStartHandle:r,connectionMode:i,connection:a}=n,{fromHandle:s,toHandle:l,isValid:c}=a;if(!s&&!r)return bh;let d=l?.nodeId===e&&l?.id===t&&l?.type===o;return{connectingFrom:s?.nodeId===e&&s?.id===t&&s?.type===o,connectingTo:d,clickConnecting:r?.nodeId===e&&r?.id===t&&r?.type===o,isPossibleEndHandle:i===At.Strict?s?.type!==o:e!==s?.nodeId||t!==s?.id,connectionInProcess:!!s,clickConnectionInProcess:!!r,valid:d&&c}};function kh({type:e="source",position:t=we.Top,isValidConnection:o,isConnectable:n=!0,isConnectableStart:r=!0,isConnectableEnd:i=!0,id:a,onConnect:s,children:l,className:c,onMouseDown:d,onTouchStart:f,...u},m){let h=a||null,x=e==="target",b=He(),v=Ul(),{connectOnClick:C,noPanClassName:p,rfId:w}=yh(),{connectingFrom:S,connectingTo:_,clickConnecting:R,isPossibleEndHandle:A,connectionInProcess:z,clickConnectionInProcess:Z,valid:X}=$e(xh(v,h,e),Ve);v||b.getState().onError?.("010",ot.error010());let K=I=>{let{defaultEdgeOptions:D,onConnect:T,hasDefaultEdges:g}=b.getState(),M={...D,...I};if(g){let{edges:L,setEdges:O,onError:j}=b.getState();O(eh(M,L,{onError:j}))}T?.(M),s?.(M)},q=I=>{if(!v)return;let D=zi(I.nativeEvent);if(r&&(D&&I.button===0||!D)){let T=b.getState();sr.onPointerDown(I.nativeEvent,{handleDomNode:I.currentTarget,autoPanOnConnect:T.autoPanOnConnect,connectionMode:T.connectionMode,connectionRadius:T.connectionRadius,domNode:T.domNode,nodeLookup:T.nodeLookup,lib:T.lib,isTarget:x,handleId:h,nodeId:v,flowId:T.rfId,panBy:T.panBy,cancelConnection:T.cancelConnection,onConnectStart:T.onConnectStart,onConnectEnd:(...g)=>b.getState().onConnectEnd?.(...g),updateConnection:T.updateConnection,onConnect:K,isValidConnection:o||((...g)=>b.getState().isValidConnection?.(...g)??!0),getTransform:()=>b.getState().transform,getFromHandle:()=>b.getState().connection.fromHandle,autoPanSpeed:T.autoPanSpeed,dragThreshold:T.connectionDragThreshold})}D?d?.(I):f?.(I)},y=I=>{let{onClickConnectStart:D,onClickConnectEnd:T,connectionClickStartHandle:g,connectionMode:M,isValidConnection:L,lib:O,rfId:j,nodeLookup:de,connection:re}=b.getState();if(!v||!g&&!r)return;if(!g){D?.(I.nativeEvent,{nodeId:v,handleId:h,handleType:e}),b.setState({connectionClickStartHandle:{nodeId:v,type:e,id:h}});return}let he=Ti(I.target),ge=o||L,{connection:ne,isValid:B}=sr.isValid(I.nativeEvent,{handle:{nodeId:v,id:h,type:e},connectionMode:M,fromNodeId:g.nodeId,fromHandleId:g.id||null,fromType:g.type,isValidConnection:ge,flowId:j,doc:he,lib:O,nodeLookup:de});B&&ne&&K(ne);let ae=structuredClone(re);delete ae.inProgress,ae.toPosition=ae.toHandle?ae.toHandle.position:null,T?.(I,ae),b.setState({connectionClickStartHandle:null})};return(0,F.jsx)("div",{"data-handleid":h,"data-nodeid":v,"data-handlepos":t,"data-id":`${w}-${v}-${h}-${e}`,className:Ye(["react-flow__handle",`react-flow__handle-${t}`,"nodrag",p,c,{source:!x,target:x,connectable:n,connectablestart:r,connectableend:i,clickconnecting:R,connectingfrom:S,connectingto:_,valid:X,connectionindicator:n&&(!z||A)&&(z||Z?i:r)}]),onMouseDown:q,onTouchStart:q,onClick:C?y:void 0,ref:m,...u,children:l})}var on=(0,H.memo)(Xl(kh));function Nh({data:e,isConnectable:t,sourcePosition:o=we.Bottom}){return(0,F.jsxs)(F.Fragment,{children:[e?.label,(0,F.jsx)(on,{type:"source",position:o,isConnectable:t})]})}function Sh({data:e,isConnectable:t,targetPosition:o=we.Top,sourcePosition:n=we.Bottom}){return(0,F.jsxs)(F.Fragment,{children:[(0,F.jsx)(on,{type:"target",position:o,isConnectable:t}),e?.label,(0,F.jsx)(on,{type:"source",position:n,isConnectable:t})]})}function Ch(){return null}function _h({data:e,isConnectable:t,targetPosition:o=we.Top}){return(0,F.jsxs)(F.Fragment,{children:[(0,F.jsx)(on,{type:"target",position:o,isConnectable:t}),e?.label]})}var fr={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0}},El={input:Nh,default:Sh,output:_h,group:Ch};function Eh(e){return e.internals.handleBounds===void 0?{width:e.width??e.initialWidth??e.style?.width,height:e.height??e.initialHeight??e.style?.height}:{width:e.width??e.style?.width,height:e.height??e.style?.height}}var Mh=e=>{let{width:t,height:o,x:n,y:r}=Nn(e.nodeLookup,{filter:i=>!!i.selected});return{width:st(t)?t:null,height:st(o)?o:null,userSelectionActive:e.userSelectionActive,transformString:`translate(${e.transform[0]}px,${e.transform[1]}px) scale(${e.transform[2]}) translate(${n}px,${r}px)`}};function Ih({onSelectionContextMenu:e,noPanClassName:t,disableKeyboardA11y:o}){let n=He(),{width:r,height:i,transformString:a,userSelectionActive:s}=$e(Mh,Ve),l=jl(),c=(0,H.useRef)(null);(0,H.useEffect)(()=>{o||c.current?.focus({preventScroll:!0})},[o]);let d=!s&&r!==null&&i!==null;if(Zl({nodeRef:c,disabled:!d}),!d)return null;let f=e?m=>{let h=n.getState().nodes.filter(x=>x.selected);e(m,h)}:void 0,u=m=>{Object.prototype.hasOwnProperty.call(fr,m.key)&&(m.preventDefault(),l({direction:fr[m.key],factor:m.shiftKey?4:1}))};return(0,F.jsx)("div",{className:Ye(["react-flow__nodesselection","react-flow__container",t]),style:{transform:a},children:(0,F.jsx)("div",{ref:c,className:"react-flow__nodesselection-rect",onContextMenu:f,tabIndex:o?void 0:-1,onKeyDown:o?void 0:u,style:{width:r,height:i}})})}var Ml=typeof window<"u"?window:void 0,Rh=e=>({nodesSelectionActive:e.nodesSelectionActive,userSelectionActive:e.userSelectionActive});function Ql({children:e,onPaneClick:t,onPaneMouseEnter:o,onPaneMouseMove:n,onPaneMouseLeave:r,onPaneContextMenu:i,onPaneScroll:a,paneClickDistance:s,deleteKeyCode:l,selectionKeyCode:c,selectionOnDrag:d,selectionMode:f,onSelectionStart:u,onSelectionEnd:m,multiSelectionKeyCode:h,panActivationKeyCode:x,zoomActivationKeyCode:b,elementsSelectable:v,zoomOnScroll:C,zoomOnPinch:p,panOnScroll:w,panOnScrollSpeed:S,panOnScrollMode:_,zoomOnDoubleClick:R,panOnDrag:A,autoPanOnSelection:z,defaultViewport:Z,translateExtent:X,minZoom:K,maxZoom:q,preventScrolling:y,onSelectionContextMenu:I,noWheelClassName:D,noPanClassName:T,disableKeyboardA11y:g,onViewportChange:M,isControlledViewport:L}){let{nodesSelectionActive:O,userSelectionActive:j}=$e(Rh,Ve),de=no(c,{target:Ml}),re=no(x,{target:Ml}),he=re||A,ge=re||w,ne=d&&he!==!0,B=de||j||ne;return sh({deleteKeyCode:l,multiSelectionKeyCode:h}),(0,F.jsx)(dh,{onPaneContextMenu:i,elementsSelectable:v,zoomOnScroll:C,zoomOnPinch:p,panOnScroll:ge,panActivationKeyPressed:re,panOnScrollSpeed:S,panOnScrollMode:_,zoomOnDoubleClick:R,panOnDrag:!de&&he,defaultViewport:Z,translateExtent:X,minZoom:K,maxZoom:q,zoomActivationKeyCode:b,preventScrolling:y,noWheelClassName:D,noPanClassName:T,onViewportChange:M,isControlledViewport:L,paneClickDistance:s,selectionOnDrag:ne,children:(0,F.jsxs)(mh,{onSelectionStart:u,onSelectionEnd:m,onPaneClick:t,onPaneMouseEnter:o,onPaneMouseMove:n,onPaneMouseLeave:r,onPaneContextMenu:i,onPaneScroll:a,panOnDrag:he,autoPanOnSelection:z,isSelecting:!!B,selectionMode:f,selectionKeyPressed:de,paneClickDistance:s,selectionOnDrag:ne,children:[e,O&&(0,F.jsx)(Ih,{onSelectionContextMenu:I,noPanClassName:T,disableKeyboardA11y:g})]})})}Ql.displayName="FlowRenderer";var Dh=(0,H.memo)(Ql),$h=e=>t=>e?Uo(t.nodeLookup,{x:0,y:0,width:t.width,height:t.height},t.transform,!0).map(o=>o.id):Array.from(t.nodeLookup.keys());function Ph(e){return $e((0,H.useCallback)($h(e),[e]),Ve)}var Th=e=>e.updateNodeInternals;function Ah(){let e=$e(Th),[t]=(0,H.useState)(()=>typeof ResizeObserver>"u"?null:new ResizeObserver(o=>{let n=new Map;o.forEach(r=>{let i=r.target.getAttribute("data-id");n.set(i,{id:i,nodeElement:r.target,force:!0})}),e(n)}));return(0,H.useEffect)(()=>()=>{t?.disconnect()},[t]),t}function zh({node:e,nodeType:t,hasDimensions:o,resizeObserver:n}){let r=He(),i=(0,H.useRef)(null),a=(0,H.useRef)(null),s=(0,H.useRef)(e.sourcePosition),l=(0,H.useRef)(e.targetPosition),c=(0,H.useRef)(t),d=o&&!!e.internals.handleBounds;return(0,H.useEffect)(()=>{i.current&&!e.hidden&&(!d||a.current!==i.current)&&(a.current&&n?.unobserve(a.current),n?.observe(i.current),a.current=i.current)},[d,e.hidden]),(0,H.useEffect)(()=>()=>{a.current&&(n?.unobserve(a.current),a.current=null)},[]),(0,H.useEffect)(()=>{if(i.current){let f=c.current!==t,u=s.current!==e.sourcePosition,m=l.current!==e.targetPosition;(f||u||m)&&(c.current=t,s.current=e.sourcePosition,l.current=e.targetPosition,r.getState().updateNodeInternals(new Map([[e.id,{id:e.id,nodeElement:i.current,force:!0}]])))}},[e.id,t,e.sourcePosition,e.targetPosition]),i}function Oh({id:e,onClick:t,onMouseEnter:o,onMouseMove:n,onMouseLeave:r,onContextMenu:i,onDoubleClick:a,nodesDraggable:s,elementsSelectable:l,nodesConnectable:c,nodesFocusable:d,resizeObserver:f,noDragClassName:u,noPanClassName:m,disableKeyboardA11y:h,rfId:x,nodeTypes:b,nodeClickDistance:v,onError:C}){let{node:p,internals:w,isParent:S}=$e(B=>{let ae=B.nodeLookup.get(e),ve=B.parentLookup.has(e);return{node:ae,internals:ae.internals,isParent:ve}},Ve),_=p.type||"default",R=b?.[_]||El[_];R===void 0&&(C?.("003",ot.error003(_)),_="default",R=b?.default||El.default);let A=!!(p.draggable||s&&typeof p.draggable>"u"),z=!!(p.selectable||l&&typeof p.selectable>"u"),Z=!!(p.connectable||c&&typeof p.connectable>"u"),X=!!(p.focusable||d&&typeof p.focusable>"u"),K=He(),q=Ri(p),y=zh({node:p,nodeType:_,hasDimensions:q,resizeObserver:f}),I=Zl({nodeRef:y,disabled:p.hidden||!A,noDragClassName:u,handleSelector:p.dragHandle,nodeId:e,isSelectable:z,nodeClickDistance:v}),D=jl();if(p.hidden)return null;let T=ct(p),g=Eh(p),M=z||A||t||o||n||r,L=o?B=>o(B,{...w.userNode}):void 0,O=n?B=>n(B,{...w.userNode}):void 0,j=r?B=>r(B,{...w.userNode}):void 0,de=i?B=>i(B,{...w.userNode}):void 0,re=a?B=>a(B,{...w.userNode}):void 0,he=B=>{let{selectNodesOnDrag:ae,nodeDragThreshold:ve}=K.getState();z&&(!ae||!A||ve>0)&&Ki({id:e,store:K,nodeRef:y}),t&&t(B,{...w.userNode})},ge=B=>{if(!(Ai(B.nativeEvent)||h)){if(bi.includes(B.key)&&z){let ae=B.key==="Escape";Ki({id:e,store:K,unselect:ae,nodeRef:y})}else if(A&&p.selected&&Object.prototype.hasOwnProperty.call(fr,B.key)){B.preventDefault();let{ariaLabelConfig:ae}=K.getState();K.setState({ariaLiveMessage:ae["node.a11yDescription.ariaLiveMessage"]({direction:B.key.replace("Arrow","").toLowerCase(),x:~~w.positionAbsolute.x,y:~~w.positionAbsolute.y})}),D({direction:fr[B.key],factor:B.shiftKey?4:1})}}},ne=()=>{if(h||!y.current?.matches(":focus-visible"))return;let{transform:B,width:ae,height:ve,autoPanOnNodeFocus:pe,setCenter:V}=K.getState();if(!pe)return;Uo(new Map([[e,p]]),{x:0,y:0,width:ae,height:ve},B,!0).length>0||V(p.position.x+T.width/2,p.position.y+T.height/2,{zoom:B[2]})};return(0,F.jsx)("div",{className:Ye(["react-flow__node",`react-flow__node-${_}`,{[m]:A},p.className,{selected:p.selected,selectable:z,parent:S,draggable:A,dragging:I}]),ref:y,style:{zIndex:w.z,transform:`translate(${w.positionAbsolute.x}px,${w.positionAbsolute.y}px)`,pointerEvents:M?"all":"none",visibility:q?"visible":"hidden",...p.style,...g},"data-id":e,"data-testid":`rf__node-${e}`,onMouseEnter:L,onMouseMove:O,onMouseLeave:j,onContextMenu:de,onClick:he,onDoubleClick:re,onKeyDown:X?ge:void 0,tabIndex:X?0:void 0,onFocus:X?ne:void 0,role:p.ariaRole??(X?"group":void 0),"aria-roledescription":"node","aria-describedby":h?void 0:`${Vl}-${x}`,"aria-label":p.ariaLabel,...p.domAttributes,children:(0,F.jsx)(gh,{value:e,children:(0,F.jsx)(R,{id:e,data:p.data,type:_,positionAbsoluteX:w.positionAbsolute.x,positionAbsoluteY:w.positionAbsolute.y,selected:p.selected??!1,selectable:z,draggable:A,deletable:p.deletable??!0,isConnectable:Z,sourcePosition:p.sourcePosition,targetPosition:p.targetPosition,dragging:I,dragHandle:p.dragHandle,zIndex:w.z,parentId:p.parentId,...T})})})}var Lh=(0,H.memo)(Oh),Fh=e=>({nodesConnectable:e.nodesConnectable,nodesFocusable:e.nodesFocusable,elementsSelectable:e.elementsSelectable,onError:e.onError});function Jl(e){let{nodesConnectable:t,nodesFocusable:o,elementsSelectable:n,onError:r}=$e(Fh,Ve),i=Ph(e.onlyRenderVisibleElements),a=Ah();return(0,F.jsx)("div",{className:"react-flow__nodes",style:hr,children:i.map(s=>(0,F.jsx)(Lh,{id:s,nodeTypes:e.nodeTypes,nodeExtent:e.nodeExtent,onClick:e.onNodeClick,onMouseEnter:e.onNodeMouseEnter,onMouseMove:e.onNodeMouseMove,onMouseLeave:e.onNodeMouseLeave,onContextMenu:e.onNodeContextMenu,onDoubleClick:e.onNodeDoubleClick,noDragClassName:e.noDragClassName,noPanClassName:e.noPanClassName,rfId:e.rfId,disableKeyboardA11y:e.disableKeyboardA11y,resizeObserver:a,nodesDraggable:e.nodesDraggable??!0,nodesConnectable:t,nodesFocusable:o,elementsSelectable:n,nodeClickDistance:e.nodeClickDistance,onError:r},s))})}Jl.displayName="NodeRenderer";var Hh=(0,H.memo)(Jl);function Vh(e){return $e((0,H.useCallback)(o=>{if(!e)return o.edges.map(r=>r.id);let n=[];if(o.width&&o.height)for(let r of o.edges){let i=o.nodeLookup.get(r.source),a=o.nodeLookup.get(r.target);i&&a&&$s({sourceNode:i,targetNode:a,width:o.width,height:o.height,transform:o.transform})&&n.push(r.id)}return n},[e]),Ve)}var Bh=({color:e="none",strokeWidth:t=1})=>{let o={strokeWidth:t,...e&&{stroke:e}};return(0,F.jsx)("polyline",{className:"arrow",style:o,strokeLinecap:"round",fill:"none",strokeLinejoin:"round",points:"-5,-4 0,0 -5,4"})},Wh=({color:e="none",strokeWidth:t=1})=>{let o={strokeWidth:t,...e&&{stroke:e,fill:e}};return(0,F.jsx)("polyline",{className:"arrowclosed",style:o,strokeLinecap:"round",strokeLinejoin:"round",points:"-5,-4 0,0 -5,4 -5,-4"})},Il={[zt.Arrow]:Bh,[zt.ArrowClosed]:Wh};function Yh(e){let t=He();return(0,H.useMemo)(()=>Object.prototype.hasOwnProperty.call(Il,e)?Il[e]:(t.getState().onError?.("009",ot.error009(e)),null),[e])}var Xh=({id:e,type:t,color:o,width:n=12.5,height:r=12.5,markerUnits:i="strokeWidth",strokeWidth:a,orient:s="auto-start-reverse"})=>{let l=Yh(t);return l?(0,F.jsx)("marker",{className:"react-flow__arrowhead",id:e,markerWidth:`${n}`,markerHeight:`${r}`,viewBox:"-10 -10 20 20",markerUnits:i,orient:s,refX:"0",refY:"0",children:(0,F.jsx)(l,{color:o,strokeWidth:a})}):null},ec=({defaultColor:e,rfId:t})=>{let o=$e(i=>i.edges),n=$e(i=>i.defaultEdgeOptions),r=(0,H.useMemo)(()=>As(o,{id:t,defaultColor:e,defaultMarkerStart:n?.markerStart,defaultMarkerEnd:n?.markerEnd}),[o,n,t,e]);return r.length?(0,F.jsx)("svg",{className:"react-flow__marker","aria-hidden":"true",children:(0,F.jsx)("defs",{children:r.map(i=>(0,F.jsx)(Xh,{id:i.id,type:i.type,color:i.color,width:i.width,height:i.height,markerUnits:i.markerUnits,strokeWidth:i.strokeWidth,orient:i.orient},i.id))})}):null};ec.displayName="MarkerDefinitions";var qh=(0,H.memo)(ec);function tc({x:e,y:t,label:o,labelStyle:n,labelShowBg:r=!0,labelBgStyle:i,labelBgPadding:a=[2,4],labelBgBorderRadius:s=2,children:l,className:c,...d}){let[f,u]=(0,H.useState)({x:1,y:0,width:0,height:0}),m=Ye(["react-flow__edge-textwrapper",c]),h=(0,H.useRef)(null);return(0,H.useEffect)(()=>{if(h.current){let x=h.current.getBBox();u({x:x.x,y:x.y,width:x.width,height:x.height})}},[o]),o?(0,F.jsxs)("g",{transform:`translate(${e-f.width/2} ${t-f.height/2})`,className:m,visibility:f.width?"visible":"hidden",...d,children:[r&&(0,F.jsx)("rect",{width:f.width+2*a[0],x:-a[0],y:-a[1],height:f.height+2*a[1],className:"react-flow__edge-textbg",style:i,rx:s,ry:s}),(0,F.jsx)("text",{className:"react-flow__edge-text",y:f.height/2,dy:"0.3em",ref:h,style:n,children:o}),l]}):null}tc.displayName="EdgeText";var Kh=(0,H.memo)(tc);function gr({path:e,labelX:t,labelY:o,label:n,labelStyle:r,labelShowBg:i,labelBgStyle:a,labelBgPadding:s,labelBgBorderRadius:l,interactionWidth:c=20,...d}){return(0,F.jsxs)(F.Fragment,{children:[(0,F.jsx)("path",{...d,d:e,fill:"none",className:Ye(["react-flow__edge-path",d.className])}),c?(0,F.jsx)("path",{d:e,fill:"none",strokeOpacity:0,strokeWidth:c,className:"react-flow__edge-interaction"}):null,n&&st(t)&&st(o)?(0,F.jsx)(Kh,{x:t,y:o,label:n,labelStyle:r,labelShowBg:i,labelBgStyle:a,labelBgPadding:s,labelBgBorderRadius:l}):null]})}function Rl({pos:e,x1:t,y1:o,x2:n,y2:r}){return e===we.Left||e===we.Right?[.5*(t+n),o]:[t,.5*(o+r)]}function nc({sourceX:e,sourceY:t,sourcePosition:o=we.Bottom,targetX:n,targetY:r,targetPosition:i=we.Top}){let[a,s]=Rl({pos:o,x1:e,y1:t,x2:n,y2:r}),[l,c]=Rl({pos:i,x1:n,y1:r,x2:e,y2:t}),[d,f,u,m]=tr({sourceX:e,sourceY:t,targetX:n,targetY:r,sourceControlX:a,sourceControlY:s,targetControlX:l,targetControlY:c});return[`M${e},${t} C${a},${s} ${l},${c} ${n},${r}`,d,f,u,m]}function oc(e){return(0,H.memo)(({id:t,sourceX:o,sourceY:n,targetX:r,targetY:i,sourcePosition:a,targetPosition:s,label:l,labelStyle:c,labelShowBg:d,labelBgStyle:f,labelBgPadding:u,labelBgBorderRadius:m,style:h,markerEnd:x,markerStart:b,interactionWidth:v})=>{let[C,p,w]=nc({sourceX:o,sourceY:n,sourcePosition:a,targetX:r,targetY:i,targetPosition:s}),S=e.isInternal?void 0:t;return(0,F.jsx)(gr,{id:S,path:C,labelX:p,labelY:w,label:l,labelStyle:c,labelShowBg:d,labelBgStyle:f,labelBgPadding:u,labelBgBorderRadius:m,style:h,markerEnd:x,markerStart:b,interactionWidth:v})})}var Zh=oc({isInternal:!1}),rc=oc({isInternal:!0});Zh.displayName="SimpleBezierEdge";rc.displayName="SimpleBezierEdgeInternal";function ic(e){return(0,H.memo)(({id:t,sourceX:o,sourceY:n,targetX:r,targetY:i,label:a,labelStyle:s,labelShowBg:l,labelBgStyle:c,labelBgPadding:d,labelBgBorderRadius:f,style:u,sourcePosition:m=we.Bottom,targetPosition:h=we.Top,markerEnd:x,markerStart:b,pathOptions:v,interactionWidth:C})=>{let[p,w,S]=to({sourceX:o,sourceY:n,sourcePosition:m,targetX:r,targetY:i,targetPosition:h,borderRadius:v?.borderRadius,offset:v?.offset,stepPosition:v?.stepPosition}),_=e.isInternal?void 0:t;return(0,F.jsx)(gr,{id:_,path:p,labelX:w,labelY:S,label:a,labelStyle:s,labelShowBg:l,labelBgStyle:c,labelBgPadding:d,labelBgBorderRadius:f,style:u,markerEnd:x,markerStart:b,interactionWidth:C})})}var ac=ic({isInternal:!1}),sc=ic({isInternal:!0});ac.displayName="SmoothStepEdge";sc.displayName="SmoothStepEdgeInternal";function lc(e){return(0,H.memo)(({id:t,...o})=>{let n=e.isInternal?void 0:t;return(0,F.jsx)(ac,{...o,id:n,pathOptions:(0,H.useMemo)(()=>({borderRadius:0,offset:o.pathOptions?.offset}),[o.pathOptions?.offset])})})}var jh=lc({isInternal:!1}),cc=lc({isInternal:!0});jh.displayName="StepEdge";cc.displayName="StepEdgeInternal";function dc(e){return(0,H.memo)(({id:t,sourceX:o,sourceY:n,targetX:r,targetY:i,label:a,labelStyle:s,labelShowBg:l,labelBgStyle:c,labelBgPadding:d,labelBgBorderRadius:f,style:u,markerEnd:m,markerStart:h,interactionWidth:x})=>{let[b,v,C]=or({sourceX:o,sourceY:n,targetX:r,targetY:i}),p=e.isInternal?void 0:t;return(0,F.jsx)(gr,{id:p,path:b,labelX:v,labelY:C,label:a,labelStyle:s,labelShowBg:l,labelBgStyle:c,labelBgPadding:d,labelBgBorderRadius:f,style:u,markerEnd:m,markerStart:h,interactionWidth:x})})}var Uh=dc({isInternal:!1}),uc=dc({isInternal:!0});Uh.displayName="StraightEdge";uc.displayName="StraightEdgeInternal";function fc(e){return(0,H.memo)(({id:t,sourceX:o,sourceY:n,targetX:r,targetY:i,sourcePosition:a=we.Bottom,targetPosition:s=we.Top,label:l,labelStyle:c,labelShowBg:d,labelBgStyle:f,labelBgPadding:u,labelBgBorderRadius:m,style:h,markerEnd:x,markerStart:b,pathOptions:v,interactionWidth:C})=>{let[p,w,S]=nr({sourceX:o,sourceY:n,sourcePosition:a,targetX:r,targetY:i,targetPosition:s,curvature:v?.curvature}),_=e.isInternal?void 0:t;return(0,F.jsx)(gr,{id:_,path:p,labelX:w,labelY:S,label:l,labelStyle:c,labelShowBg:d,labelBgStyle:f,labelBgPadding:u,labelBgBorderRadius:m,style:h,markerEnd:x,markerStart:b,interactionWidth:C})})}var Gh=fc({isInternal:!1}),pc=fc({isInternal:!0});Gh.displayName="BezierEdge";pc.displayName="BezierEdgeInternal";var Dl={default:pc,straight:uc,step:cc,smoothstep:sc,simplebezier:rc},$l={sourceX:null,sourceY:null,targetX:null,targetY:null,sourcePosition:null,targetPosition:null,zIndex:void 0},Qh=(e,t,o)=>o===we.Left?e-t:o===we.Right?e+t:e,Jh=(e,t,o)=>o===we.Top?e-t:o===we.Bottom?e+t:e,Pl="react-flow__edgeupdater";function Tl({position:e,centerX:t,centerY:o,radius:n=10,onMouseDown:r,onMouseEnter:i,onMouseOut:a,type:s}){return(0,F.jsx)("circle",{onMouseDown:r,onMouseEnter:i,onMouseOut:a,className:Ye([Pl,`${Pl}-${s}`]),cx:Qh(t,n,e),cy:Jh(o,n,e),r:n,stroke:"transparent",fill:"transparent"})}function eg({isReconnectable:e,reconnectRadius:t,edge:o,sourceX:n,sourceY:r,targetX:i,targetY:a,sourcePosition:s,targetPosition:l,onReconnect:c,onReconnectStart:d,onReconnectEnd:f,setReconnecting:u,setUpdateHover:m}){let h=He(),x=(w,S)=>{if(w.button!==0)return;let{autoPanOnConnect:_,domNode:R,connectionMode:A,connectionRadius:z,lib:Z,onConnectStart:X,cancelConnection:K,nodeLookup:q,rfId:y,panBy:I,updateConnection:D}=h.getState(),T=S.type==="target",g=(O,j)=>{u(!1),f?.(O,o,S.type,j)},M=O=>c?.(o,O),L=(O,j)=>{u(!0),d?.(w,o,S.type),X?.(O,j)};sr.onPointerDown(w.nativeEvent,{autoPanOnConnect:_,connectionMode:A,connectionRadius:z,domNode:R,handleId:S.id,nodeId:S.nodeId,nodeLookup:q,isTarget:T,edgeUpdaterType:S.type,lib:Z,flowId:y,cancelConnection:K,panBy:I,isValidConnection:(...O)=>h.getState().isValidConnection?.(...O)??!0,onConnect:M,onConnectStart:L,onConnectEnd:(...O)=>h.getState().onConnectEnd?.(...O),onReconnectEnd:g,updateConnection:D,getTransform:()=>h.getState().transform,getFromHandle:()=>h.getState().connection.fromHandle,dragThreshold:h.getState().connectionDragThreshold,handleDomNode:w.currentTarget})},b=w=>x(w,{nodeId:o.target,id:o.targetHandle??null,type:"target"}),v=w=>x(w,{nodeId:o.source,id:o.sourceHandle??null,type:"source"}),C=()=>m(!0),p=()=>m(!1);return(0,F.jsxs)(F.Fragment,{children:[(e===!0||e==="source")&&(0,F.jsx)(Tl,{position:s,centerX:n,centerY:r,radius:t,onMouseDown:b,onMouseEnter:C,onMouseOut:p,type:"source"}),(e===!0||e==="target")&&(0,F.jsx)(Tl,{position:l,centerX:i,centerY:a,radius:t,onMouseDown:v,onMouseEnter:C,onMouseOut:p,type:"target"})]})}function tg({id:e,edgesFocusable:t,edgesReconnectable:o,elementsSelectable:n,onClick:r,onDoubleClick:i,onContextMenu:a,onMouseEnter:s,onMouseMove:l,onMouseLeave:c,reconnectRadius:d,onReconnect:f,onReconnectStart:u,onReconnectEnd:m,rfId:h,edgeTypes:x,noPanClassName:b,onError:v,disableKeyboardA11y:C}){let p=$e(V=>V.edgeLookup.get(e)),w=$e(V=>V.defaultEdgeOptions);p=w?{...w,...p}:p;let S=p.type||"default",_=x?.[S]||Dl[S];_===void 0&&(v?.("011",ot.error011(S)),S="default",_=x?.default||Dl.default);let R=!!(p.focusable||t&&typeof p.focusable>"u"),A=typeof f<"u"&&(p.reconnectable||o&&typeof p.reconnectable>"u"),z=!!(p.selectable||n&&typeof p.selectable>"u"),Z=(0,H.useRef)(null),[X,K]=(0,H.useState)(!1),[q,y]=(0,H.useState)(!1),I=He(),{zIndex:D=p.zIndex,sourceX:T,sourceY:g,targetX:M,targetY:L,sourcePosition:O,targetPosition:j}=$e((0,H.useCallback)(V=>{let W=V.nodeLookup.get(p.source),G=V.nodeLookup.get(p.target);if(!W||!G)return $l;let ee=Ts({id:e,sourceNode:W,targetNode:G,sourceHandle:p.sourceHandle||null,targetHandle:p.targetHandle||null,connectionMode:V.connectionMode,onError:v}),fe=Ds({selected:p.selected,zIndex:p.zIndex,sourceNode:W,targetNode:G,elevateOnSelect:V.elevateEdgesOnSelect,zIndexMode:V.zIndexMode});return{...ee||$l,zIndex:fe}},[p.source,p.target,p.sourceHandle,p.targetHandle,p.selected,p.zIndex,v]),Ve),de=(0,H.useMemo)(()=>p.markerStart?`url('#${rr(p.markerStart,h)}')`:void 0,[p.markerStart,h]),re=(0,H.useMemo)(()=>p.markerEnd?`url('#${rr(p.markerEnd,h)}')`:void 0,[p.markerEnd,h]);if(p.hidden||T===null||g===null||M===null||L===null)return null;let he=V=>{let{addSelectedEdges:W,unselectNodesAndEdges:G,multiSelectionActive:ee}=I.getState();z&&(I.setState({nodesSelectionActive:!1}),p.selected&&ee?(G({nodes:[],edges:[p]}),Z.current?.blur()):W([e])),r&&r(V,p)},ge=i?V=>{i(V,{...p})}:void 0,ne=a?V=>{a(V,{...p})}:void 0,B=s?V=>{s(V,{...p})}:void 0,ae=l?V=>{l(V,{...p})}:void 0,ve=c?V=>{c(V,{...p})}:void 0,pe=V=>{if(!C&&bi.includes(V.key)&&z){let{unselectNodesAndEdges:W,addSelectedEdges:G}=I.getState();V.key==="Escape"?(Z.current?.blur(),W({edges:[p]})):G([e])}};return(0,F.jsx)("svg",{style:{zIndex:D},children:(0,F.jsxs)("g",{className:Ye(["react-flow__edge",`react-flow__edge-${S}`,p.className,b,{selected:p.selected,animated:p.animated,inactive:!z&&!r,updating:X,selectable:z}]),onClick:he,onDoubleClick:ge,onContextMenu:ne,onMouseEnter:B,onMouseMove:ae,onMouseLeave:ve,onKeyDown:R?pe:void 0,tabIndex:R?0:void 0,role:p.ariaRole??(R?"group":"img"),"aria-roledescription":"edge","data-id":e,"data-testid":`rf__edge-${e}`,"aria-label":p.ariaLabel===null?void 0:p.ariaLabel||`Edge from ${p.source} to ${p.target}`,"aria-describedby":R?`${Bl}-${h}`:void 0,ref:Z,...p.domAttributes,children:[!q&&(0,F.jsx)(_,{id:e,source:p.source,target:p.target,type:p.type,selected:p.selected,animated:p.animated,selectable:z,deletable:p.deletable??!0,label:p.label,labelStyle:p.labelStyle,labelShowBg:p.labelShowBg,labelBgStyle:p.labelBgStyle,labelBgPadding:p.labelBgPadding,labelBgBorderRadius:p.labelBgBorderRadius,sourceX:T,sourceY:g,targetX:M,targetY:L,sourcePosition:O,targetPosition:j,data:p.data,style:p.style,sourceHandleId:p.sourceHandle,targetHandleId:p.targetHandle,markerStart:de,markerEnd:re,pathOptions:"pathOptions"in p?p.pathOptions:void 0,interactionWidth:p.interactionWidth}),A&&(0,F.jsx)(eg,{edge:p,isReconnectable:A,reconnectRadius:d,onReconnect:f,onReconnectStart:u,onReconnectEnd:m,sourceX:T,sourceY:g,targetX:M,targetY:L,sourcePosition:O,targetPosition:j,setUpdateHover:K,setReconnecting:y})]})})}var ng=(0,H.memo)(tg),og=e=>({edgesFocusable:e.edgesFocusable,edgesReconnectable:e.edgesReconnectable,elementsSelectable:e.elementsSelectable,connectionMode:e.connectionMode,onError:e.onError});function mc({defaultMarkerColor:e,onlyRenderVisibleElements:t,rfId:o,edgeTypes:n,noPanClassName:r,onReconnect:i,onEdgeContextMenu:a,onEdgeMouseEnter:s,onEdgeMouseMove:l,onEdgeMouseLeave:c,onEdgeClick:d,reconnectRadius:f,onEdgeDoubleClick:u,onReconnectStart:m,onReconnectEnd:h,disableKeyboardA11y:x}){let{edgesFocusable:b,edgesReconnectable:v,elementsSelectable:C,onError:p}=$e(og,Ve),w=Vh(t);return(0,F.jsxs)("div",{className:"react-flow__edges",children:[(0,F.jsx)(qh,{defaultColor:e,rfId:o}),w.map(S=>(0,F.jsx)(ng,{id:S,edgesFocusable:b,edgesReconnectable:v,elementsSelectable:C,noPanClassName:r,onReconnect:i,onContextMenu:a,onMouseEnter:s,onMouseMove:l,onMouseLeave:c,onClick:d,reconnectRadius:f,onDoubleClick:u,onReconnectStart:m,onReconnectEnd:h,rfId:o,onError:p,edgeTypes:n,disableKeyboardA11y:x},S))]})}mc.displayName="EdgeRenderer";var rg=(0,H.memo)(mc),Al=e=>`translate(${e[0]}px,${e[1]}px) scale(${e[2]})`;function ig({children:e}){let t=He(),o=(0,H.useRef)(null),[n]=(0,H.useState)(()=>t.getState().transform);return ql(()=>{let r=null,i=()=>{let a=t.getState().transform;r&&a[0]===r[0]&&a[1]===r[1]&&a[2]===r[2]||(r=a,o.current&&(o.current.style.transform=Al(a)))};return i(),t.subscribe(i)},[t]),(0,F.jsx)("div",{ref:o,className:"react-flow__viewport xyflow__viewport react-flow__container",style:{transform:Al(n)},children:e})}function ag(e){let t=oo(),o=(0,H.useRef)(!1);(0,H.useEffect)(()=>{!o.current&&t.viewportInitialized&&e&&(setTimeout(()=>e(t),1),o.current=!0)},[e,t.viewportInitialized])}var sg=e=>e.panZoom?.syncViewport;function lg(e){let t=$e(sg),o=He();return(0,H.useEffect)(()=>{e&&(t?.(e),o.setState({transform:[e.x,e.y,e.zoom]}))},[e,t]),null}function zl(e){return e.connection.inProgress?{...e.connection,to:_n(e.connection.to,e.transform)}:{...e.connection}}function cg(e){return e?o=>{let n=zl(o);return e(n)}:zl}function dg(e){let t=cg(e);return $e(t,Ve)}var ug=e=>({nodesConnectable:e.nodesConnectable,isValid:e.connection.isValid,inProgress:e.connection.inProgress,width:e.width,height:e.height});function fg({containerStyle:e,style:t,type:o,component:n}){let{nodesConnectable:r,width:i,height:a,isValid:s,inProgress:l}=$e(ug,Ve);return!(i&&r&&l)?null:(0,F.jsx)("svg",{style:e,width:i,height:a,className:"react-flow__connectionline react-flow__container",children:(0,F.jsx)("g",{className:Ye(["react-flow__connection",Pi(s)]),children:(0,F.jsx)(hc,{style:t,type:o,CustomComponent:n,isValid:s})})})}var hc=({style:e,type:t=bt.Bezier,CustomComponent:o,isValid:n})=>{let{inProgress:r,from:i,fromNode:a,fromHandle:s,fromPosition:l,to:c,toNode:d,toHandle:f,toPosition:u,pointer:m}=dg();if(!r)return;if(o)return(0,F.jsx)(o,{connectionLineType:t,connectionLineStyle:e,fromNode:a,fromHandle:s,fromX:i.x,fromY:i.y,toX:c.x,toY:c.y,fromPosition:l,toPosition:u,connectionStatus:Pi(n),toNode:d,toHandle:f,pointer:m});let h="",x={sourceX:i.x,sourceY:i.y,sourcePosition:l,targetX:c.x,targetY:c.y,targetPosition:u};switch(t){case bt.Bezier:[h]=nr(x);break;case bt.SimpleBezier:[h]=nc(x);break;case bt.Step:[h]=to({...x,borderRadius:0});break;case bt.SmoothStep:[h]=to(x);break;default:[h]=or(x)}return(0,F.jsx)("path",{d:h,fill:"none",className:"react-flow__connection-path",style:e})};hc.displayName="ConnectionLine";var pg={};function Ol(e=pg){let t=(0,H.useRef)(e),o=He();(0,H.useEffect)(()=>{},[e])}function mg(){let e=He(),t=(0,H.useRef)(!1);(0,H.useEffect)(()=>{},[])}function gc({nodeTypes:e,edgeTypes:t,onInit:o,onNodeClick:n,onEdgeClick:r,onNodeDoubleClick:i,onEdgeDoubleClick:a,onNodeMouseEnter:s,onNodeMouseMove:l,onNodeMouseLeave:c,onNodeContextMenu:d,onSelectionContextMenu:f,onSelectionStart:u,onSelectionEnd:m,connectionLineType:h,connectionLineStyle:x,connectionLineComponent:b,connectionLineContainerStyle:v,selectionKeyCode:C,selectionOnDrag:p,selectionMode:w,multiSelectionKeyCode:S,panActivationKeyCode:_,zoomActivationKeyCode:R,deleteKeyCode:A,onlyRenderVisibleElements:z,elementsSelectable:Z,defaultViewport:X,translateExtent:K,minZoom:q,maxZoom:y,preventScrolling:I,defaultMarkerColor:D,zoomOnScroll:T,zoomOnPinch:g,panOnScroll:M,panOnScrollSpeed:L,panOnScrollMode:O,zoomOnDoubleClick:j,panOnDrag:de,autoPanOnSelection:re,onPaneClick:he,onPaneMouseEnter:ge,onPaneMouseMove:ne,onPaneMouseLeave:B,onPaneScroll:ae,onPaneContextMenu:ve,paneClickDistance:pe,nodeClickDistance:V,onEdgeContextMenu:W,onEdgeMouseEnter:G,onEdgeMouseMove:ee,onEdgeMouseLeave:fe,reconnectRadius:ce,onReconnect:Y,onReconnectStart:N,onReconnectEnd:Ce,noDragClassName:ie,noWheelClassName:xe,noPanClassName:ye,disableKeyboardA11y:se,nodeExtent:be,rfId:Re,viewport:Ae,onViewportChange:Fe,nodesDraggable:E}){return Ol(e),Ol(t),mg(),ag(o),lg(Ae),(0,F.jsx)(Dh,{onPaneClick:he,onPaneMouseEnter:ge,onPaneMouseMove:ne,onPaneMouseLeave:B,onPaneContextMenu:ve,onPaneScroll:ae,paneClickDistance:pe,deleteKeyCode:A,selectionKeyCode:C,selectionOnDrag:p,selectionMode:w,onSelectionStart:u,onSelectionEnd:m,multiSelectionKeyCode:S,panActivationKeyCode:_,zoomActivationKeyCode:R,elementsSelectable:Z,zoomOnScroll:T,zoomOnPinch:g,zoomOnDoubleClick:j,panOnScroll:M,panOnScrollSpeed:L,panOnScrollMode:O,panOnDrag:de,autoPanOnSelection:re,defaultViewport:X,translateExtent:K,minZoom:q,maxZoom:y,onSelectionContextMenu:f,preventScrolling:I,noDragClassName:ie,noWheelClassName:xe,noPanClassName:ye,disableKeyboardA11y:se,onViewportChange:Fe,isControlledViewport:!!Ae,children:(0,F.jsxs)(ig,{children:[(0,F.jsx)(rg,{edgeTypes:t,onEdgeClick:r,onEdgeDoubleClick:a,onReconnect:Y,onReconnectStart:N,onReconnectEnd:Ce,onlyRenderVisibleElements:z,onEdgeContextMenu:W,onEdgeMouseEnter:G,onEdgeMouseMove:ee,onEdgeMouseLeave:fe,reconnectRadius:ce,defaultMarkerColor:D,noPanClassName:ye,disableKeyboardA11y:se,rfId:Re}),(0,F.jsx)(fg,{style:x,type:h,component:b,containerStyle:v}),(0,F.jsx)("div",{className:"react-flow__edgelabel-renderer"}),(0,F.jsx)(Hh,{nodeTypes:e,onNodeClick:n,onNodeDoubleClick:i,onNodeMouseEnter:s,onNodeMouseMove:l,onNodeMouseLeave:c,onNodeContextMenu:d,nodeClickDistance:V,onlyRenderVisibleElements:z,noPanClassName:ye,noDragClassName:ie,disableKeyboardA11y:se,nodeExtent:be,rfId:Re,nodesDraggable:E}),(0,F.jsx)("div",{className:"react-flow__viewport-portal"})]})})}gc.displayName="GraphView";var hg=(0,H.memo)(gc),gg=Ii("React Flow","https://reactflow.dev/"),Ll=({nodes:e,edges:t,defaultNodes:o,defaultEdges:n,width:r,height:i,fitView:a,fitViewOptions:s,minZoom:l=.5,maxZoom:c=2,nodeOrigin:d,nodeExtent:f,zIndexMode:u="basic"}={})=>{let m=new Map,h=new Map,x=new Map,b=new Map,v=n??t??[],C=o??e??[],p=d??[0,0],w=f??kn;Bi(x,b,v);let{nodesInitialized:S}=ir(C,m,h,{nodeOrigin:p,nodeExtent:w,zIndexMode:u}),_=[0,0,1];if(a&&r&&i){let R=Nn(m,{filter:X=>!!((X.width||X.initialWidth)&&(X.height||X.initialHeight))}),{x:A,y:z,zoom:Z}=eo(R,r,i,l,c,s?.padding??.1);_=[A,z,Z]}return{rfId:"1",width:r??0,height:i??0,transform:_,nodes:C,nodesInitialized:S,nodeLookup:m,parentLookup:h,edges:v,edgeLookup:b,connectionLookup:x,onNodesChange:null,onEdgesChange:null,hasDefaultNodes:o!==void 0,hasDefaultEdges:n!==void 0,panZoom:null,minZoom:l,maxZoom:c,translateExtent:kn,nodeExtent:w,nodesSelectionActive:!1,userSelectionActive:!1,userSelectionRect:null,connectionMode:At.Strict,domNode:null,paneDragging:!1,noPanClassName:"nopan",nodeOrigin:p,nodeDragThreshold:1,connectionDragThreshold:1,snapGrid:[15,15],snapToGrid:!1,nodesDraggable:!0,nodesConnectable:!0,nodesFocusable:!0,edgesFocusable:!0,edgesReconnectable:!0,elementsSelectable:!0,elevateNodesOnSelect:!0,elevateEdgesOnSelect:!0,selectNodesOnDrag:!0,multiSelectionActive:!1,fitViewQueued:a??!1,fitViewOptions:s,fitViewResolver:null,connection:{...ki},connectionClickStartHandle:null,connectOnClick:!0,ariaLiveMessage:"",autoPanOnConnect:!0,autoPanOnNodeDrag:!0,autoPanOnNodeFocus:!0,autoPanSpeed:15,connectionRadius:20,onError:gg,isValidConnection:void 0,onSelectionChangeHandlers:[],lib:"react",debug:!1,ariaLabelConfig:xi,zIndexMode:u,defaultEdgeOptions:void 0,onNodesChangeMiddlewareMap:new Map,onEdgesChangeMiddlewareMap:new Map,onNodesDelete:void 0,onEdgesDelete:void 0,onDelete:void 0,onBeforeDelete:void 0,onViewportChangeStart:void 0,onViewportChange:void 0,onViewportChangeEnd:void 0,onNodeDragStart:void 0,onNodeDrag:void 0,onNodeDragStop:void 0,onSelectionDragStart:void 0,onSelectionDrag:void 0,onSelectionDragStop:void 0,onMoveStart:void 0,onMove:void 0,onMoveEnd:void 0,onConnect:void 0,onConnectStart:void 0,onConnectEnd:void 0,onClickConnectStart:void 0,onClickConnectEnd:void 0}},wg=({nodes:e,edges:t,defaultNodes:o,defaultEdges:n,width:r,height:i,fitView:a,fitViewOptions:s,minZoom:l,maxZoom:c,nodeOrigin:d,nodeExtent:f,zIndexMode:u})=>pl((m,h)=>{async function x(){let{nodeLookup:b,panZoom:v,fitViewOptions:C,fitViewResolver:p,width:w,height:S,minZoom:_,maxZoom:R}=h();v&&(await Cs({nodes:b,width:w,height:S,panZoom:v,minZoom:_,maxZoom:R},C),p?.resolve(!0),m({fitViewResolver:null}))}return{...Ll({nodes:e,edges:t,width:r,height:i,fitView:a,fitViewOptions:s,minZoom:l,maxZoom:c,nodeOrigin:d,nodeExtent:f,defaultNodes:o,defaultEdges:n,zIndexMode:u}),setNodes:b=>{let{nodeLookup:v,parentLookup:C,nodeOrigin:p,nodeExtent:w,elevateNodesOnSelect:S,fitViewQueued:_,zIndexMode:R,nodesSelectionActive:A}=h(),{nodesInitialized:z,hasSelectedNodes:Z}=ir(b,v,C,{nodeOrigin:p,nodeExtent:w,elevateNodesOnSelect:S,checkEquality:!0,zIndexMode:R}),X=A&&Z;_&&z?(x(),m({nodes:b,nodesInitialized:z,fitViewQueued:!1,fitViewOptions:void 0,nodesSelectionActive:X})):m({nodes:b,nodesInitialized:z,nodesSelectionActive:X})},setEdges:b=>{let{connectionLookup:v,edgeLookup:C}=h();Bi(v,C,b),m({edges:b})},setDefaultNodesAndEdges:(b,v)=>{if(b){let{setNodes:C}=h();C(b),m({hasDefaultNodes:!0})}if(v){let{setEdges:C}=h();C(v),m({hasDefaultEdges:!0})}},updateNodeInternals:b=>{let{triggerNodeChanges:v,nodeLookup:C,parentLookup:p,domNode:w,nodeOrigin:S,nodeExtent:_,debug:R,fitViewQueued:A,zIndexMode:z}=h(),{changes:Z,updatedInternals:X}=Fs(b,C,p,w,S,_,z);X&&(Os(C,p,{nodeOrigin:S,nodeExtent:_,zIndexMode:z}),A?(x(),m({fitViewQueued:!1,fitViewOptions:void 0})):m({}),Z?.length>0&&(R&&console.log("React Flow: trigger node changes",Z),v?.(Z)))},updateNodePositions:(b,v=!1)=>{let C=[],p=[],{nodeLookup:w,triggerNodeChanges:S,connection:_,updateConnection:R,onNodesChangeMiddlewareMap:A}=h();for(let[z,Z]of b){let X=w.get(z),K=!!(X?.expandParent&&X?.parentId&&Z?.position),q={id:z,type:"position",position:K?{x:Math.max(0,Z.position.x),y:Math.max(0,Z.position.y)}:Z.position,dragging:v};if(X&&_.inProgress&&_.fromNode.id===X.id){let y=Ot(X,_.fromHandle,we.Left,!0);R({..._,from:y})}K&&X.parentId&&C.push({id:z,parentId:X.parentId,rect:{...Z.internals.positionAbsolute,width:Z.measured.width??0,height:Z.measured.height??0}}),p.push(q)}if(C.length>0){let{parentLookup:z,nodeOrigin:Z}=h(),X=ar(C,w,z,Z);p.push(...X)}for(let z of A.values())p=z(p);S(p)},triggerNodeChanges:b=>{let{onNodesChange:v,setNodes:C,nodes:p,hasDefaultNodes:w,debug:S}=h();if(b?.length){if(w){let _=Zi(b,p);C(_)}S&&console.log("React Flow: trigger node changes",b),v?.(b)}},triggerEdgeChanges:b=>{let{onEdgesChange:v,setEdges:C,edges:p,hasDefaultEdges:w,debug:S}=h();if(b?.length){if(w){let _=Qm(b,p);C(_)}S&&console.log("React Flow: trigger edge changes",b),v?.(b)}},addSelectedNodes:b=>{let{multiSelectionActive:v,edgeLookup:C,nodeLookup:p,triggerNodeChanges:w,triggerEdgeChanges:S}=h();if(v){let _=b.map(R=>nn(R,!0));w(_);return}w(In(p,new Set([...b]))),S(In(C))},addSelectedEdges:b=>{let{multiSelectionActive:v,edgeLookup:C,nodeLookup:p,triggerNodeChanges:w,triggerEdgeChanges:S}=h();if(v){let _=b.map(R=>nn(R,!0));S(_);return}S(In(C,new Set([...b]))),w(In(p,new Set))},unselectNodesAndEdges:({nodes:b,edges:v}={})=>{let{edges:C,nodes:p,nodeLookup:w,triggerNodeChanges:S,triggerEdgeChanges:_}=h(),R=b||p,A=v||C,z=[];for(let X of R)X.selected&&z.push(nn(X.id,!1));let Z=[];for(let X of A)X.selected&&Z.push(nn(X.id,!1));S(z),_(Z)},setMinZoom:b=>{let{panZoom:v,maxZoom:C}=h();v?.setScaleExtent([b,C]),m({minZoom:b})},setMaxZoom:b=>{let{panZoom:v,minZoom:C}=h();v?.setScaleExtent([C,b]),m({maxZoom:b})},setTranslateExtent:b=>{h().panZoom?.setTranslateExtent(b),m({translateExtent:b})},resetSelectedElements:()=>{let{edges:b,nodes:v,triggerNodeChanges:C,triggerEdgeChanges:p,elementsSelectable:w}=h();if(!w)return;let S=v.reduce((R,A)=>A.selected?[...R,nn(A.id,!1)]:R,[]),_=b.reduce((R,A)=>A.selected?[...R,nn(A.id,!1)]:R,[]);C(S),p(_)},setNodeExtent:b=>{let{nodes:v,nodeLookup:C,parentLookup:p,nodeOrigin:w,elevateNodesOnSelect:S,nodeExtent:_,zIndexMode:R}=h();b[0][0]===_[0][0]&&b[0][1]===_[0][1]&&b[1][0]===_[1][0]&&b[1][1]===_[1][1]||(ir(v,C,p,{nodeOrigin:w,nodeExtent:b,elevateNodesOnSelect:S,checkEquality:!1,zIndexMode:R}),m({nodeExtent:b}))},panBy:b=>{let{transform:v,width:C,height:p,panZoom:w,translateExtent:S}=h();return Hs({delta:b,panZoom:w,transform:v,translateExtent:S,width:C,height:p})},setCenter:async(b,v,C)=>{let{width:p,height:w,maxZoom:S,panZoom:_}=h();if(!_)return!1;let R=typeof C?.zoom<"u"?C.zoom:S;return await _.setViewport({x:p/2-b*R,y:w/2-v*R,zoom:R},{duration:C?.duration,ease:C?.ease,interpolate:C?.interpolate}),!0},cancelConnection:()=>{m({connection:{...ki}})},updateConnection:b=>{m({connection:b})},reset:()=>m({...Ll()})}},Object.is);function wr({initialNodes:e,initialEdges:t,defaultNodes:o,defaultEdges:n,initialWidth:r,initialHeight:i,initialMinZoom:a,initialMaxZoom:s,initialFitViewOptions:l,fitView:c,nodeOrigin:d,nodeExtent:f,zIndexMode:u,children:m}){let[h]=(0,H.useState)(()=>wg({nodes:e,edges:t,defaultNodes:o,defaultEdges:n,width:r,height:i,fitView:c,minZoom:a,maxZoom:s,fitViewOptions:l,nodeOrigin:d,nodeExtent:f,zIndexMode:u}));return(0,F.jsx)($m,{value:h,children:(0,F.jsx)(oh,{children:(0,F.jsx)(vh,{children:m})})})}function vg({children:e,nodes:t,edges:o,defaultNodes:n,defaultEdges:r,width:i,height:a,fitView:s,fitViewOptions:l,minZoom:c,maxZoom:d,nodeOrigin:f,nodeExtent:u,zIndexMode:m}){return(0,H.useContext)(pr)?(0,F.jsx)(F.Fragment,{children:e}):(0,F.jsx)(wr,{initialNodes:t,initialEdges:o,defaultNodes:n,defaultEdges:r,initialWidth:i,initialHeight:a,fitView:s,initialFitViewOptions:l,initialMinZoom:c,initialMaxZoom:d,nodeOrigin:f,nodeExtent:u,zIndexMode:m,children:e})}var yg={width:"100%",height:"100%",overflow:"hidden",position:"relative",zIndex:0};function bg({nodes:e,edges:t,defaultNodes:o,defaultEdges:n,className:r,nodeTypes:i,edgeTypes:a,onNodeClick:s,onEdgeClick:l,onInit:c,onMove:d,onMoveStart:f,onMoveEnd:u,onConnect:m,onConnectStart:h,onConnectEnd:x,onClickConnectStart:b,onClickConnectEnd:v,onNodeMouseEnter:C,onNodeMouseMove:p,onNodeMouseLeave:w,onNodeContextMenu:S,onNodeDoubleClick:_,onNodeDragStart:R,onNodeDrag:A,onNodeDragStop:z,onNodesDelete:Z,onEdgesDelete:X,onDelete:K,onSelectionChange:q,onSelectionDragStart:y,onSelectionDrag:I,onSelectionDragStop:D,onSelectionContextMenu:T,onSelectionStart:g,onSelectionEnd:M,onBeforeDelete:L,connectionMode:O,connectionLineType:j=bt.Bezier,connectionLineStyle:de,connectionLineComponent:re,connectionLineContainerStyle:he,deleteKeyCode:ge="Backspace",selectionKeyCode:ne="Shift",selectionOnDrag:B=!1,selectionMode:ae=Qt.Full,panActivationKeyCode:ve="Space",multiSelectionKeyCode:pe=En()?"Meta":"Control",zoomActivationKeyCode:V=En()?"Meta":"Control",snapToGrid:W,snapGrid:G,onlyRenderVisibleElements:ee=!1,selectNodesOnDrag:fe,nodesDraggable:ce,autoPanOnNodeFocus:Y,nodesConnectable:N,nodesFocusable:Ce,nodeOrigin:ie=Wl,edgesFocusable:xe,edgesReconnectable:ye,elementsSelectable:se=!0,defaultViewport:be=Xm,minZoom:Re=.5,maxZoom:Ae=2,translateExtent:Fe=kn,preventScrolling:E=!0,nodeExtent:$,defaultMarkerColor:Q="#b1b1b7",zoomOnScroll:Se=!0,zoomOnPinch:_e=!0,panOnScroll:De=!1,panOnScrollSpeed:Ee=.5,panOnScrollMode:Be=Et.Free,zoomOnDoubleClick:ze=!0,panOnDrag:Pe=!0,onPaneClick:Oe,onPaneMouseEnter:Le,onPaneMouseMove:U,onPaneMouseLeave:te,onPaneScroll:J,onPaneContextMenu:ke,paneClickDistance:Te=1,nodeClickDistance:Ge=0,children:rn,onReconnect:We,onReconnectStart:le,onReconnectEnd:tt,onEdgeContextMenu:an,onEdgeDoubleClick:sn,onEdgeMouseEnter:Dn,onEdgeMouseMove:so,onEdgeMouseLeave:lo,reconnectRadius:Sr=10,onNodesChange:$n,onEdgesChange:Cr,noDragClassName:Ft="nodrag",noWheelClassName:Ht="nowheel",noPanClassName:Vt="nopan",fitView:co,fitViewOptions:rt,connectOnClick:uo,attributionPosition:Pn,proOptions:it,defaultEdgeOptions:ln,elevateNodesOnSelect:mt=!0,elevateEdgesOnSelect:cn=!1,disableKeyboardA11y:dn=!1,autoPanOnConnect:Tn,autoPanOnNodeDrag:fo,autoPanOnSelection:_r=!0,autoPanSpeed:Er,connectionRadius:ht,isValidConnection:Mr,onError:po,style:mo,id:ho,nodeDragThreshold:Ir,connectionDragThreshold:Rr,viewport:Rt,onViewportChange:go,width:Bt,height:at,colorMode:Wt="light",debug:wo,onScroll:An,ariaLabelConfig:vo,zIndexMode:zn="basic",...yo},Dr){let P=ho||"1",oe=jm(Wt),me=(0,H.useCallback)(Me=>{Me.currentTarget.scrollTo({top:0,left:0,behavior:"instant"}),An?.(Me)},[An]);return(0,F.jsx)("div",{"data-testid":"rf__wrapper",...yo,onScroll:me,style:{...mo,...yg},ref:Dr,className:Ye(["react-flow",r,oe]),id:ho,role:"application",children:(0,F.jsxs)(vg,{nodes:e,edges:t,width:Bt,height:at,fitView:co,fitViewOptions:rt,minZoom:Re,maxZoom:Ae,nodeOrigin:ie,nodeExtent:$,zIndexMode:zn,children:[(0,F.jsx)(Zm,{nodes:e,edges:t,defaultNodes:o,defaultEdges:n,onConnect:m,onConnectStart:h,onConnectEnd:x,onClickConnectStart:b,onClickConnectEnd:v,nodesDraggable:ce,autoPanOnNodeFocus:Y,nodesConnectable:N,nodesFocusable:Ce,edgesFocusable:xe,edgesReconnectable:ye,elementsSelectable:se,elevateNodesOnSelect:mt,elevateEdgesOnSelect:cn,minZoom:Re,maxZoom:Ae,nodeExtent:$,onNodesChange:$n,onEdgesChange:Cr,snapToGrid:W,snapGrid:G,connectionMode:O,translateExtent:Fe,connectOnClick:uo,defaultEdgeOptions:ln,fitView:co,fitViewOptions:rt,onNodesDelete:Z,onEdgesDelete:X,onDelete:K,onNodeDragStart:R,onNodeDrag:A,onNodeDragStop:z,onSelectionDrag:I,onSelectionDragStart:y,onSelectionDragStop:D,onMove:d,onMoveStart:f,onMoveEnd:u,noPanClassName:Vt,nodeOrigin:ie,rfId:P,autoPanOnConnect:Tn,autoPanOnNodeDrag:fo,autoPanSpeed:Er,onError:po,connectionRadius:ht,isValidConnection:Mr,selectNodesOnDrag:fe,nodeDragThreshold:Ir,connectionDragThreshold:Rr,onBeforeDelete:L,debug:wo,ariaLabelConfig:vo,zIndexMode:zn}),(0,F.jsx)(hg,{onInit:c,onNodeClick:s,onEdgeClick:l,onNodeMouseEnter:C,onNodeMouseMove:p,onNodeMouseLeave:w,onNodeContextMenu:S,onNodeDoubleClick:_,nodeTypes:i,edgeTypes:a,connectionLineType:j,connectionLineStyle:de,connectionLineComponent:re,connectionLineContainerStyle:he,selectionKeyCode:ne,selectionOnDrag:B,selectionMode:ae,deleteKeyCode:ge,multiSelectionKeyCode:pe,panActivationKeyCode:ve,zoomActivationKeyCode:V,onlyRenderVisibleElements:ee,defaultViewport:be,translateExtent:Fe,minZoom:Re,maxZoom:Ae,preventScrolling:E,zoomOnScroll:Se,zoomOnPinch:_e,zoomOnDoubleClick:ze,panOnScroll:De,panOnScrollSpeed:Ee,panOnScrollMode:Be,panOnDrag:Pe,autoPanOnSelection:_r,onPaneClick:Oe,onPaneMouseEnter:Le,onPaneMouseMove:U,onPaneMouseLeave:te,onPaneScroll:J,onPaneContextMenu:ke,paneClickDistance:Te,nodeClickDistance:Ge,onSelectionContextMenu:T,onSelectionStart:g,onSelectionEnd:M,onReconnect:We,onReconnectStart:le,onReconnectEnd:tt,onEdgeContextMenu:an,onEdgeDoubleClick:sn,onEdgeMouseEnter:Dn,onEdgeMouseMove:so,onEdgeMouseLeave:lo,reconnectRadius:Sr,defaultMarkerColor:Q,noDragClassName:Ft,noWheelClassName:Ht,noPanClassName:Vt,rfId:P,disableKeyboardA11y:dn,nodeExtent:$,viewport:Rt,onViewportChange:go,nodesDraggable:ce}),(0,F.jsx)(Ym,{onSelectionChange:q}),rn,(0,F.jsx)(Fm,{proOptions:it,position:Pn}),(0,F.jsx)(Lm,{rfId:P,disableKeyboardA11y:dn})]})})}var wc=Xl(bg);var Lv=ot.error014();function xg({dimensions:e,lineWidth:t,variant:o,className:n}){return(0,F.jsx)("path",{strokeWidth:t,d:`M${e[0]/2} 0 V${e[1]} M0 ${e[1]/2} H${e[0]}`,className:Ye(["react-flow__background-pattern",o,n])})}function kg({radius:e,className:t}){return(0,F.jsx)("circle",{cx:e,cy:e,r:e,className:Ye(["react-flow__background-pattern","dots",t])})}var xt;(function(e){e.Lines="lines",e.Dots="dots",e.Cross="cross"})(xt||(xt={}));var Ng={[xt.Dots]:1,[xt.Lines]:1,[xt.Cross]:6},Sg=e=>({transform:e.transform,patternId:`pattern-${e.rfId}`});function vc({id:e,variant:t=xt.Dots,gap:o=20,size:n,lineWidth:r=1,offset:i=0,color:a,bgColor:s,style:l,className:c,patternClassName:d}){let f=(0,H.useRef)(null),{transform:u,patternId:m}=$e(Sg,Ve),h=n||Ng[t],x=t===xt.Dots,b=t===xt.Cross,v=Array.isArray(o)?o:[o,o],C=[v[0]*u[2]||1,v[1]*u[2]||1],p=h*u[2],w=Array.isArray(i)?i:[i,i],S=b?[p,p]:C,_=[w[0]*u[2]+S[0]/2,w[1]*u[2]+S[1]/2],R=`${m}${e||""}`;return(0,F.jsxs)("svg",{className:Ye(["react-flow__background",c]),style:{...l,...hr,"--xy-background-color-props":s,"--xy-background-pattern-color-props":a},ref:f,"data-testid":"rf__background",children:[(0,F.jsx)("pattern",{id:R,x:u[0]%C[0],y:u[1]%C[1],width:C[0],height:C[1],patternUnits:"userSpaceOnUse",patternTransform:`translate(-${_[0]},-${_[1]})`,children:x?(0,F.jsx)(kg,{radius:p/2,className:d}):(0,F.jsx)(xg,{dimensions:S,lineWidth:r,variant:t,className:d})}),(0,F.jsx)("rect",{x:"0",y:"0",width:"100%",height:"100%",fill:`url(#${R})`})]})}vc.displayName="Background";var yc=(0,H.memo)(vc);function Cg(){return(0,F.jsx)("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 32 32",children:(0,F.jsx)("path",{d:"M32 18.133H18.133V32h-4.266V18.133H0v-4.266h13.867V0h4.266v13.867H32z"})})}function _g(){return(0,F.jsx)("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 32 5",children:(0,F.jsx)("path",{d:"M0 0h32v4.2H0z"})})}function Eg(){return(0,F.jsx)("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 32 30",children:(0,F.jsx)("path",{d:"M3.692 4.63c0-.53.4-.938.939-.938h5.215V0H4.708C2.13 0 0 2.054 0 4.63v5.216h3.692V4.631zM27.354 0h-5.2v3.692h5.17c.53 0 .984.4.984.939v5.215H32V4.631A4.624 4.624 0 0027.354 0zm.954 24.83c0 .532-.4.94-.939.94h-5.215v3.768h5.215c2.577 0 4.631-2.13 4.631-4.707v-5.139h-3.692v5.139zm-23.677.94c-.531 0-.939-.4-.939-.94v-5.138H0v5.139c0 2.577 2.13 4.707 4.708 4.707h5.138V25.77H4.631z"})})}function Mg(){return(0,F.jsx)("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 25 32",children:(0,F.jsx)("path",{d:"M21.333 10.667H19.81V7.619C19.81 3.429 16.38 0 12.19 0 8 0 4.571 3.429 4.571 7.619v3.048H3.048A3.056 3.056 0 000 13.714v15.238A3.056 3.056 0 003.048 32h18.285a3.056 3.056 0 003.048-3.048V13.714a3.056 3.056 0 00-3.048-3.047zM12.19 24.533a3.056 3.056 0 01-3.047-3.047 3.056 3.056 0 013.047-3.048 3.056 3.056 0 013.048 3.048 3.056 3.056 0 01-3.048 3.047zm4.724-13.866H7.467V7.619c0-2.59 2.133-4.724 4.723-4.724 2.591 0 4.724 2.133 4.724 4.724v3.048z"})})}function Ig(){return(0,F.jsx)("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 25 32",children:(0,F.jsx)("path",{d:"M21.333 10.667H19.81V7.619C19.81 3.429 16.38 0 12.19 0c-4.114 1.828-1.37 2.133.305 2.438 1.676.305 4.42 2.59 4.42 5.181v3.048H3.047A3.056 3.056 0 000 13.714v15.238A3.056 3.056 0 003.048 32h18.285a3.056 3.056 0 003.048-3.048V13.714a3.056 3.056 0 00-3.048-3.047zM12.19 24.533a3.056 3.056 0 01-3.047-3.047 3.056 3.056 0 013.047-3.048 3.056 3.056 0 013.048 3.048 3.056 3.056 0 01-3.048 3.047z"})})}function ur({children:e,className:t,...o}){return(0,F.jsx)("button",{type:"button",className:Ye(["react-flow__controls-button",t]),...o,children:e})}var Rg=e=>({isInteractive:e.nodesDraggable||e.nodesConnectable||e.elementsSelectable,minZoomReached:e.transform[2]<=e.minZoom,maxZoomReached:e.transform[2]>=e.maxZoom,ariaLabelConfig:e.ariaLabelConfig});function bc({style:e,showZoom:t=!0,showFitView:o=!0,showInteractive:n=!0,fitViewOptions:r,onZoomIn:i,onZoomOut:a,onFitView:s,onInteractiveChange:l,className:c,children:d,position:f="bottom-left",orientation:u="vertical","aria-label":m}){let h=He(),{isInteractive:x,minZoomReached:b,maxZoomReached:v,ariaLabelConfig:C}=$e(Rg,Ve),{zoomIn:p,zoomOut:w,fitView:S}=oo(),_=()=>{p(),i?.()},R=()=>{w(),a?.()},A=()=>{S(r),s?.()},z=()=>{h.setState({nodesDraggable:!x,nodesConnectable:!x,elementsSelectable:!x}),l?.(!x)};return(0,F.jsxs)(mr,{className:Ye(["react-flow__controls",u==="horizontal"?"horizontal":"vertical",c]),position:f,style:e,"data-testid":"rf__controls","aria-label":m??C["controls.ariaLabel"],children:[t&&(0,F.jsxs)(F.Fragment,{children:[(0,F.jsx)(ur,{onClick:_,className:"react-flow__controls-zoomin",title:C["controls.zoomIn.ariaLabel"],"aria-label":C["controls.zoomIn.ariaLabel"],disabled:v,children:(0,F.jsx)(Cg,{})}),(0,F.jsx)(ur,{onClick:R,className:"react-flow__controls-zoomout",title:C["controls.zoomOut.ariaLabel"],"aria-label":C["controls.zoomOut.ariaLabel"],disabled:b,children:(0,F.jsx)(_g,{})})]}),o&&(0,F.jsx)(ur,{className:"react-flow__controls-fitview",onClick:A,title:C["controls.fitView.ariaLabel"],"aria-label":C["controls.fitView.ariaLabel"],children:(0,F.jsx)(Eg,{})}),n&&(0,F.jsx)(ur,{className:"react-flow__controls-interactive",onClick:z,title:C["controls.interactive.ariaLabel"],"aria-label":C["controls.interactive.ariaLabel"],children:x?(0,F.jsx)(Ig,{}):(0,F.jsx)(Mg,{})}),d]})}bc.displayName="Controls";var xc=(0,H.memo)(bc);function Dg({id:e,x:t,y:o,width:n,height:r,style:i,color:a,strokeColor:s,strokeWidth:l,className:c,borderRadius:d,shapeRendering:f,selected:u,onClick:m}){let{background:h,backgroundColor:x}=i||{},b=a||h||x;return(0,F.jsx)("rect",{className:Ye(["react-flow__minimap-node",{selected:u},c]),x:t,y:o,rx:d,ry:d,width:n,height:r,style:{fill:b,stroke:s,strokeWidth:l},shapeRendering:f,onClick:m?v=>m(v,e):void 0})}var $g=(0,H.memo)(Dg),Pg=e=>e.nodes.map(t=>t.id),qi=e=>e instanceof Function?e:()=>e;function Tg({nodeStrokeColor:e,nodeColor:t,nodeClassName:o="",nodeBorderRadius:n=5,nodeStrokeWidth:r,nodeComponent:i=$g,onClick:a}){let s=$e(Pg,Ve),l=qi(t),c=qi(e),d=qi(o),f=typeof window>"u"||window.chrome?"crispEdges":"geometricPrecision";return(0,F.jsx)(F.Fragment,{children:s.map(u=>(0,F.jsx)(zg,{id:u,nodeColorFunc:l,nodeStrokeColorFunc:c,nodeClassNameFunc:d,nodeBorderRadius:n,nodeStrokeWidth:r,NodeComponent:i,onClick:a,shapeRendering:f},u))})}function Ag({id:e,nodeColorFunc:t,nodeStrokeColorFunc:o,nodeClassNameFunc:n,nodeBorderRadius:r,nodeStrokeWidth:i,shapeRendering:a,NodeComponent:s,onClick:l}){let{node:c,x:d,y:f,width:u,height:m}=$e(h=>{let x=h.nodeLookup.get(e);if(!x)return{node:void 0,x:0,y:0,width:0,height:0};let b=x.internals.userNode,{x:v,y:C}=x.internals.positionAbsolute,{width:p,height:w}=ct(b);return{node:b,x:v,y:C,width:p,height:w}},Ve);return!c||c.hidden||!Ri(c)?null:(0,F.jsx)(s,{x:d,y:f,width:u,height:m,style:c.style,selected:!!c.selected,className:n(c),color:t(c),borderRadius:r,strokeColor:o(c),strokeWidth:i,shapeRendering:a,onClick:l,id:c.id})}var zg=(0,H.memo)(Ag),Og=(0,H.memo)(Tg),Lg=200,Fg=150,Hg=e=>!e.hidden,Vg=e=>{let t={x:-e.transform[0]/e.transform[2],y:-e.transform[1]/e.transform[2],width:e.width/e.transform[2],height:e.height/e.transform[2]},o=!1;for(let n of e.nodeLookup.values())if(!n.hidden){o=!0;break}return{viewBB:t,boundingRect:o?Ei(Nn(e.nodeLookup,{filter:Hg}),t):t,rfId:e.rfId,panZoom:e.panZoom,translateExtent:e.translateExtent,flowWidth:e.width,flowHeight:e.height,ariaLabelConfig:e.ariaLabelConfig}},Fl=(e,t)=>e.x===t.x&&e.y===t.y&&e.width===t.width&&e.height===t.height,Bg=(e,t)=>Fl(e.viewBB,t.viewBB)&&Fl(e.boundingRect,t.boundingRect)&&e.rfId===t.rfId&&e.panZoom===t.panZoom&&e.translateExtent===t.translateExtent&&e.flowWidth===t.flowWidth&&e.flowHeight===t.flowHeight&&e.ariaLabelConfig===t.ariaLabelConfig,Wg="react-flow__minimap-desc";function kc({style:e,className:t,nodeStrokeColor:o,nodeColor:n,nodeClassName:r="",nodeBorderRadius:i=5,nodeStrokeWidth:a,nodeComponent:s,bgColor:l,maskColor:c,maskStrokeColor:d,maskStrokeWidth:f,position:u="bottom-right",onClick:m,onNodeClick:h,pannable:x=!1,zoomable:b=!1,ariaLabel:v,inversePan:C,zoomStep:p=1,offsetScale:w=5}){let S=He(),_=(0,H.useRef)(null),{boundingRect:R,panZoom:A,viewBB:z,rfId:Z,translateExtent:X,flowWidth:K,flowHeight:q,ariaLabelConfig:y}=$e(Vg,Bg),I=e?.width??Lg,D=e?.height??Fg,T=R.width/I,g=R.height/D,M=Math.max(T,g),L=M*I,O=M*D,j=w*M,de=R.x-(L-R.width)/2-j,re=R.y-(O-R.height)/2-j,he=L+j*2,ge=O+j*2,ne=`${Wg}-${Z}`,B=(0,H.useRef)(0),ae=(0,H.useRef)();B.current=M,(0,H.useEffect)(()=>{let G=S.getState().panZoom;if(_.current&&G)return ae.current=Ks({domNode:_.current,panZoom:G,getTransform:()=>S.getState().transform,getViewScale:()=>B.current}),()=>{ae.current?.destroy()}},[A]),(0,H.useEffect)(()=>{ae.current?.update({translateExtent:X,width:K,height:q,inversePan:C,pannable:x,zoomStep:p,zoomable:b})},[x,b,C,p,X,K,q]);let ve=m?G=>{let[ee,fe]=ae.current?.pointer(G)||[0,0];m(G,{x:ee,y:fe})}:void 0,pe=(0,H.useCallback)((G,ee)=>{let fe=S.getState().nodeLookup.get(ee).internals.userNode;h?.(G,fe)},[h]),V=h?pe:void 0,W=v??y["minimap.ariaLabel"];return(0,F.jsx)(mr,{position:u,style:{...e,"--xy-minimap-background-color-props":typeof l=="string"?l:void 0,"--xy-minimap-mask-background-color-props":typeof c=="string"?c:void 0,"--xy-minimap-mask-stroke-color-props":typeof d=="string"?d:void 0,"--xy-minimap-mask-stroke-width-props":typeof f=="number"?f*M:void 0,"--xy-minimap-node-background-color-props":typeof n=="string"?n:void 0,"--xy-minimap-node-stroke-color-props":typeof o=="string"?o:void 0,"--xy-minimap-node-stroke-width-props":typeof a=="number"?a:void 0},className:Ye(["react-flow__minimap",t]),"data-testid":"rf__minimap",children:(0,F.jsxs)("svg",{width:I,height:D,viewBox:`${de} ${re} ${he} ${ge}`,className:"react-flow__minimap-svg",role:"img","aria-labelledby":ne,ref:_,onClick:ve,children:[W&&(0,F.jsx)("title",{id:ne,children:W}),(0,F.jsx)(Og,{onClick:V,nodeColor:n,nodeStrokeColor:o,nodeBorderRadius:i,nodeClassName:r,nodeStrokeWidth:a,nodeComponent:s}),(0,F.jsx)("path",{className:"react-flow__minimap-mask",d:`M${de-j},${re-j}h${he+j*2}v${ge+j*2}h${-he-j*2}z
+        M${z.x},${z.y}h${z.width}v${z.height}h${-z.width}z`,fillRule:"evenodd",pointerEvents:"none"})]})})}kc.displayName="MiniMap";var Nc=(0,H.memo)(kc),Yg=e=>t=>e?`${Math.max(1/t.transform[2],1)}`:void 0,Xg={[Lt.Line]:"right",[Lt.Handle]:"bottom-right"};function qg({nodeId:e,position:t,variant:o=Lt.Handle,className:n,style:r=void 0,children:i,color:a,minWidth:s=10,minHeight:l=10,maxWidth:c=Number.MAX_VALUE,maxHeight:d=Number.MAX_VALUE,keepAspectRatio:f=!1,resizeDirection:u,autoScale:m=!0,shouldResize:h,onResizeStart:x,onResize:b,onResizeEnd:v}){let C=Ul(),p=typeof e=="string"?e:C,w=He(),S=(0,H.useRef)(null),_=o===Lt.Handle,R=$e((0,H.useCallback)(Yg(_&&m),[_,m]),Ve),A=(0,H.useRef)(null),z=t??Xg[o];(0,H.useEffect)(()=>{if(!(!S.current||!p))return A.current||(A.current=Qs({domNode:S.current,nodeId:p,getStoreItems:()=>{let{nodeLookup:X,transform:K,snapGrid:q,snapToGrid:y,nodeOrigin:I,domNode:D}=w.getState();return{nodeLookup:X,transform:K,snapGrid:q,snapToGrid:y,nodeOrigin:I,paneDomNode:D}},onChange:(X,K)=>{let{triggerNodeChanges:q,nodeLookup:y,parentLookup:I,nodeOrigin:D}=w.getState(),T=[],g={x:X.x,y:X.y},M=y.get(p);if(M&&M.expandParent&&M.parentId){let L=M.origin??D,O=X.width??M.measured.width??0,j=X.height??M.measured.height??0,de={id:M.id,parentId:M.parentId,rect:{width:O,height:j,...Di({x:X.x??M.position.x,y:X.y??M.position.y},{width:O,height:j},M.parentId,y,L)}},re=ar([de],y,I,D);T.push(...re),g.x=X.x?Math.max(L[0]*O,X.x):void 0,g.y=X.y?Math.max(L[1]*j,X.y):void 0}if(g.x!==void 0&&g.y!==void 0){let L={id:p,type:"position",position:{...g}};T.push(L)}if(X.width!==void 0&&X.height!==void 0){let O={id:p,type:"dimensions",resizing:!0,setAttributes:u?u==="horizontal"?"width":"height":!0,dimensions:{width:X.width,height:X.height}};T.push(O)}for(let L of K){let O={...L,type:"position"};T.push(O)}q(T)},onEnd:({width:X,height:K})=>{let q={id:p,type:"dimensions",resizing:!1,dimensions:{width:X,height:K}};w.getState().triggerNodeChanges([q])}})),A.current.update({controlPosition:z,boundaries:{minWidth:s,minHeight:l,maxWidth:c,maxHeight:d},keepAspectRatio:f,resizeDirection:u,onResizeStart:x,onResize:b,onResizeEnd:v,shouldResize:h}),()=>{A.current?.destroy()}},[z,s,l,c,d,f,x,b,v,h]);let Z=z.split("-");return(0,F.jsx)("div",{className:Ye(["react-flow__resize-control","nodrag",...Z,o,n]),ref:S,style:{...r,scale:R,...a&&{[_?"backgroundColor":"borderColor"]:a}},children:i})}var Fv=(0,H.memo)(qg);var Ue=require("react");var Kg={name:"error",kind:"error",label:"Error",optional:!0};function Mt(e,t){return e===void 0?[]:e.dynamicPorts==="options"?(Array.isArray(t.options)?t.options:[]).map(o=>typeof o=="string"?o:o?.name).filter(o=>typeof o=="string"&&o!=="").map(o=>({name:o,kind:"branch",label:o,optional:!0})):e.dynamicPorts==="labels"?[...(t.labels!==null&&typeof t.labels=="object"?Object.keys(t.labels):[]).map(n=>({name:n,kind:"branch",label:n,optional:!0})),{name:"unknown",kind:"branch",label:"Unknown",optional:!0},Kg]:e.dynamicPorts==="cases"?[...(t.cases!==null&&typeof t.cases=="object"?Object.keys(t.cases):[]).map(n=>({name:n,kind:"branch",label:n,optional:!0})),{name:"default",kind:"branch",label:"Default",optional:!0}]:e.ports}var Zg=["next","ok","success","true","body","found","default"];function Ui(e){let t=e.map(o=>o.name);return Zg.find(o=>t.includes(o))??t.find(o=>o!=="error")}function Sc(e,t,o,n){switch(e){case"key":return{key:"Enter"};case"shortcut":return{keys:["ControlLeft","AltLeft","Delete"]};case"text":return{text:t("\u8981\u8F93\u5165\u7684\u6587\u5B57","text to type"),submit:!1};case"click":return{x:.5,y:.5,button:"left",count:1};case"move":return{x:.5,y:.5};case"scroll":return{x:.5,y:.5,wheelY:3};case"delay":return{ms:1e3};case"if":return{condition:{vision:t("\u753B\u9762\u4E0A\u51FA\u73B0\u4E86\u2026\u2026","The screen shows \u2026")}};case"switch":return{cases:{first:{vision:t("\u7B2C\u4E00\u79CD\u753B\u9762","The first screen")},second:{vision:t("\u7B2C\u4E8C\u79CD\u753B\u9762","The second screen")}}};case"wait_until":return{condition:{change:!0},timeoutSec:60,pollMs:1e3};case"loop":return{count:3,maxIterations:10,indexVar:"i"};case"human":return{message:t("\u8BF7\u4EBA\u5DE5\u786E\u8BA4\u540E\u9009\u62E9\u4E0B\u4E00\u6B65","Check the target, then choose how to continue"),options:["continue","abort"]};case"subflow":return{workflow:o.find(r=>r.id!==n)?.id??"wf-id"};case"end":return{result:"success"};case"set":return{assign:{counter:"{{coalesce(vars.counter, 0) + 1}}"}};case"vision_check":return{prompt:t("\u753B\u9762\u4E0A\u51FA\u73B0\u4E86\u2026\u2026","The screen shows \u2026")};case"vision_classify":return{prompt:t("\u5F53\u524D\u662F\u54EA\u4E2A\u753B\u9762\uFF1F","Which screen is this?"),labels:{first:t("\u7B2C\u4E00\u79CD\u753B\u9762","The first screen"),second:t("\u7B2C\u4E8C\u79CD\u753B\u9762","The second screen")}};case"vision_extract":return{prompt:t("\u8BFB\u51FA\u753B\u9762\u4E0A\u7684\u503C","Read the value shown on screen"),fields:["value"]};case"locate":return{target:t("\u8981\u70B9\u51FB\u7684\u6309\u94AE","The button to click")};case"image_match":return{image:"assets/reference.jpg",maxByteDelta:0};case"screen_change":return{compareWith:"previous"};default:return{}}}function Cc(e,t){let o=e.config??{},n=r=>r===null||typeof r!="object"?"":typeof r.vision=="string"?`\u{1F441} ${r.vision}`:typeof r.expr=="string"?`\u0192 ${r.expr}`:typeof r.image=="string"?`\u{1F5BC} ${r.image}`:"change"in r?r.change===!1?t("\u753B\u9762\u4E0D\u53D8","screen unchanged"):t("\u753B\u9762\u53D8\u5316","screen changed"):Array.isArray(r.all)?t(`\u5168\u90E8\u6EE1\u8DB3\uFF08${r.all.length}\uFF09`,`all of ${r.all.length}`):Array.isArray(r.any)?t(`\u4EFB\u4E00\u6EE1\u8DB3\uFF08${r.any.length}\uFF09`,`any of ${r.any.length}`):r.not!==void 0?`not ${n(r.not)}`:"";switch(e.type){case"key":return`${o.key}${(o.repeat??1)>1?` \xD7${o.repeat}`:""}`;case"shortcut":return Array.isArray(o.keys)?o.keys.join(" + "):"";case"text":return`\u201C${String(o.text??"").slice(0,48)}\u201D${o.submit?" \u23CE":""}`;case"click":return`${o.button??"left"} @ ${vr(o.x)}, ${vr(o.y)}${(o.count??1)>1?` \xD7${o.count}`:""}`;case"move":return`@ ${vr(o.x)}, ${vr(o.y)}`;case"scroll":return`wheel ${o.wheelY??0}`;case"delay":return`${o.ms} ms`;case"sequence":return t(`${(o.events??[]).length} \u4E2A\u5F55\u5236\u4E8B\u4EF6`,`${(o.events??[]).length} recorded events`);case"if":return n(o.condition);case"switch":return t(`${Object.keys(o.cases??{}).length} \u4E2A\u5206\u652F`,`${Object.keys(o.cases??{}).length} cases`);case"wait_until":return`${n(o.condition)} \xB7 \u2264${o.timeoutSec??60}s`;case"loop":return o.count!==void 0?t(`\u91CD\u590D ${o.count} \u6B21`,`repeat ${o.count}\xD7`):`${n(o.while)} \xB7 \u2264${o.maxIterations??10}`;case"human":return String(o.message??"");case"subflow":return`\u2192 ${o.workflow??""}`;case"end":return o.result==="failure"?`\u2717 ${o.reason??t("\u5931\u8D25","failure")}`:`\u2713 ${o.reason??t("\u6210\u529F","success")}`;case"set":return Object.keys(o.assign??{}).map(r=>`${r} =`).join(", ");case"vision_check":return String(o.prompt??"");case"vision_classify":return Object.keys(o.labels??{}).join(" / ");case"vision_extract":return(o.fields??[]).join(", ");case"locate":return String(o.target??"");case"image_match":return String(o.image??"");case"screen_change":return o.compareWith==="run-start"?t("\u4E0E\u5F00\u59CB\u65F6\u6BD4\u8F83","vs. run start"):t("\u4E0E\u4E0A\u4E00\u5E27\u6BD4\u8F83","vs. previous frame");default:return""}}function vr(e){return typeof e=="number"?e.toFixed(3):String(e??"")}function _c(e,t){let o=e.replace(/_/g,"-"),n=1;for(;Object.hasOwn(t.nodes,`${o}-${n}`);)n+=1;return`${o}-${n}`}function Ec(e,t){let o={};for(let[r,i]of Object.entries(e.nodes)){if(r===t)continue;let a={};for(let[s,l]of Object.entries(i.next??{}))l!==t&&(a[s]=l);o[r]={...i,next:a}}let n=e.start===t?Object.keys(o)[0]??"":e.start;return{...e,nodes:o,start:n}}function Mc(e,t,o){let n={};for(let[r,i]of Object.entries(e.nodes)){let a={};for(let[s,l]of Object.entries(i.next??{}))a[s]=l===t?o:l;n[r===t?o:r]={...i,id:r===t?o:r,next:a}}return{...e,nodes:n,start:e.start===t?o:e.start}}function Ic(e,t){let o=new Set(t.map(r=>r.name)),n={};for(let[r,i]of Object.entries(e.next??{}))o.has(r)&&(n[r]=i);return{...e,next:n}}function Gi(e,t){if(e===void 0||e.workflowId!==t)return;let o={},n={},r=new Set,i;for(let l of e.trace??[])l.depth===0&&(o[l.nodeId]=(o[l.nodeId]??0)+1,n[l.nodeId]=l.status==="failed"?"failed":"passed",l.port!==void 0&&l.port!==""&&l.target!==void 0&&(i=`${l.nodeId}:${l.port}`,r.add(i)));let s=["succeeded","failed","aborted"].includes(e.status)?void 0:e.currentNodeId;return s!==void 0&&(n[s]=e.status==="paused"?"paused":"running"),{...s===void 0?{}:{current:s},visits:o,status:n,taken:r,...i===void 0?{}:{lastEdge:i},...e.awaiting?.nodeId===void 0||e.awaiting.nodeId===""?{}:{awaitingNode:e.awaiting.nodeId}}}function yr(e){return JSON.parse(JSON.stringify(e))}var Xe=require("react/jsx-runtime"),br="application/x-kvmflow-node",jg={flow:"\u25C6",action:"\u25B6",sense:"\u25C9",data:"\u2261"},Ug=(0,Ue.memo)(function({data:t,selected:o}){let{node:n,spec:r,ports:i,isStart:a,issues:s,runStatus:l,visits:c,awaiting:d,connected:f,t:u}=t,m=s.filter(p=>p.severity==="error").length,h=s.length-m,x=r?.category??"flow",b=n.type==="end"&&n.config?.result==="failure",v=["kf-card",`kf-cat-${x}`,b?"kf-end-failure":"",o?"kf-selected":"",l===void 0?"":`kf-run-${l}`,d?"kf-awaiting":"",m>0?"kf-has-error":""].filter(Boolean).join(" "),C=Cc(n,u);return(0,Xe.jsxs)("div",{className:v,title:s.map(p=>p.message).join(`
+`)||void 0,children:[(0,Xe.jsx)(on,{type:"target",position:we.Left,id:"in",className:"kf-handle kf-handle-in"}),(0,Xe.jsxs)("div",{className:"kf-card-head",children:[(0,Xe.jsx)("span",{className:"kf-glyph","aria-hidden":"true",children:jg[x]}),(0,Xe.jsx)("span",{className:"kf-card-title",children:n.name||(r?u(r.label[0],r.label[1]):n.type)}),a?(0,Xe.jsx)("span",{className:"kf-badge kf-badge-start",children:u("\u8D77\u70B9","START")}):null,c!==void 0&&c>0?(0,Xe.jsxs)("span",{className:"kf-badge kf-badge-visits",title:u("\u8BBF\u95EE\u6B21\u6570","visits"),children:["\xD7",c]}):null]}),(0,Xe.jsxs)("div",{className:"kf-card-type",children:[r?u(r.label[0],r.label[1]):n.type,(0,Xe.jsx)("span",{className:"kf-card-id",children:n.id})]}),C!==""?(0,Xe.jsx)("div",{className:"kf-card-summary",children:C}):null,m+h>0?(0,Xe.jsx)("div",{className:`kf-card-issues ${m>0?"err":"warn"}`,children:m>0?u(`${m} \u4E2A\u9519\u8BEF`,`${m} error${m>1?"s":""}`):u(`${h} \u4E2A\u63D0\u9192`,`${h} warning${h>1?"s":""}`)}):null,i.length>0?(0,Xe.jsx)("div",{className:"kf-ports",children:i.map(p=>(0,Xe.jsxs)("div",{className:`kf-port kf-port-${p.kind}${f.has(p.name)?" kf-port-on":""}${!p.optional&&!f.has(p.name)?" kf-port-missing":""}`,children:[(0,Xe.jsx)("span",{className:"kf-port-label",children:ro(p,u)}),(0,Xe.jsx)(on,{type:"source",position:we.Right,id:p.name,className:`kf-handle kf-handle-${p.kind}`})]},p.name))}):null]})}),Gg={next:["\u4E0B\u4E00\u6B65","next"],error:["\u51FA\u9519","error"],true:["\u662F","true"],false:["\u5426","false"],ok:["\u6EE1\u8DB3","ok"],timeout:["\u8D85\u65F6","timeout"],body:["\u5FAA\u73AF\u4F53","body"],done:["\u7ED3\u675F\u5FAA\u73AF","done"],success:["\u6210\u529F","success"],failure:["\u5931\u8D25","failure"],found:["\u627E\u5230","found"],not_found:["\u672A\u627E\u5230","not found"],unknown:["\u65E0\u6CD5\u8BC6\u522B","unknown"],default:["\u5176\u4ED6","default"]};function ro(e,t){let o=Gg[e.name];return o===void 0?e.name:t(o[0],o[1])}var Qg={kvm:Ug};function Qi(e){let{doc:t,positions:o,catalog:n,issues:r,overlay:i,selectedId:a,readOnly:s,t:l}=e,c=oo(),d=(0,Ue.useMemo)(()=>{let w=new Map;for(let S of r){if(S.nodeId===void 0)continue;let _=w.get(S.nodeId)??[];_.push(S),w.set(S.nodeId,_)}return w},[r]),f=(0,Ue.useMemo)(()=>Object.entries(t.nodes).map(([w,S])=>{let _=n.get(S.type),R=Mt(_,S.config??{});return{id:w,type:"kvm",position:o[w]??{x:0,y:0},selected:w===a,deletable:!s,draggable:!s,connectable:!s,data:{node:{...S,id:w},..._===void 0?{}:{spec:_},ports:R,isStart:t.start===w,issues:d.get(w)??[],...i?.status[w]===void 0?{}:{runStatus:i.status[w]},...i?.visits[w]===void 0?{}:{visits:i.visits[w]},awaiting:i?.awaitingNode===w,connected:new Set(Object.keys(S.next??{})),t:l}}}),[t,o,n,a,s,d,i,l]),[u,m]=(0,Ue.useState)(f);(0,Ue.useEffect)(()=>{m(f)},[f]);let h=(0,Ue.useMemo)(()=>{let w=[];for(let[S,_]of Object.entries(t.nodes)){let R=Mt(n.get(_.type),_.config??{});for(let A of R){let z=_.next?.[A.name];if(z===void 0||!Object.hasOwn(t.nodes,z))continue;let Z=`${S}:${A.name}`,X=i?.taken.has(Z)===!0,K=i?.lastEdge===Z,q=["kf-edge",`kf-edge-${A.kind}`,X?"kf-edge-taken":"",K?"kf-edge-latest":"",i!==void 0&&!X?"kf-edge-idle":""].filter(Boolean).join(" ");w.push({id:Z,source:S,sourceHandle:A.name,target:z,targetHandle:"in",type:"smoothstep",className:q,animated:K&&i?.current!==void 0,deletable:!s,...A.kind==="next"?{}:{label:ro(A,l),labelClassName:"kf-edge-label"},markerEnd:{type:zt.ArrowClosed,width:16,height:16}})}}return w},[t,n,i,s,l]),x=(0,Ue.useCallback)(w=>{m(_=>Zi(w,_));let S={};for(let _ of w)_.type==="position"&&_.dragging===!1&&_.position!==void 0&&(S[_.id]={x:Math.round(_.position.x),y:Math.round(_.position.y)});Object.keys(S).length>0&&e.onMove?.(S)},[e.onMove]),b=(0,Ue.useCallback)(w=>{if(!s)for(let S of w){if(S.type!=="remove")continue;let[_,R]=S.id.split(":");e.onDisconnect?.(_,R)}},[e.onDisconnect,s]),v=(0,Ue.useCallback)(w=>{s||w.source===null||w.target===null||w.sourceHandle===null||w.sourceHandle===void 0||e.onConnect?.(w.source,w.sourceHandle,w.target)},[e.onConnect,s]);(0,Ue.useEffect)(()=>{if(e.fitToken===void 0||e.fitToken===0)return;let w=setTimeout(()=>{c.fitView({padding:.18,duration:250})},30);return()=>clearTimeout(w)},[e.fitToken]);let C=(0,Ue.useCallback)(w=>{s||w.dataTransfer.types.includes(br)&&(w.preventDefault(),w.dataTransfer.dropEffect="copy")},[s]),p=(0,Ue.useCallback)(w=>{if(s)return;let S=w.dataTransfer.getData(br);if(S==="")return;w.preventDefault();let _=c.screenToFlowPosition({x:w.clientX,y:w.clientY});e.onDropType?.(S,{x:Math.round(_.x-110),y:Math.round(_.y-30)})},[c,e.onDropType,s]);return(0,Xe.jsx)("div",{className:"kf-canvas",onDragOver:C,onDrop:p,children:(0,Xe.jsxs)(wc,{nodes:u,edges:h,nodeTypes:Qg,onNodesChange:x,onEdgesChange:b,onConnect:v,onNodesDelete:w=>{s||e.onDeleteNodes?.(w.map(S=>S.id))},onNodeClick:(w,S)=>e.onSelect?.(S.id),onPaneClick:()=>e.onSelect?.(void 0),nodesDraggable:!s,nodesConnectable:!s,elementsSelectable:!0,deleteKeyCode:s?null:["Backspace","Delete"],fitView:!0,fitViewOptions:{padding:.18},minZoom:.2,maxZoom:1.8,proOptions:{hideAttribution:!0},snapToGrid:!0,snapGrid:[10,10],children:[(0,Xe.jsx)(yc,{variant:xt.Dots,gap:18,size:1}),(0,Xe.jsx)(xc,{showInteractive:!1,position:"bottom-left"}),(0,Xe.jsx)(Nc,{pannable:!0,zoomable:!0,position:"bottom-right",className:"kf-minimap",nodeClassName:w=>`kf-mini-${w.data?.spec?.category??"flow"}`})]})})}var It=require("react");var k=require("react/jsx-runtime"),kr=/^[A-Za-z][A-Za-z0-9_-]*$/;function qe(e){let[t,o]=(0,It.useState)(e.value);(0,It.useEffect)(()=>{o(e.value)},[e.value]);let n=()=>{t!==e.value&&e.onCommit(t)},r=`kf-input${e.mono?" kf-mono":""}${e.invalid?" kf-invalid":""}`;return e.multiline?(0,k.jsx)("textarea",{className:`${r} kf-textarea`,value:t,rows:e.rows??3,placeholder:e.placeholder,"aria-label":e.ariaLabel,onChange:i=>o(i.target.value),onBlur:n,onKeyDown:i=>{i.key==="Enter"&&(i.metaKey||i.ctrlKey)&&n()}}):(0,k.jsx)("input",{className:r,value:t,placeholder:e.placeholder,"aria-label":e.ariaLabel,onChange:i=>o(i.target.value),onBlur:n,onKeyDown:i=>{i.key==="Enter"&&n()}})}function Ze(e){let t=e.value===void 0?"":String(e.value),[o,n]=(0,It.useState)(t);(0,It.useEffect)(()=>{n(t)},[t]);let r=()=>{if(o===t)return;if(o.trim()===""){e.onCommit(void 0);return}if(e.allowTemplate&&o.includes("{{")){e.onCommit(o);return}let i=Number(o);Number.isFinite(i)?e.onCommit(i):n(t)};return(0,k.jsx)("input",{className:"kf-input kf-num",inputMode:"decimal",value:o,"aria-label":e.ariaLabel,onChange:i=>n(i.target.value),onBlur:r,onKeyDown:i=>{i.key==="Enter"&&r()}})}function Ie(e){return(0,k.jsxs)("label",{className:`kf-field${e.wide?" wide":""}`,children:[(0,k.jsx)("span",{className:"kf-field-label",children:e.label}),e.children,e.help?(0,k.jsx)("span",{className:"kf-field-help",children:e.help}):null]})}function dt(e){return(0,k.jsxs)("details",{className:"kf-section",open:e.open!==!1,children:[(0,k.jsxs)("summary",{children:[(0,k.jsx)("span",{children:e.title}),e.aside]}),(0,k.jsx)("div",{className:"kf-section-body",children:e.children})]})}function Rc(e){let{value:t,t:o}=e,n=t===null||typeof t!="object"?"vision":["vision","expr","image","change"].find(i=>i in t)??"json",r=i=>{i!==n&&(i==="vision"?e.onChange({vision:o("\u753B\u9762\u4E0A\u51FA\u73B0\u4E86\u2026\u2026","The screen shows \u2026")}):i==="expr"?e.onChange({expr:"vars.count < 3"}):i==="image"?e.onChange({image:"assets/reference.jpg"}):i==="change"?e.onChange({change:!0}):e.onChange({all:[t??{change:!0}]}))};return(0,k.jsxs)("div",{className:"kf-condition",children:[(0,k.jsxs)("select",{className:"kf-input kf-select",value:n,onChange:i=>r(i.target.value),"aria-label":o("\u6761\u4EF6\u7C7B\u578B","Condition kind"),children:[(0,k.jsx)("option",{value:"vision",children:o("\u89C6\u89C9\u5224\u65AD","Vision")}),(0,k.jsx)("option",{value:"expr",children:o("\u8868\u8FBE\u5F0F","Expression")}),(0,k.jsx)("option",{value:"change",children:o("\u753B\u9762\u53D8\u5316","Screen change")}),(0,k.jsx)("option",{value:"image",children:o("\u53C2\u8003\u56FE","Reference image")}),(0,k.jsx)("option",{value:"json",children:o("\u7EC4\u5408\uFF08JSON\uFF09","Compound (JSON)")})]}),n==="vision"?(0,k.jsxs)(k.Fragment,{children:[(0,k.jsx)(qe,{multiline:!0,rows:3,value:String(t.vision??""),onCommit:i=>e.onChange({...t,vision:i}),placeholder:o("\u5177\u4F53\u63CF\u8FF0\u753B\u9762\u4E0A\u5FC5\u987B\u51FA\u73B0\u4EC0\u4E48","Describe exactly what must be visible")}),(0,k.jsx)(qe,{value:String(t.context??""),onCommit:i=>e.onChange(i===""?{vision:t.vision,...t.settleMs===void 0?{}:{settleMs:t.settleMs}}:{...t,context:i}),placeholder:o("\u80CC\u666F\u8BF4\u660E\uFF08\u53EF\u9009\uFF09","Context (optional)")})]}):null,n==="expr"?(0,k.jsx)(qe,{mono:!0,value:String(t.expr??""),onCommit:i=>e.onChange({expr:i}),placeholder:"vars.count < 3 && nodes.detect.output.label == 'network'"}):null,n==="image"?(0,k.jsxs)("div",{className:"kf-inline",children:[(0,k.jsx)(qe,{value:String(t.image??""),onCommit:i=>e.onChange({...t,image:i}),placeholder:"assets/step-1.jpg"}),(0,k.jsx)(Ze,{value:t.maxByteDelta,onCommit:i=>e.onChange(i===void 0?{image:t.image}:{...t,maxByteDelta:i}),ariaLabel:o("\u5141\u8BB8\u5B57\u8282\u5DEE","Byte delta")})]}):null,n==="change"?(0,k.jsxs)("select",{className:"kf-input kf-select",value:t.change===!1?"same":"changed",onChange:i=>e.onChange({change:i.target.value!=="same"}),children:[(0,k.jsx)("option",{value:"changed",children:o("\u4E0E\u4E0A\u4E00\u5E27\u4E0D\u540C","differs from the previous frame")}),(0,k.jsx)("option",{value:"same",children:o("\u4E0E\u4E0A\u4E00\u5E27\u76F8\u540C","same as the previous frame")})]}):null,n==="json"?(0,k.jsx)(Ji,{value:t,onChange:e.onChange,t:o}):null]})}function Ji(e){let t=JSON.stringify(e.value??null,null,2),[o,n]=(0,It.useState)(t),[r,i]=(0,It.useState)("");return(0,It.useEffect)(()=>{n(t),i("")},[t]),(0,k.jsxs)(k.Fragment,{children:[(0,k.jsx)("textarea",{className:`kf-input kf-textarea kf-mono${r?" kf-invalid":""}`,rows:e.rows??5,value:o,onChange:a=>n(a.target.value),onBlur:()=>{if(o!==t)try{e.onChange(JSON.parse(o)),i("")}catch(a){i(a instanceof Error?a.message:String(a))}}}),r?(0,k.jsx)("span",{className:"kf-field-error",children:r}):null]})}function xr(e){let t=Object.entries(e.value??{}),{t:o}=e,n=(s,l)=>{if(e.keyIsPort&&!kr.test(l))return;let c={};t.forEach(([d,f],u)=>{c[u===s?l:d]=f}),e.onChange(c)},r=(s,l)=>e.onChange({...e.value,[s]:l}),i=s=>{let l={...e.value};delete l[s],e.onChange(l)},a=()=>{let s=t.length+1;for(;Object.hasOwn(e.value??{},`item${s}`);)s+=1;e.onChange({...e.value,[`item${s}`]:e.makeValue()})};return(0,k.jsxs)("div",{className:"kf-map",children:[t.map(([s,l],c)=>(0,k.jsxs)("div",{className:"kf-map-row",children:[(0,k.jsxs)("div",{className:"kf-map-head",children:[(0,k.jsx)(qe,{mono:!0,value:s,onCommit:d=>n(c,d),invalid:e.keyIsPort===!0&&!kr.test(s),placeholder:e.keyPlaceholder,ariaLabel:o("\u540D\u79F0","Name")}),(0,k.jsx)("button",{type:"button",className:"kf-icon-btn",onClick:()=>i(s),"aria-label":o(`\u5220\u9664 ${s}`,`Remove ${s}`),children:"\xD7"})]}),e.renderValue(l,d=>r(s,d))]},`${c}`)),(0,k.jsxs)("button",{type:"button",className:"kf-btn kf-btn-ghost",onClick:a,children:["+ ",o("\u6DFB\u52A0","Add")]})]})}function Jg(e){let t=(e.value??[]).map(o=>typeof o=="string"?o:o?.name??"");return(0,k.jsxs)("div",{className:"kf-list",children:[t.map((o,n)=>(0,k.jsxs)("div",{className:"kf-inline",children:[(0,k.jsx)(qe,{mono:!0,value:o,invalid:e.port===!0&&!kr.test(o),onCommit:r=>e.onChange(t.map((i,a)=>a===n?r:i))}),(0,k.jsx)("button",{type:"button",className:"kf-icon-btn",onClick:()=>e.onChange(t.filter((r,i)=>i!==n)),"aria-label":e.t("\u5220\u9664","Remove"),children:"\xD7"})]},`${n}`)),(0,k.jsxs)("button",{type:"button",className:"kf-btn kf-btn-ghost",onClick:()=>e.onChange([...t,`option${t.length+1}`]),children:["+ ",e.t("\u6DFB\u52A0","Add")]})]})}function ew(e){let{node:t,set:o,t:n}=e,r=t.config??{};switch(t.type){case"key":return(0,k.jsxs)("div",{className:"kf-grid2",children:[(0,k.jsx)(Ie,{label:n("\u6309\u952E","Key"),help:n("KeyboardEvent.code\uFF0C\u5982 Enter\u3001F2\u3001ArrowDown","KeyboardEvent.code, e.g. Enter, F2, ArrowDown"),wide:!0,children:(0,k.jsx)(qe,{mono:!0,value:String(r.key??""),onCommit:i=>o({key:i})})}),(0,k.jsx)(Ie,{label:n("\u91CD\u590D\u6B21\u6570","Repeat"),children:(0,k.jsx)(Ze,{value:r.repeat,min:1,onCommit:i=>o({repeat:i})})}),(0,k.jsx)(Ie,{label:n("\u95F4\u9694\uFF08\u6BEB\u79D2\uFF09","Interval (ms)"),children:(0,k.jsx)(Ze,{value:r.intervalMs,onCommit:i=>o({intervalMs:i})})})]});case"shortcut":return(0,k.jsx)(Ie,{label:n("\u7EC4\u5408\u952E\uFF08\u9017\u53F7\u5206\u9694\uFF0C\u6309\u987A\u5E8F\u6309\u4E0B\uFF09","Keys (comma separated, pressed in order)"),children:(0,k.jsx)(qe,{mono:!0,value:(r.keys??[]).join(", "),onCommit:i=>o({keys:i.split(",").map(a=>a.trim()).filter(Boolean)})})});case"text":return(0,k.jsxs)(k.Fragment,{children:[(0,k.jsx)(Ie,{label:n("\u6587\u672C","Text"),help:n("\u53EF\u7528 {{inputs.name}} \u5F15\u7528\u8F93\u5165\uFF1B\u53EA\u652F\u6301\u53EF\u6253\u5370 ASCII\u3002","Use {{inputs.name}} for inputs; printable ASCII only."),children:(0,k.jsx)(qe,{multiline:!0,value:String(r.text??""),onCommit:i=>o({text:i})})}),(0,k.jsxs)("label",{className:"kf-check",children:[(0,k.jsx)("input",{type:"checkbox",checked:r.submit===!0,onChange:i=>o({submit:i.target.checked})}),n("\u8F93\u5165\u540E\u6309\u56DE\u8F66","Press Enter afterwards")]})]});case"click":case"move":case"scroll":return(0,k.jsxs)("div",{className:"kf-grid2",children:[(0,k.jsx)(Ie,{label:"x",help:n("0\u20131\uFF0C\u53EF\u5199 {{nodes.find.output.x}}","0\u20131, or {{nodes.find.output.x}}"),children:(0,k.jsx)(Ze,{allowTemplate:!0,value:r.x,onCommit:i=>o({x:i})})}),(0,k.jsx)(Ie,{label:"y",children:(0,k.jsx)(Ze,{allowTemplate:!0,value:r.y,onCommit:i=>o({y:i})})}),t.type==="click"?(0,k.jsxs)(k.Fragment,{children:[(0,k.jsx)(Ie,{label:n("\u6309\u952E","Button"),children:(0,k.jsxs)("select",{className:"kf-input kf-select",value:r.button??"left",onChange:i=>o({button:i.target.value}),children:[(0,k.jsx)("option",{value:"left",children:n("\u5DE6\u952E","left")}),(0,k.jsx)("option",{value:"right",children:n("\u53F3\u952E","right")}),(0,k.jsx)("option",{value:"middle",children:n("\u4E2D\u952E","middle")})]})}),(0,k.jsx)(Ie,{label:n("\u6B21\u6570","Count"),children:(0,k.jsx)(Ze,{value:r.count,onCommit:i=>o({count:i})})})]}):null,t.type==="scroll"?(0,k.jsx)(Ie,{label:n("\u6EDA\u52A8\u91CF\uFF08\u6B63\u6570\u5411\u4E0B\uFF09","Wheel (positive = down)"),children:(0,k.jsx)(Ze,{value:r.wheelY,onCommit:i=>o({wheelY:i})})}):null]});case"delay":return(0,k.jsx)(Ie,{label:n("\u7B49\u5F85\uFF08\u6BEB\u79D2\uFF09","Wait (ms)"),children:(0,k.jsx)(Ze,{allowTemplate:!0,value:r.ms,onCommit:i=>o({ms:i})})});case"sequence":return(0,k.jsx)(Ie,{label:n("\u5F55\u5236\u4E8B\u4EF6","Recorded events"),help:n("\u6765\u81EA\u5F55\u5236\u7684\u539F\u59CB HID \u4E8B\u4EF6\uFF0C\u5750\u6807\u4E0D\u7ECF\u6620\u5C04\u3002","Raw HID events from a recording; coordinates are not remapped."),children:(0,k.jsx)(Ji,{value:r.events,rows:6,onChange:i=>o({events:i}),t:n})});default:return null}}function Dc(e){let{t}=e,o=e.value??{mode:"none"},n=o.mode??"none";return(0,k.jsxs)("div",{className:"kf-col",children:[(0,k.jsxs)("select",{className:"kf-input kf-select",value:n,onChange:r=>e.onChange(r.target.value==="none"?e.kind==="precondition"?void 0:{mode:"none"}:{...o,mode:r.target.value}),children:[(0,k.jsx)("option",{value:"none",children:e.kind==="verify"?t("\u4E0D\u9A8C\u8BC1","No verification"):t("\u65E0\u524D\u7F6E\u6761\u4EF6","No precondition")}),(0,k.jsx)("option",{value:"change",children:t("\u753B\u9762\u53D1\u751F\u53D8\u5316","Screen changes")}),(0,k.jsx)("option",{value:"vision",children:t("\u89C6\u89C9\u5224\u65AD","Vision check")}),(0,k.jsx)("option",{value:"image",children:t("\u4E0E\u53C2\u8003\u56FE\u4E00\u81F4","Matches a reference image")})]}),n==="vision"?(0,k.jsx)(qe,{multiline:!0,value:o.prompt??"",onCommit:r=>e.onChange({...o,prompt:r}),placeholder:t("\u6210\u529F\u65F6\u753B\u9762\u4E0A\u5E94\u51FA\u73B0\u4EC0\u4E48","What the screen shows on success")}):null,n==="image"?(0,k.jsx)(qe,{value:o.image??"",onCommit:r=>e.onChange({...o,image:r}),placeholder:"assets/step-1.jpg"}):null,n!=="none"?(0,k.jsxs)("div",{className:"kf-grid2",children:[(0,k.jsx)(Ie,{label:t("\u8D85\u65F6\uFF08\u79D2\uFF09","Timeout (s)"),children:(0,k.jsx)(Ze,{value:o.timeoutSec,onCommit:r=>e.onChange({...o,timeoutSec:Number(r??12)})})}),(0,k.jsx)(Ie,{label:t("\u7A33\u5B9A\u7B49\u5F85\uFF08\u6BEB\u79D2\uFF09","Settle (ms)"),children:(0,k.jsx)(Ze,{value:o.settleMs,onCommit:r=>e.onChange({...o,settleMs:Number(r??800)})})})]}):null]})}function tw(e){let{field:t,node:o,set:n,t:r}=e,i=o.config?.[t.key],a=r(t.label[0],t.label[1])+(t.required?" *":""),s=t.help?r(t.help[0],t.help[1]):void 0;return t.kind==="condition"?!t.required&&i===void 0?(0,k.jsx)(Ie,{label:a,help:s,children:(0,k.jsxs)("button",{type:"button",className:"kf-btn kf-btn-ghost",onClick:()=>n({[t.key]:{expr:"true"}}),children:["+ ",r("\u6DFB\u52A0\u6761\u4EF6","Add condition")]})}):(0,k.jsxs)(Ie,{label:a,help:s,wide:!0,children:[(0,k.jsx)(Rc,{value:i,onChange:l=>n({[t.key]:l}),t:r}),t.required?null:(0,k.jsx)("button",{type:"button",className:"kf-link",onClick:()=>n({[t.key]:void 0}),children:r("\u79FB\u9664\u6761\u4EF6","Remove condition")})]}):t.kind==="map"?o.type==="switch"?(0,k.jsx)(Ie,{label:a,help:s,wide:!0,children:(0,k.jsx)(xr,{keyIsPort:!0,value:i??{},t:r,onChange:l=>n({cases:l}),makeValue:()=>({vision:r("\u753B\u9762\u4E0A\u51FA\u73B0\u4E86\u2026\u2026","The screen shows \u2026")}),renderValue:(l,c)=>(0,k.jsx)(Rc,{value:l,onChange:c,t:r})})}):o.type==="vision_classify"?(0,k.jsx)(Ie,{label:a,help:s,wide:!0,children:(0,k.jsx)(xr,{keyIsPort:!0,value:i??{},t:r,onChange:l=>n({labels:l}),makeValue:()=>r("\u8FD9\u4E00\u7C7B\u753B\u9762\u7684\u63CF\u8FF0","What this screen looks like"),renderValue:(l,c)=>(0,k.jsx)(qe,{multiline:!0,rows:2,value:String(l??""),onCommit:c})})}):(0,k.jsx)(Ie,{label:a,help:s,wide:!0,children:(0,k.jsx)(xr,{value:i??{},t:r,onChange:l=>n({[t.key]:l}),makeValue:()=>"",renderValue:(l,c)=>(0,k.jsx)(qe,{mono:!0,value:String(l??""),onCommit:c,placeholder:"{{vars.x}}"})})}):t.kind==="list"?(0,k.jsx)(Ie,{label:a,help:s,wide:!0,children:(0,k.jsx)(Jg,{port:o.type==="human",value:i??[],t:r,onChange:l=>n({[t.key]:l})})}):t.kind==="number"?(0,k.jsx)(Ie,{label:a,help:s,children:(0,k.jsx)(Ze,{value:i,min:t.min,max:t.max,onCommit:l=>n({[t.key]:l})})}):t.kind==="boolean"?(0,k.jsxs)("label",{className:"kf-check",children:[(0,k.jsx)("input",{type:"checkbox",checked:i===!0,onChange:l=>n({[t.key]:l.target.checked})}),a]}):t.kind==="select"?(0,k.jsx)(Ie,{label:a,help:s,children:(0,k.jsx)("select",{className:"kf-input kf-select",value:String(i??t.options?.[0]??""),onChange:l=>n({[t.key]:l.target.value}),children:(t.options??[]).map(l=>(0,k.jsx)("option",{value:l,children:l},l))})}):o.type==="subflow"&&t.key==="workflow"?(0,k.jsx)(Ie,{label:a,help:s,wide:!0,children:(0,k.jsxs)("select",{className:"kf-input kf-select",value:String(i??""),onChange:l=>n({workflow:l.target.value}),children:[e.workflows.some(l=>l.id===i)?null:(0,k.jsx)("option",{value:String(i??""),children:String(i??"")}),e.workflows.map(l=>(0,k.jsxs)("option",{value:l.id,children:[l.name," \u2014 ",l.id]},l.id))]})}):(0,k.jsx)(Ie,{label:a,help:s,wide:t.kind==="text",children:(0,k.jsx)(qe,{multiline:t.kind==="text",mono:t.kind==="expression",value:String(i??""),onCommit:l=>n({[t.key]:l}),placeholder:t.placeholder})})}function $c(e){let{doc:t,nodeId:o,spec:n,t:r}=e,i=t.nodes[o];if(i===void 0)return null;let a=Mt(n,i.config??{}),s=c=>{let d={...i.config??{}};for(let[u,m]of Object.entries(c))m===void 0?delete d[u]:d[u]=m;let f={...i,config:d};e.onChange(Ic(f,Mt(n,d)))},l=Object.entries(t.nodes).filter(([c])=>c!==o);return(0,k.jsxs)("div",{className:"kf-inspector-body",children:[(0,k.jsxs)("div",{className:"kf-inspector-head",children:[(0,k.jsxs)("div",{children:[(0,k.jsx)("div",{className:"kf-inspector-kind",children:n?r(n.label[0],n.label[1]):i.type}),(0,k.jsx)("div",{className:"kf-hint",children:n?r(n.description[0],n.description[1]):""})]}),t.start===o?(0,k.jsx)("span",{className:"kf-badge kf-badge-start",children:r("\u8D77\u70B9","START")}):(0,k.jsx)("button",{type:"button",className:"kf-btn kf-btn-ghost",onClick:e.onSetStart,children:r("\u8BBE\u4E3A\u8D77\u70B9","Set as start")})]}),e.issues.length>0?(0,k.jsx)("ul",{className:"kf-issue-list",children:e.issues.map((c,d)=>(0,k.jsx)("li",{className:c.severity,children:c.message},d))}):null,(0,k.jsxs)(dt,{title:r("\u57FA\u672C","Basics"),children:[(0,k.jsx)(Ie,{label:r("\u540D\u79F0","Name"),children:(0,k.jsx)(qe,{value:i.name,onCommit:c=>e.onChange({...i,name:c})})}),(0,k.jsx)(Ie,{label:"ID",help:r("\u5B57\u6BCD\u5F00\u5934\uFF0C\u53EF\u542B\u6570\u5B57\u3001- \u548C _\uFF1B\u88AB\u8868\u8FBE\u5F0F nodes.<id> \u5F15\u7528\u3002","Starts with a letter; letters, digits, - and _. Referenced as nodes.<id>."),children:(0,k.jsx)(qe,{mono:!0,value:o,onCommit:c=>{kr.test(c)&&!Object.hasOwn(t.nodes,c)&&e.onRename(c)}})}),(0,k.jsx)(Ie,{label:r("\u8BF4\u660E","Description"),wide:!0,children:(0,k.jsx)(qe,{multiline:!0,rows:2,value:i.description??"",onCommit:c=>e.onChange({...i,...c===""?{description:void 0}:{description:c}})})})]}),(0,k.jsx)(dt,{title:r("\u914D\u7F6E","Configuration"),children:n?.action?(0,k.jsx)(ew,{node:i,set:s,t:r}):(n?.fields??[]).map(c=>(0,k.jsx)(tw,{field:c,node:i,set:s,t:r,workflows:e.workflows},c.key))}),n?.action&&i.type!=="delay"?(0,k.jsxs)(dt,{title:r("\u524D\u7F6E\u6761\u4EF6\u4E0E\u9A8C\u8BC1","Guards"),open:i.verify?.mode!==void 0&&i.verify.mode!=="none"||i.precondition!==void 0,children:[(0,k.jsx)(Ie,{label:r("\u6267\u884C\u524D\u68C0\u67E5","Before acting"),wide:!0,children:(0,k.jsx)(Dc,{kind:"precondition",value:i.precondition,onChange:c=>e.onChange({...i,...c===void 0?{precondition:void 0}:{precondition:c}}),t:r})}),(0,k.jsx)(Ie,{label:r("\u6267\u884C\u540E\u9A8C\u8BC1","After acting"),wide:!0,children:(0,k.jsx)(Dc,{kind:"verify",value:i.verify,onChange:c=>e.onChange({...i,verify:c??{mode:"none"}}),t:r})})]}):null,a.length>0?(0,k.jsx)(dt,{title:r("\u8FDE\u63A5","Connections"),aside:(0,k.jsx)("span",{className:"kf-hint",children:r("\u4E5F\u53EF\u4EE5\u5728\u753B\u5E03\u4E0A\u62D6\u52A8\u8FDE\u7EBF","or drag on the canvas")}),children:a.map(c=>(0,k.jsx)(Ie,{label:`${ro(c,r)}${c.optional?"":" *"}`,children:(0,k.jsxs)("select",{className:"kf-input kf-select",value:i.next?.[c.name]??"",onChange:d=>e.onConnect(c.name,d.target.value===""?void 0:d.target.value),children:[(0,k.jsx)("option",{value:"",children:c.optional?r("\u2014 \u672A\u8FDE\u63A5\uFF08\u8FD0\u884C\u5230\u8FD9\u91CC\u4F1A\u6682\u505C\uFF09","\u2014 not connected (the run pauses here)"):r("\u2014 \u672A\u8FDE\u63A5","\u2014 not connected")}),l.map(([d,f])=>(0,k.jsxs)("option",{value:d,children:[f.name||d," \xB7 ",d]},d)),(0,k.jsx)("option",{value:o,children:r("\uFF08\u56DE\u5230\u81EA\u5DF1\uFF09","(this node)")})]})},c.name))}):null,(0,k.jsx)(dt,{title:r("\u5931\u8D25\u4E0E\u4E0A\u9650","Failures & limits"),open:i.retry.times>0||i.maxVisits!==100,children:(0,k.jsxs)("div",{className:"kf-grid2",children:[(0,k.jsx)(Ie,{label:r("\u5931\u8D25\u91CD\u8BD5\u6B21\u6570","Retries"),children:(0,k.jsx)(Ze,{value:i.retry.times,onCommit:c=>e.onChange({...i,retry:{...i.retry,times:Math.max(0,Math.floor(Number(c??0)))}})})}),(0,k.jsx)(Ie,{label:r("\u91CD\u8BD5\u95F4\u9694\uFF08\u6BEB\u79D2\uFF09","Retry delay (ms)"),children:(0,k.jsx)(Ze,{value:i.retry.delayMs,onCommit:c=>e.onChange({...i,retry:{...i.retry,delayMs:Math.max(0,Number(c??0))}})})}),(0,k.jsx)(Ie,{label:r("\u6700\u591A\u8FDB\u5165\u6B21\u6570","Max visits"),help:r("\u9632\u6B62\u56DE\u8FB9\u6B7B\u5FAA\u73AF\uFF1B\u8D85\u51FA\u65F6\u8D70\u201C\u51FA\u9519\u201D\u51FA\u53E3\u3002","Stops runaway back edges; exceeding it takes the error port."),children:(0,k.jsx)(Ze,{value:i.maxVisits,onCommit:c=>e.onChange({...i,maxVisits:Math.max(1,Math.floor(Number(c??100)))})})})]})}),e.onTest!==void 0?(0,k.jsxs)(dt,{title:r("\u5355\u72EC\u8BD5\u8FD0\u884C","Test this node"),children:[(0,k.jsx)("p",{className:"kf-hint",children:n?.action?r("\u4F1A\u771F\u5B9E\u5411\u76EE\u6807\u673A\u53D1\u9001\u952E\u9F20\u64CD\u4F5C\u3002","This really sends input to the target."):r("\u53EA\u8BFB\u53D6\u753B\u9762\u5E76\u8C03\u7528\u6A21\u578B\uFF0C\u4E0D\u4F1A\u64CD\u4F5C\u76EE\u6807\u673A\u3002","Reads the screen and calls the model; sends no input.")}),(0,k.jsx)("button",{type:"button",className:"kf-btn",disabled:e.testing||e.testDisabledReason!==void 0,title:e.testDisabledReason,onClick:e.onTest,children:e.testing?r("\u8BD5\u8FD0\u884C\u4E2D\u2026","Testing\u2026"):r("\u5728\u76EE\u6807\u673A\u4E0A\u8BD5\u8FD0\u884C","Run on the target")}),e.testResult!==void 0?(0,k.jsx)("div",{className:`kf-test-result${e.testResult.error?" err":""}`,children:e.testResult.error?(0,k.jsx)("div",{children:e.testResult.error}):(0,k.jsxs)(k.Fragment,{children:[(0,k.jsxs)("div",{children:[(0,k.jsxs)("b",{children:[r("\u51FA\u53E3","Port"),":"]})," ",e.testResult.port===void 0?"\u2014":ro({name:e.testResult.port},r),e.testResult.durationMs===void 0?"":` \xB7 ${e.testResult.durationMs} ms`]}),e.testResult.reason?(0,k.jsx)("div",{className:"kf-hint",children:e.testResult.reason}):null,e.testResult.output!==void 0?(0,k.jsx)("pre",{className:"kf-pre",children:JSON.stringify(e.testResult.output,null,2)}):null,(0,k.jsxs)("div",{className:"kf-thumbs",children:[e.testResult.before?e.renderThumb(e.testResult.before,r("\u6267\u884C\u524D","before")):null,e.testResult.after?e.renderThumb(e.testResult.after,r("\u753B\u9762","screen")):null]})]})}):null]}):null,(0,k.jsx)("div",{className:"kf-inspector-foot",children:(0,k.jsx)("button",{type:"button",className:"kf-btn kf-btn-danger",onClick:e.onDelete,children:r("\u5220\u9664\u8282\u70B9","Delete node")})})]})}function Pc(e){let{doc:t,t:o}=e,n=i=>e.onChange({...t,inputs:i}),r=e.issues;return(0,k.jsxs)("div",{className:"kf-inspector-body",children:[(0,k.jsx)("div",{className:"kf-inspector-head",children:(0,k.jsxs)("div",{children:[(0,k.jsx)("div",{className:"kf-inspector-kind",children:o("\u5DE5\u4F5C\u6D41\u8BBE\u7F6E","Workflow settings")}),(0,k.jsx)("div",{className:"kf-hint",children:o("\u9009\u4E2D\u8282\u70B9\u53EF\u7F16\u8F91\u8282\u70B9\uFF1B\u8FD9\u91CC\u662F\u6574\u4EFD\u5DE5\u4F5C\u6D41\u7684\u8BBE\u7F6E\u3002","Select a node to edit it; these settings apply to the whole workflow.")})]})}),r.length>0?(0,k.jsx)(dt,{title:o(`\u95EE\u9898\uFF08${r.length}\uFF09`,`Issues (${r.length})`),children:(0,k.jsx)("ul",{className:"kf-issue-list",children:r.map((i,a)=>(0,k.jsxs)("li",{className:i.severity,children:[i.nodeId?(0,k.jsx)("button",{type:"button",className:"kf-link",onClick:()=>e.onSelectNode(i.nodeId),children:i.nodeId}):null," ",i.message]},a))})}):null,(0,k.jsxs)(dt,{title:o("\u57FA\u672C","Basics"),children:[(0,k.jsx)(Ie,{label:o("\u540D\u79F0","Name"),children:(0,k.jsx)(qe,{value:t.name,onCommit:i=>e.onChange({...t,name:i})})}),(0,k.jsx)(Ie,{label:o("\u8BF4\u660E","Description"),wide:!0,children:(0,k.jsx)(qe,{multiline:!0,rows:3,value:t.description??"",onCommit:i=>e.onChange({...t,...i===""?{description:void 0}:{description:i}})})})]}),(0,k.jsx)(dt,{title:o("\u8FD0\u884C\u8F93\u5165","Run inputs"),open:Object.keys(t.inputs??{}).length>0,aside:(0,k.jsx)("span",{className:"kf-hint",children:"{{inputs.name}}"}),children:(0,k.jsx)(xr,{keyIsPort:!0,t:o,value:t.inputs??{},onChange:i=>n(i),makeValue:()=>({type:"string",required:!0}),renderValue:(i,a)=>(0,k.jsxs)("div",{className:"kf-inline",children:[(0,k.jsxs)("select",{className:"kf-input kf-select",value:i.type,onChange:s=>a({...i,type:s.target.value}),children:[(0,k.jsx)("option",{value:"string",children:o("\u6587\u672C","text")}),(0,k.jsx)("option",{value:"secret",children:o("\u5BC6\u7801\uFF08\u4E0D\u843D\u76D8\uFF09","secret (never stored)")}),(0,k.jsx)("option",{value:"number",children:o("\u6570\u5B57","number")}),(0,k.jsx)("option",{value:"boolean",children:o("\u662F/\u5426","boolean")})]}),(0,k.jsxs)("label",{className:"kf-check",children:[(0,k.jsx)("input",{type:"checkbox",checked:i.required!==!1,onChange:s=>a({...i,required:s.target.checked})}),o("\u5FC5\u586B","required")]})]})})}),(0,k.jsx)(dt,{title:o("\u521D\u59CB\u53D8\u91CF","Variables"),open:Object.keys(t.vars??{}).length>0,aside:(0,k.jsx)("span",{className:"kf-hint",children:"{{vars.name}}"}),children:(0,k.jsx)(Ji,{value:t.vars??{},rows:4,t:o,onChange:i=>e.onChange({...t,vars:i??{}})})}),(0,k.jsxs)(dt,{title:o("BIOS \u524D\u594F","BIOS prelude"),open:t.bios!==void 0,children:[(0,k.jsxs)("label",{className:"kf-check",children:[(0,k.jsx)("input",{type:"checkbox",checked:t.bios!==void 0,onChange:i=>e.onChange(i.target.checked?{...t,bios:{hotkey:"F2",intervalMs:1200,timeoutSec:180,requireConfirm:!1,settleSec:2}}:{...t,bios:void 0})}),o("\u5F00\u673A\u524D\u6301\u7EED\u6309\u70ED\u952E\uFF0C\u7B49\u5230\u6709\u753B\u9762\u540E\u518D\u5F00\u59CB","Tap a hotkey before power-on and start once video appears")]}),t.bios!==void 0?(0,k.jsxs)("div",{className:"kf-grid2",children:[(0,k.jsx)(Ie,{label:o("\u70ED\u952E","Hotkey"),children:(0,k.jsx)(qe,{mono:!0,value:t.bios.hotkey,onCommit:i=>e.onChange({...t,bios:{...t.bios,hotkey:i}})})}),(0,k.jsx)(Ie,{label:o("\u95F4\u9694\uFF08\u6BEB\u79D2\uFF09","Interval (ms)"),children:(0,k.jsx)(Ze,{value:t.bios.intervalMs,onCommit:i=>e.onChange({...t,bios:{...t.bios,intervalMs:Number(i??1200)}})})}),(0,k.jsx)(Ie,{label:o("\u7B49\u5F85\u5F00\u673A\uFF08\u79D2\uFF09","Wait for power (s)"),children:(0,k.jsx)(Ze,{value:t.bios.timeoutSec,onCommit:i=>e.onChange({...t,bios:{...t.bios,timeoutSec:Number(i??180)}})})}),(0,k.jsxs)("label",{className:"kf-check",children:[(0,k.jsx)("input",{type:"checkbox",checked:t.bios.requireConfirm,onChange:i=>e.onChange({...t,bios:{...t.bios,requireConfirm:i.target.checked}})}),o("\u8FDB\u5165\u540E\u4EBA\u5DE5\u786E\u8BA4","Confirm manually")]})]}):null]}),(0,k.jsx)(dt,{title:o("\u5B89\u5168\u4E0A\u9650","Limits"),open:!1,children:(0,k.jsxs)("div",{className:"kf-grid2",children:[(0,k.jsx)(Ie,{label:o("\u8282\u70B9\u8BBF\u95EE\u603B\u6570","Node visits"),children:(0,k.jsx)(Ze,{value:t.limits.maxNodeVisits,onCommit:i=>e.onChange({...t,limits:{...t.limits,maxNodeVisits:Number(i??1e3)}})})}),(0,k.jsx)(Ie,{label:o("\u89C6\u89C9\u8C03\u7528\u6B21\u6570","Vision calls"),children:(0,k.jsx)(Ze,{value:t.limits.maxVisionCalls,onCommit:i=>e.onChange({...t,limits:{...t.limits,maxVisionCalls:Number(i??400)}})})}),(0,k.jsx)(Ie,{label:o("\u603B\u65F6\u957F\uFF08\u79D2\uFF09","Timeout (s)"),children:(0,k.jsx)(Ze,{value:t.limits.timeoutSec,onCommit:i=>e.onChange({...t,limits:{...t.limits,timeoutSec:Number(i??7200)}})})})]})})]})}var ue=require("react/jsx-runtime"),nw=["sense","flow","action","data"],Tc={sense:["\u611F\u77E5","Perceive"],flow:["\u6D41\u7A0B","Control flow"],action:["\u64CD\u4F5C","Act"],data:["\u6570\u636E","Data"]},Nr;function ow(e){return Nr===void 0&&(Nr=e("flow.catalog").then(t=>t.nodes).catch(t=>{throw Nr=void 0,t})),Nr}function zc(e){let[t,o]=(0,Ne.useState)(void 0);return(0,Ne.useEffect)(()=>{let n=!0;return ow(e).then(r=>{n&&o(new Map(r.map(i=>[i.type,i])))}).catch(()=>{}),()=>{n=!1}},[e]),t}function Ac(e){let t=e?.details?.issues;return Array.isArray(t)?t:void 0}function rw(e,t){let n={...e===void 0?{x:0,y:0}:{x:e.x+300,y:e.y}},r=Object.values(t);for(;r.some(i=>Math.abs(i.x-n.x)<200&&Math.abs(i.y-n.y)<110);)n={x:n.x,y:n.y+140};return n}function Oc(e){return(0,ue.jsx)(wr,{children:(0,ue.jsx)(iw,{...e})})}function iw(e){let{rpc:t,t:o,workflowId:n,notify:r}=e,i=zc(t),[a,s]=(0,Ne.useState)(void 0),[l,c]=(0,Ne.useState)({}),[d,f]=(0,Ne.useState)([]),[u,m]=(0,Ne.useState)(""),[h,x]=(0,Ne.useState)(void 0),[b,v]=(0,Ne.useState)("canvas"),[C,p]=(0,Ne.useState)(void 0),[w,S]=(0,Ne.useState)("saved"),[_,R]=(0,Ne.useState)(""),[A,z]=(0,Ne.useState)(""),[Z,X]=(0,Ne.useState)(0),[K,q]=(0,Ne.useState)(""),[y,I]=(0,Ne.useState)(!1),[D,T]=(0,Ne.useState)({}),[g,M]=(0,Ne.useState)(!1),[L,O]=(0,Ne.useState)({}),[j,de]=(0,Ne.useState)(!0),re=(0,Ne.useRef)({past:[],future:[]}),he=(0,Ne.useRef)(0),ge=(0,Ne.useRef)(void 0),ne=(0,Ne.useRef)({positions:{}});ne.current={doc:a,positions:l};let B=(0,Ne.useCallback)((E,$=!0)=>{s(E.document),c(E.graph.layout.nodes??{}),f(E.issues??[]),m(E.yaml),x(void 0),$||p(void 0)},[]);(0,Ne.useEffect)(()=>{let E=!0;return s(void 0),z(""),S("saved"),O({}),re.current={past:[],future:[]},t("flow.get",{id:n}).then($=>{E&&(B($,!1),X(Q=>Q+1))}).catch($=>{E&&z($?.message??String($))}),()=>{E=!1,ge.current!==void 0&&clearTimeout(ge.current)}},[n,t,B]),(0,Ne.useEffect)(()=>{e.onDirtyChange?.(w==="dirty"||w==="saving"||w==="invalid")},[w]);let ae=(0,Ne.useCallback)(async()=>{let E=ne.current;if(E.doc===void 0)return!1;let $=he.current;S("saving");try{let Q=await t("flow.save",{id:n,document:E.doc,layout:{version:1,nodes:E.positions}});return $!==he.current||(f(Q.issues??[]),m(Q.yaml),S("saved"),R(""),e.onSaved()),!0}catch(Q){let Se=Ac(Q);return Se!==void 0?(f(Se),S("invalid"),R(o("\u6709\u9519\u8BEF\uFF0C\u4FEE\u6B63\u540E\u81EA\u52A8\u4FDD\u5B58","Fix the errors to save"))):(S("error"),R(Q?.message??String(Q))),!1}},[t,n,e.onSaved,o]),ve=(0,Ne.useCallback)((E=700)=>{ge.current!==void 0&&clearTimeout(ge.current),ge.current=setTimeout(()=>{ge.current=void 0,ae()},E)},[ae]),pe=(0,Ne.useCallback)((E,$)=>{let Q=ne.current.doc;Q!==void 0&&(re.current.past.push(yr(Q)),re.current.past.length>60&&re.current.past.shift(),re.current.future=[]),he.current+=1,s(E),$!==void 0&&c($),ne.current={doc:E,positions:$??ne.current.positions},S("dirty"),ve()},[ve]),V=(0,Ne.useCallback)((E=!1)=>{let $=re.current,Q=E?$.future:$.past,Se=E?$.past:$.future,_e=Q.pop(),De=ne.current.doc;_e===void 0||De===void 0||(Se.push(yr(De)),he.current+=1,s(_e),ne.current={doc:_e,positions:ne.current.positions},C!==void 0&&!Object.hasOwn(_e.nodes,C)&&p(void 0),S("dirty"),ve(300))},[ve,C]);(0,Ne.useEffect)(()=>{let E=$=>{let Q=$.target;Q!==null&&(Q.tagName==="INPUT"||Q.tagName==="TEXTAREA"||Q.tagName==="SELECT"||Q.isContentEditable)||($.metaKey||$.ctrlKey)&&($.key.toLowerCase()==="z"?($.preventDefault(),V($.shiftKey)):$.key.toLowerCase()==="y"?($.preventDefault(),V(!0)):$.key.toLowerCase()==="s"&&($.preventDefault(),ge.current!==void 0&&clearTimeout(ge.current),ae()))};return window.addEventListener("keydown",E),()=>window.removeEventListener("keydown",E)},[V,ae]);let W=(0,Ne.useMemo)(()=>Gi(e.run,n),[e.run,n]),G=W!==void 0&&e.run!==void 0&&!["succeeded","failed","aborted"].includes(e.run.status),ee=(0,Ne.useCallback)((E,$)=>{let Q=ne.current.doc;if(Q===void 0||i===void 0)return;let Se=i.get(E),_e=_c(E,Q),De=Sc(E,o,e.workflows,n),Ee={id:_e,type:E,name:Se===void 0?E:o(Se.label[0],Se.label[1]),config:De,next:{},retry:{times:0,delayMs:0},maxVisits:100,...Se?.action?{verify:{mode:"none"}}:{}},Be={...Q.nodes,[_e]:Ee},ze=$===void 0?C:void 0;if(ze!==void 0&&Be[ze]!==void 0){let Le=Be[ze],U=Mt(i.get(Le.type),Le.config),J=U.find(ke=>ke.kind!=="error"&&Le.next[ke.name]===void 0)?.name??Ui(U);if(J!==void 0){let ke=Le.next[J],Te=Ui(Mt(Se,De));ke!==void 0&&Te!==void 0&&(Ee.next[Te]=ke),Be[ze]={...Le,next:{...Le.next,[J]:_e}}}}let Pe={...Q,nodes:Be,start:Q.start===""?_e:Q.start},Oe=$??rw(ze===void 0?void 0:ne.current.positions[ze],ne.current.positions);pe(Pe,{...ne.current.positions,[_e]:Oe}),p(_e),de(!0)},[i,pe,e.workflows,C,o,n]),fe=(0,Ne.useCallback)((E,$)=>{let Q=ne.current.doc;Q!==void 0&&pe({...Q,nodes:{...Q.nodes,[E]:$}})},[pe]),ce=(0,Ne.useCallback)(E=>{let $=ne.current.doc;if($===void 0)return;for(let Se of E)$=Ec($,Se);let Q={...ne.current.positions};for(let Se of E)delete Q[Se];pe($,Q),C!==void 0&&E.includes(C)&&p(void 0)},[pe,C]),Y=(0,Ne.useCallback)((E,$,Q)=>{let Se=ne.current.doc;if(Se===void 0||Se.nodes[E]===void 0)return;let _e={...Se.nodes[E].next};Q===void 0?delete _e[$]:_e[$]=Q,pe({...Se,nodes:{...Se.nodes,[E]:{...Se.nodes[E],next:_e}}})},[pe]),N=(0,Ne.useCallback)(async()=>{let E=ne.current.doc;if(E!==void 0)try{let $=await t("flow.check",{document:E,id:n});if($.graph===void 0){r(o("\u5148\u4FEE\u6B63\u9519\u8BEF\u518D\u81EA\u52A8\u6392\u7248\u3002","Fix the errors before auto layout."),"warn");return}c($.graph.layout.nodes),ne.current={doc:E,positions:$.graph.layout.nodes},S("dirty"),ve(200),X(Q=>Q+1)}catch($){r($?.message??String($),"err")}},[r,t,ve,o,n]),Ce=(0,Ne.useCallback)(async()=>{if(h!==void 0){S("saving");try{let E=await t("flow.save",{id:n,yaml:h});re.current.past.push(yr(ne.current.doc)),B(E),S("saved"),R(""),e.onSaved(),r(o("\u5DF2\u4ECE YAML \u66F4\u65B0\u5DE5\u4F5C\u6D41\u3002","Workflow updated from YAML."),"ok")}catch(E){let $=Ac(E);$!==void 0&&f($),S("invalid"),R(E?.message??String(E))}}},[B,r,e.onSaved,t,o,n,h]),ie=(0,Ne.useCallback)(async E=>{if(!(w!=="saved"&&(ge.current!==void 0&&clearTimeout(ge.current),!await ae()))){M(!0);try{let $=await t("flow.testNode",{id:n,nodeId:E,deviceId:e.deviceId});O(Q=>({...Q,[E]:$}))}catch($){O(Q=>({...Q,[E]:{error:$?.message??String($)}}))}finally{M(!1)}}},[ae,e.deviceId,t,w,n]),xe=(0,Ne.useCallback)(async()=>{let E=ne.current.doc;if(E===void 0)return;if(w!=="saved"&&(ge.current!==void 0&&clearTimeout(ge.current),!await ae())){r(o("\u5DE5\u4F5C\u6D41\u6709\u9519\u8BEF\uFF0C\u4FEE\u6B63\u540E\u518D\u6267\u884C\u3002","The workflow has errors; fix them before running."),"err");return}if(Object.keys(E.inputs??{}).length>0&&!y){I(!0);return}I(!1);let $={};for(let[Q,Se]of Object.entries(E.inputs??{})){let _e=D[Q];_e===void 0||_e===""||($[Q]=Se.type==="number"?Number(_e):Se.type==="boolean"?_e==="true":_e)}await e.onRun($),T(Q=>Object.fromEntries(Object.entries(Q).filter(([Se])=>E.inputs[Se]?.type!=="secret")))},[r,ae,e.onRun,D,w,y,o]);if(A!=="")return(0,ue.jsx)("div",{className:"kf-empty",children:A});if(a===void 0||i===void 0)return(0,ue.jsx)("div",{className:"kf-empty",children:o("\u6B63\u5728\u52A0\u8F7D\u5DE5\u4F5C\u6D41\u2026","Loading workflow\u2026")});let ye=d.filter(E=>E.severity==="error").length,se=d.length-ye,be=C===void 0?void 0:a.nodes[C],Re=K.trim().toLowerCase(),Ae=nw.map(E=>({category:E,items:[...i.values()].filter($=>$.category===E&&$.type!=="sequence").filter($=>Re===""||`${$.type} ${$.label[0]} ${$.label[1]}`.toLowerCase().includes(Re))})).filter(E=>E.items.length>0),Fe={saved:o("\u5DF2\u4FDD\u5B58","Saved"),dirty:o("\u672A\u4FDD\u5B58","Unsaved"),saving:o("\u4FDD\u5B58\u4E2D\u2026","Saving\u2026"),invalid:o("\u6709\u9519\u8BEF\uFF0C\u672A\u4FDD\u5B58","Not saved: errors"),error:o("\u4FDD\u5B58\u5931\u8D25","Save failed")};return(0,ue.jsxs)("div",{className:`kf-editor${e.compact?" kf-compact":""}${j?"":" kf-no-inspector"}`,children:[(0,ue.jsxs)("div",{className:"kf-toolbar",children:[(0,ue.jsxs)("div",{className:"kf-toolbar-title",children:[(0,ue.jsx)("span",{className:"kf-doc-name",title:a.id,children:a.name}),(0,ue.jsx)("span",{className:`kf-save kf-save-${w}`,title:_||void 0,children:Fe[w]}),ye>0?(0,ue.jsx)("span",{className:"kf-chip err",children:o(`${ye} \u4E2A\u9519\u8BEF`,`${ye} error${ye>1?"s":""}`)}):null,se>0?(0,ue.jsx)("span",{className:"kf-chip warn",children:o(`${se} \u4E2A\u63D0\u9192`,`${se} warning${se>1?"s":""}`)}):null,G?(0,ue.jsxs)("span",{className:"kf-chip run",children:[o("\u6267\u884C\u4E2D","Running")," \xB7 ",e.run?.phase]}):null]}),(0,ue.jsxs)("div",{className:"kf-toolbar-actions",children:[(0,ue.jsxs)("div",{className:"kf-seg",role:"tablist","aria-label":o("\u89C6\u56FE","View"),children:[(0,ue.jsx)("button",{type:"button",role:"tab","aria-selected":b==="canvas",className:b==="canvas"?"on":"",onClick:()=>v("canvas"),children:o("\u753B\u5E03","Canvas")}),(0,ue.jsx)("button",{type:"button",role:"tab","aria-selected":b==="yaml",className:b==="yaml"?"on":"",onClick:()=>{v("yaml"),x(void 0)},children:"YAML"})]}),(0,ue.jsx)("button",{type:"button",className:"kf-btn",onClick:()=>V(!1),disabled:re.current.past.length===0,title:o("\u64A4\u9500\uFF08\u2318Z\uFF09","Undo (\u2318Z)"),children:"\u21B6"}),(0,ue.jsx)("button",{type:"button",className:"kf-btn",onClick:()=>V(!0),disabled:re.current.future.length===0,title:o("\u91CD\u505A\uFF08\u21E7\u2318Z\uFF09","Redo (\u21E7\u2318Z)"),children:"\u21B7"}),b==="canvas"?(0,ue.jsx)("button",{type:"button",className:"kf-btn",onClick:()=>{N()},children:o("\u81EA\u52A8\u6392\u7248","Auto layout")}):null,(0,ue.jsx)("button",{type:"button",className:"kf-btn",onClick:()=>e.onAskAi(a),children:o("AI \u7F16\u8F91","Edit with AI")}),(0,ue.jsxs)("button",{type:"button",className:"kf-btn kf-btn-primary",onClick:()=>{xe()},disabled:e.runDisabledReason!==void 0||ye>0,title:e.runDisabledReason??(ye>0?o("\u5148\u4FEE\u6B63\u9519\u8BEF","Fix the errors first"):void 0),children:["\u25B6 ",o("\u6267\u884C","Run")]}),(0,ue.jsx)("button",{type:"button",className:"kf-btn","aria-pressed":j,onClick:()=>de(E=>!E),title:o("\u663E\u793A/\u9690\u85CF\u5C5E\u6027\u9762\u677F","Toggle the inspector"),children:"\u2AF6"})]})]}),y?(0,ue.jsxs)("div",{className:"kf-run-form",children:[(0,ue.jsx)("div",{className:"kf-run-form-title",children:o("\u8FD0\u884C\u8F93\u5165","Run inputs")}),(0,ue.jsx)("div",{className:"kf-run-form-grid",children:Object.entries(a.inputs).map(([E,$])=>(0,ue.jsxs)("label",{className:"kf-field",children:[(0,ue.jsxs)("span",{className:"kf-field-label",children:[E,$.required?" *":"",$.description?` \u2014 ${$.description}`:""]}),$.type==="boolean"?(0,ue.jsxs)("select",{className:"kf-input kf-select",value:D[E]??String($.default??"false"),onChange:Q=>T(Se=>({...Se,[E]:Q.target.value})),children:[(0,ue.jsx)("option",{value:"true",children:"true"}),(0,ue.jsx)("option",{value:"false",children:"false"})]}):(0,ue.jsx)("input",{className:"kf-input",type:$.type==="secret"?"password":$.type==="number"?"number":"text",autoComplete:$.type==="secret"?"new-password":"off",value:D[E]??($.default===void 0?"":String($.default)),onChange:Q=>T(Se=>({...Se,[E]:Q.target.value}))})]},E))}),(0,ue.jsxs)("div",{className:"kf-run-form-actions",children:[(0,ue.jsx)("span",{className:"kf-hint",children:o("\u5BC6\u7801\u7C7B\u8F93\u5165\u53EA\u5728\u672C\u6B21\u6267\u884C\u7684\u5185\u5B58\u4E2D\u4F7F\u7528\uFF0C\u4E0D\u5199\u5165\u65E5\u5FD7\u548C\u78C1\u76D8\u3002","Secret inputs live only in this run's memory; they are never logged or stored.")}),(0,ue.jsx)("button",{type:"button",className:"kf-btn",onClick:()=>I(!1),children:o("\u53D6\u6D88","Cancel")}),(0,ue.jsxs)("button",{type:"button",className:"kf-btn kf-btn-primary",onClick:()=>{xe()},children:["\u25B6 ",o("\u5F00\u59CB\u6267\u884C","Start run")]})]})]}):null,b==="yaml"?(0,ue.jsxs)("div",{className:"kf-yaml",children:[(0,ue.jsx)("textarea",{className:"kf-input kf-textarea kf-mono kf-yaml-text",spellCheck:!1,value:h??u,onChange:E=>x(E.target.value),"aria-label":"YAML"}),(0,ue.jsxs)("div",{className:"kf-yaml-actions",children:[(0,ue.jsx)("span",{className:"kf-hint",children:h===void 0?o("\u753B\u5E03\u4E0A\u7684\u4FEE\u6539\u4F1A\u540C\u6B65\u5230\u8FD9\u91CC\u3002","Canvas edits appear here after saving."):o("\u5E94\u7528\u540E\u4F1A\u6821\u9A8C\u5E76\u5237\u65B0\u753B\u5E03\u3002","Applying validates the YAML and refreshes the canvas.")}),(0,ue.jsx)("button",{type:"button",className:"kf-btn",disabled:h===void 0,onClick:()=>x(void 0),children:o("\u653E\u5F03\u4FEE\u6539","Discard")}),(0,ue.jsx)("button",{type:"button",className:"kf-btn kf-btn-primary",disabled:h===void 0,onClick:()=>{Ce()},children:o("\u5E94\u7528 YAML","Apply YAML")})]}),w==="invalid"&&_!==""?(0,ue.jsx)("div",{className:"kf-banner err",children:_}):null]}):(0,ue.jsxs)("div",{className:"kf-workspace",children:[(0,ue.jsxs)("aside",{className:"kf-palette","aria-label":o("\u8282\u70B9","Nodes"),children:[(0,ue.jsx)("input",{className:"kf-input kf-palette-search",placeholder:o("\u641C\u7D22\u8282\u70B9\u2026","Search nodes\u2026"),value:K,onChange:E=>q(E.target.value)}),(0,ue.jsx)("div",{className:"kf-palette-hint",children:C===void 0?o("\u62D6\u5230\u753B\u5E03\uFF0C\u6216\u70B9\u51FB\u6DFB\u52A0","Drag onto the canvas or click to add"):o("\u70B9\u51FB\uFF1A\u63A5\u5728\u9009\u4E2D\u8282\u70B9\u4E4B\u540E","Click: continue after the selected node")}),Ae.map(E=>(0,ue.jsxs)("div",{className:"kf-palette-group",children:[(0,ue.jsx)("div",{className:`kf-palette-head kf-cat-${E.category}`,children:o(Tc[E.category][0],Tc[E.category][1])}),E.items.map($=>(0,ue.jsxs)("button",{type:"button",className:`kf-palette-item kf-cat-${$.category}`,draggable:!0,onDragStart:Q=>{Q.dataTransfer.setData(br,$.type),Q.dataTransfer.effectAllowed="copy"},onClick:()=>ee($.type),title:o($.description[0],$.description[1]),children:[(0,ue.jsx)("span",{className:"kf-palette-name",children:o($.label[0],$.label[1])}),(0,ue.jsx)("span",{className:"kf-palette-type",children:$.type})]},$.type))]},E.category))]}),(0,ue.jsxs)("div",{className:"kf-stage",children:[Object.keys(a.nodes).length===0?(0,ue.jsx)("div",{className:"kf-stage-empty",children:o("\u4ECE\u5DE6\u4FA7\u62D6\u5165\u7B2C\u4E00\u4E2A\u8282\u70B9\u3002\u5EFA\u8BAE\u4ECE\u201C\u753B\u9762\u5206\u7C7B\u201D\u5F00\u59CB\uFF1A\u5148\u8BA4\u51FA\u5F53\u524D\u753B\u9762\uFF0C\u518D\u5206\u652F\u5904\u7406\u3002","Drag in a first node. A good start is Vision classify: recognize the screen, then branch.")}):null,(0,ue.jsx)(Qi,{doc:a,positions:l,catalog:i,issues:d,...W===void 0?{}:{overlay:W},...C===void 0?{}:{selectedId:C},t:o,fitToken:Z,onSelect:E=>{p(E),E!==void 0&&de(!0)},onConnect:(E,$,Q)=>Y(E,$,Q),onDisconnect:(E,$)=>Y(E,$,void 0),onDeleteNodes:ce,onMove:E=>{let $={...ne.current.positions,...E};c($),ne.current={doc:ne.current.doc,positions:$},S(Q=>Q==="saved"?"dirty":Q),ve(900)},onDropType:(E,$)=>ee(E,$)})]}),j?(0,ue.jsx)("aside",{className:"kf-inspector","aria-label":o("\u5C5E\u6027","Inspector"),children:be!==void 0&&C!==void 0?(0,ue.jsx)($c,{doc:a,nodeId:C,...i.get(be.type)===void 0?{}:{spec:i.get(be.type)},issues:d.filter(E=>E.nodeId===C),t:o,workflows:e.workflows.filter(E=>E.id!==n),onChange:E=>fe(C,E),onRename:E=>{let $=ne.current.doc,Q={...ne.current.positions};Q[C]!==void 0&&(Q[E]=Q[C],delete Q[C]),pe(Mc($,C,E),Q),p(E)},onDelete:()=>ce([C]),onSetStart:()=>pe({...ne.current.doc,start:C}),onConnect:(E,$)=>Y(C,E,$),testing:g,...L[C]===void 0?{}:{testResult:L[C]},onTest:()=>{ie(C)},...e.deviceId===""?{testDisabledReason:o("\u5148\u9009\u62E9 KVM \u8BBE\u5907","Select a KVM device first")}:G?{testDisabledReason:o("\u6267\u884C\u4E2D\u4E0D\u80FD\u8BD5\u8FD0\u884C","Not while a run is active")}:{},renderThumb:e.renderThumb}):(0,ue.jsx)(Pc,{doc:a,issues:d,t:o,onChange:pe,onSelectNode:E=>p(E)})}):null]})]})}function Lc(e){return(0,ue.jsx)(wr,{children:(0,ue.jsx)(aw,{...e})})}var ea=new Map;function aw(e){let{rpc:t,t:o,workflowId:n,run:r}=e,i=zc(t),[a,s]=(0,Ne.useState)(ea.get(n)?.view),[l,c]=(0,Ne.useState)(""),[d,f]=(0,Ne.useState)(1);(0,Ne.useEffect)(()=>{let m=!0,h=ea.get(n);if(h!==void 0&&Date.now()-h.at<15e3){s(h.view);return}return t("flow.get",{id:n}).then(x=>{m&&(ea.set(n,{at:Date.now(),view:x}),s(x),f(b=>b+1))}).catch(x=>{m&&c(x?.message??String(x))}),()=>{m=!1}},[t,n]);let u=(0,Ne.useMemo)(()=>Gi(r,n),[r,n]);return l!==""?(0,ue.jsxs)("div",{className:"kf-empty",children:[o("\u65E0\u6CD5\u52A0\u8F7D\u5DE5\u4F5C\u6D41\u56FE\uFF1A","Cannot load the workflow graph: "),l]}):a===void 0||i===void 0?(0,ue.jsx)("div",{className:"kf-empty",children:o("\u6B63\u5728\u52A0\u8F7D\u6D41\u7A0B\u56FE\u2026","Loading the graph\u2026")}):(0,ue.jsx)("div",{className:"kf-run-graph",style:{height:e.height??360},children:(0,ue.jsx)(Qi,{doc:a.document,positions:a.graph.layout.nodes,catalog:i,issues:[],...u===void 0?{}:{overlay:u},...e.selectedNodeId===void 0?{}:{selectedId:e.selectedNodeId},readOnly:!0,t:o,fitToken:d,onSelect:m=>e.onSelectNode?.(m)})})}var Fc=require("react"),Rn=require("react/jsx-runtime"),io=class extends Fc.Component{state={};static getDerivedStateFromError(t){return{error:t}}componentDidCatch(t){console.error("[kvmflow] editor crashed:",t)}render(){return this.state.error===void 0?this.props.children:(0,Rn.jsxs)("div",{className:"kf-empty",children:[(0,Rn.jsx)("p",{className:"kf-hint",children:this.props.message}),(0,Rn.jsx)("pre",{className:"kf-pre",children:this.state.error.message}),(0,Rn.jsx)("button",{type:"button",className:"kf-btn",onClick:()=>this.setState({error:void 0}),children:this.props.retryLabel})]})}};var Hc=`
+.kf-editor { display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  --kf-flow: var(--dsw-alias-brand-primary);
+  --kf-action: var(--dsw-alias-state-success-primary);
+  --kf-sense: var(--dsw-alias-state-warn-primary);
+  --kf-data: var(--dsw-alias-label-secondary);
+  --kf-error: var(--dsw-alias-state-error-primary);
+  --kf-line: var(--dsw-alias-border-l2);
+  --kf-h: max(520px, calc(100vh - 250px));
+}
+.kf-editor .kf-cat-flow { --kf-cat: var(--kf-flow); }
+.kf-editor .kf-cat-action { --kf-cat: var(--kf-action); }
+.kf-editor .kf-cat-sense { --kf-cat: var(--kf-sense); }
+.kf-editor .kf-cat-data { --kf-cat: var(--kf-data); }
+.kf-run-graph { --kf-flow: var(--dsw-alias-brand-primary); --kf-action: var(--dsw-alias-state-success-primary); --kf-sense: var(--dsw-alias-state-warn-primary); --kf-data: var(--dsw-alias-label-secondary); --kf-error: var(--dsw-alias-state-error-primary); --kf-line: var(--dsw-alias-border-l2); }
+.kf-run-graph .kf-cat-flow { --kf-cat: var(--kf-flow); }
+.kf-run-graph .kf-cat-action { --kf-cat: var(--kf-action); }
+.kf-run-graph .kf-cat-sense { --kf-cat: var(--kf-sense); }
+.kf-run-graph .kf-cat-data { --kf-cat: var(--kf-data); }
+
+.kf-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.kf-toolbar-title { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 240px; }
+.kf-doc-name { font-weight: 650; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kf-toolbar-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.kf-save { font-size: 11px; color: var(--dsw-alias-label-secondary); white-space: nowrap; }
+.kf-save::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: var(--dsw-alias-state-success-primary); }
+.kf-save-dirty::before, .kf-save-saving::before { background: var(--dsw-alias-state-warn-primary); }
+.kf-save-invalid, .kf-save-error { color: var(--kf-error); }
+.kf-save-invalid::before, .kf-save-error::before { background: var(--kf-error); }
+.kf-chip { font-size: 11px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--dsw-alias-border-l1); white-space: nowrap; }
+.kf-chip.err { color: var(--kf-error); border-color: color-mix(in srgb, var(--kf-error) 45%, transparent); }
+.kf-chip.warn { color: var(--dsw-alias-state-warn-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent); }
+.kf-chip.run { color: var(--kf-flow); border-color: color-mix(in srgb, var(--kf-flow) 45%, transparent); max-width: 16rem; overflow: hidden; text-overflow: ellipsis; }
+
+.kf-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; line-height: 1.3; }
+.kf-btn:disabled { opacity: 0.45; cursor: default; }
+.kf-btn:focus-visible, .kf-icon-btn:focus-visible, .kf-palette-item:focus-visible, .kf-seg button:focus-visible { outline: 2px solid var(--kf-flow); outline-offset: 1px; }
+@media (hover: hover) { .kf-btn:hover:not(:disabled) { border-color: var(--dsw-alias-border-l2); background: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 70%, var(--dsw-alias-bg-base)); } }
+.kf-btn-primary { background: var(--kf-flow); border-color: var(--kf-flow); color: var(--dsw-alias-bg-base); font-weight: 600; }
+@media (hover: hover) { .kf-btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--kf-flow) 85%, var(--dsw-alias-label-primary)); border-color: transparent; } }
+.kf-btn-danger { color: var(--kf-error); border-color: color-mix(in srgb, var(--kf-error) 45%, var(--dsw-alias-border-l1)); }
+.kf-btn-ghost { background: transparent; border-style: dashed; color: var(--dsw-alias-label-secondary); }
+.kf-btn[aria-pressed='true'] { color: var(--kf-flow); border-color: color-mix(in srgb, var(--kf-flow) 45%, var(--dsw-alias-border-l1)); }
+.kf-icon-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); border-radius: 6px; width: 24px; height: 24px; flex: none; cursor: pointer; font-size: 14px; line-height: 1; }
+.kf-link { appearance: none; border: 0; background: none; padding: 0; color: var(--kf-flow); font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; }
+.kf-seg { display: inline-flex; border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; overflow: hidden; }
+.kf-seg button { appearance: none; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12px; padding: 5px 10px; cursor: pointer; }
+.kf-seg button.on { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font-weight: 600; }
+
+.kf-workspace { display: grid; grid-template-columns: 172px minmax(0, 1fr) 320px; gap: 8px; height: var(--kf-h); min-height: 0; }
+.kf-no-inspector .kf-workspace { grid-template-columns: 172px minmax(0, 1fr); }
+.kf-palette, .kf-inspector { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); overflow: auto; min-height: 0; }
+.kf-palette { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.kf-palette-search { margin-bottom: 2px; }
+.kf-palette-hint { font-size: 10.5px; color: var(--dsw-alias-label-secondary); line-height: 1.35; }
+.kf-palette-group { display: flex; flex-direction: column; gap: 3px; }
+.kf-palette-head { font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--kf-cat); font-weight: 650; margin: 6px 2px 1px; }
+.kf-palette-item { appearance: none; text-align: left; border: 1px solid var(--dsw-alias-border-l1); border-left: 3px solid var(--kf-cat); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); border-radius: 7px; padding: 5px 8px; cursor: grab; display: flex; flex-direction: column; gap: 0; font: inherit; }
+.kf-palette-item:active { cursor: grabbing; }
+@media (hover: hover) { .kf-palette-item:hover { border-color: color-mix(in srgb, var(--kf-cat) 55%, var(--dsw-alias-border-l1)); border-left-color: var(--kf-cat); } }
+.kf-palette-name { font-size: 12px; font-weight: 600; }
+.kf-palette-type { font-size: 10px; color: var(--dsw-alias-label-secondary); font-family: var(--ds-font-family-code, ui-monospace, monospace); }
+
+.kf-stage { position: relative; border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; overflow: hidden; min-height: 0; background: var(--dsw-alias-bg-base); }
+.kf-stage-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 40px; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12px; pointer-events: none; z-index: 2; }
+.kf-canvas { width: 100%; height: 100%; }
+.kf-run-graph { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; overflow: hidden; background: var(--dsw-alias-bg-base); }
+
+/* React Flow theming. */
+.kf-canvas .react-flow {
+  --xy-background-color: var(--dsw-alias-bg-base);
+  --xy-background-pattern-color: color-mix(in srgb, var(--dsw-alias-label-secondary) 30%, transparent);
+  --xy-edge-stroke: var(--kf-line);
+  --xy-edge-stroke-selected: var(--kf-flow);
+  --xy-connectionline-stroke: var(--kf-flow);
+  --xy-attribution-background-color: transparent;
+  --xy-controls-button-background-color: var(--dsw-alias-bg-layer-1);
+  --xy-controls-button-background-color-hover: var(--dsw-alias-bg-layer-2);
+  --xy-controls-button-color: var(--dsw-alias-label-primary);
+  --xy-controls-button-border-color: var(--dsw-alias-border-l1);
+  --xy-minimap-background-color: var(--dsw-alias-bg-layer-1);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);
+  --xy-node-boxshadow-selected: none;
+  --xy-selection-background-color: color-mix(in srgb, var(--kf-flow) 10%, transparent);
+  --xy-selection-border: 1px dashed var(--kf-flow);
+  --xy-edge-label-background-color: var(--dsw-alias-bg-layer-1);
+  --xy-edge-label-color: var(--dsw-alias-label-secondary);
+  color: var(--dsw-alias-label-primary);
+}
+.kf-canvas .react-flow__node { padding: 0; border: 0; background: none; box-shadow: none; }
+.kf-canvas .react-flow__controls { box-shadow: none; border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; overflow: hidden; }
+.kf-canvas .react-flow__minimap { border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; overflow: hidden; }
+.kf-canvas .kf-mini-flow { fill: var(--kf-flow); }
+.kf-canvas .kf-mini-action { fill: var(--kf-action); }
+.kf-canvas .kf-mini-sense { fill: var(--kf-sense); }
+.kf-canvas .kf-mini-data { fill: var(--kf-data); }
+
+.kf-card { width: 224px; background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l1); border-top: 3px solid var(--kf-cat); border-radius: 9px; font-size: 12px; color: var(--dsw-alias-label-primary); box-shadow: 0 1px 2px color-mix(in srgb, #000 8%, transparent); }
+.kf-card.kf-end-failure { --kf-cat: var(--kf-error); }
+.kf-card.kf-selected { border-color: var(--kf-flow); border-top-color: var(--kf-cat); box-shadow: 0 0 0 2px color-mix(in srgb, var(--kf-flow) 35%, transparent); }
+.kf-card.kf-has-error { border-color: color-mix(in srgb, var(--kf-error) 60%, var(--dsw-alias-border-l1)); }
+.kf-card.kf-run-passed { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 7%, var(--dsw-alias-bg-layer-1)); }
+.kf-card.kf-run-failed { background: color-mix(in srgb, var(--kf-error) 9%, var(--dsw-alias-bg-layer-1)); border-color: color-mix(in srgb, var(--kf-error) 60%, var(--dsw-alias-border-l1)); }
+.kf-card.kf-run-running { box-shadow: 0 0 0 3px color-mix(in srgb, var(--kf-flow) 45%, transparent); animation: kf-pulse 1.4s ease-in-out infinite; }
+.kf-card.kf-run-paused, .kf-card.kf-awaiting { box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-warn-primary) 55%, transparent); }
+@keyframes kf-pulse { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--kf-flow) 15%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .kf-card.kf-run-running { animation: none; } }
+.kf-card-head { display: flex; align-items: center; gap: 6px; padding: 7px 10px 0; }
+.kf-glyph { color: var(--kf-cat); font-size: 11px; flex: none; }
+.kf-card-title { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+.kf-card-type { padding: 0 10px; font-size: 10.5px; color: var(--dsw-alias-label-secondary); display: flex; gap: 6px; justify-content: space-between; }
+.kf-card-id { font-family: var(--ds-font-family-code, ui-monospace, monospace); opacity: 0.8; overflow: hidden; text-overflow: ellipsis; }
+.kf-card-summary { margin: 5px 10px 0; padding: 4px 6px; border-radius: 5px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); font-size: 11px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+.kf-card-issues { margin: 4px 10px 0; font-size: 10.5px; }
+.kf-card-issues.err { color: var(--kf-error); }
+.kf-card-issues.warn { color: var(--dsw-alias-state-warn-primary); }
+.kf-ports { margin-top: 6px; padding: 4px 0 6px; border-top: 1px solid var(--dsw-alias-border-l1); display: flex; flex-direction: column; }
+.kf-card:not(:has(.kf-ports)) { padding-bottom: 8px; }
+.kf-port { position: relative; display: flex; justify-content: flex-end; align-items: center; padding: 1px 14px 1px 10px; min-height: 18px; font-size: 10.5px; color: var(--dsw-alias-label-secondary); }
+.kf-port-on { color: var(--dsw-alias-label-primary); }
+.kf-port-error { color: color-mix(in srgb, var(--kf-error) 80%, var(--dsw-alias-label-secondary)); }
+.kf-port-missing .kf-port-label::after { content: ' \xB7'; color: var(--dsw-alias-state-warn-primary); font-weight: 700; }
+.kf-badge { font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; border-radius: 4px; padding: 0 4px; line-height: 15px; flex: none; }
+.kf-badge-start { background: var(--kf-flow); color: var(--dsw-alias-bg-base); }
+.kf-badge-visits { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l1); }
+.kf-handle { width: 9px !important; height: 9px !important; border: 2px solid var(--dsw-alias-bg-layer-1) !important; background: var(--kf-line) !important; }
+.kf-handle-in { background: var(--dsw-alias-label-secondary) !important; }
+.kf-port .kf-handle { right: -5px !important; }
+.kf-port-on .kf-handle { background: var(--kf-cat) !important; }
+.kf-handle-error { background: color-mix(in srgb, var(--kf-error) 70%, transparent) !important; }
+.kf-canvas .kf-edge path.react-flow__edge-path { stroke-width: 1.6; }
+.kf-canvas .kf-edge-error path.react-flow__edge-path { stroke: color-mix(in srgb, var(--kf-error) 70%, transparent); stroke-dasharray: 5 4; }
+.kf-canvas .kf-edge-taken path.react-flow__edge-path { stroke: var(--kf-flow); stroke-width: 2.6; }
+.kf-canvas .kf-edge-latest path.react-flow__edge-path { stroke-width: 3.2; }
+.kf-canvas .kf-edge-idle { opacity: 0.45; }
+.kf-canvas .kf-edge-label { font-size: 10.5px; }
+
+.kf-inspector { padding: 10px 12px 14px; }
+.kf-inspector-body { display: flex; flex-direction: column; gap: 8px; }
+.kf-inspector-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.kf-inspector-kind { font-weight: 650; font-size: 13px; }
+.kf-inspector-foot { display: flex; justify-content: flex-end; padding-top: 4px; }
+.kf-section { border-top: 1px solid var(--dsw-alias-border-l1); padding-top: 6px; }
+.kf-section > summary { cursor: pointer; font-size: 11.5px; font-weight: 650; color: var(--dsw-alias-label-secondary); display: flex; justify-content: space-between; gap: 8px; list-style: none; padding: 2px 0; }
+.kf-section > summary::-webkit-details-marker { display: none; }
+.kf-section > summary::before { content: '\u25B8'; margin-right: 4px; transition: transform 120ms; display: inline-block; }
+.kf-section[open] > summary::before { transform: rotate(90deg); }
+.kf-section > summary > span:first-child { flex: 1 1 auto; }
+.kf-section-body { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 4px; }
+.kf-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.kf-field-label { font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.kf-field-help { font-size: 10.5px; color: var(--dsw-alias-label-secondary); opacity: 0.85; line-height: 1.35; }
+.kf-field-error { font-size: 10.5px; color: var(--kf-error); }
+.kf-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.kf-grid2 .wide { grid-column: 1 / -1; }
+.kf-col { display: flex; flex-direction: column; gap: 6px; }
+.kf-inline { display: flex; gap: 6px; align-items: center; }
+.kf-inline > .kf-input { flex: 1 1 auto; }
+.kf-input { width: 100%; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-primary); border-radius: 6px; padding: 5px 7px; font: inherit; font-size: 12px; outline: none; min-width: 0; }
+.kf-input:focus { border-color: var(--kf-flow); }
+.kf-input.kf-invalid { border-color: var(--kf-error); }
+.kf-textarea { resize: vertical; line-height: 1.45; }
+.kf-mono { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 11.5px; }
+.kf-num { max-width: 100%; }
+.kf-check { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.kf-condition, .kf-map, .kf-list { display: flex; flex-direction: column; gap: 6px; }
+.kf-map-row { border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; padding: 6px; display: flex; flex-direction: column; gap: 5px; background: var(--dsw-alias-bg-layer-2); }
+.kf-map-head { display: flex; gap: 6px; align-items: center; }
+.kf-issue-list { margin: 0; padding: 0 0 0 16px; font-size: 11.5px; display: flex; flex-direction: column; gap: 3px; }
+.kf-issue-list li.error { color: var(--kf-error); }
+.kf-issue-list li.warning { color: var(--dsw-alias-state-warn-primary); }
+.kf-test-result { border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; padding: 7px; font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+.kf-test-result.err { color: var(--kf-error); border-color: color-mix(in srgb, var(--kf-error) 45%, transparent); }
+.kf-pre { margin: 0; font-size: 11px; font-family: var(--ds-font-family-code, ui-monospace, monospace); white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; background: var(--dsw-alias-bg-layer-2); border-radius: 5px; padding: 5px; }
+.kf-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+.kf-thumbs img { width: 132px !important; }
+.kf-hint { font-size: 11px; color: var(--dsw-alias-label-secondary); margin: 0; }
+.kf-empty { border: 1px dashed var(--dsw-alias-border-l2); border-radius: 9px; padding: 26px; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.kf-banner { border-radius: 7px; padding: 6px 9px; font-size: 12px; }
+.kf-banner.err { color: var(--kf-error); border: 1px solid color-mix(in srgb, var(--kf-error) 45%, transparent); }
+
+.kf-yaml { display: flex; flex-direction: column; gap: 8px; }
+.kf-yaml-text { height: var(--kf-h); min-height: 320px; }
+.kf-yaml-actions, .kf-run-form-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.kf-yaml-actions .kf-hint, .kf-run-form-actions .kf-hint { flex: 1 1 200px; }
+.kf-run-form { border: 1px solid color-mix(in srgb, var(--kf-flow) 40%, var(--dsw-alias-border-l1)); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: color-mix(in srgb, var(--kf-flow) 4%, var(--dsw-alias-bg-layer-1)); }
+.kf-run-form-title { font-weight: 650; font-size: 12.5px; }
+.kf-run-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+
+/* Narrow panels (the right sidebar): stack palette, canvas and inspector. */
+@container (max-width: 860px) {
+  .kf-workspace { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .kf-no-inspector .kf-workspace { grid-template-columns: minmax(0, 1fr); }
+  .kf-palette { flex-direction: row; flex-wrap: wrap; max-height: 150px; }
+  .kf-palette-search, .kf-palette-hint { flex: 1 1 100%; }
+  .kf-palette-group { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .kf-palette-head { margin: 0 4px 0 0; }
+  .kf-palette-type { display: none; }
+  .kf-stage { height: 460px; }
+  .kf-inspector { max-height: none; }
+}
+`;var ao=require("react/jsx-runtime"),lw=ra(e=>e==="react"?sw:require(e),{FlowEditor:e=>(0,ao.jsx)(io,{message:e.t("\u5DE5\u4F5C\u6D41\u7F16\u8F91\u5668\u51FA\u9519\u4E86\uFF0C\u5DE5\u4F5C\u6D41\u6587\u4EF6\u6CA1\u6709\u53D7\u5F71\u54CD\u3002","The workflow editor failed; the workflow file is unaffected."),retryLabel:e.t("\u91CD\u65B0\u52A0\u8F7D\u7F16\u8F91\u5668","Reload the editor"),children:(0,ao.jsx)(Oc,{...e})}),RunGraph:e=>(0,ao.jsx)(io,{message:e.t("\u6D41\u7A0B\u56FE\u65E0\u6CD5\u663E\u793A\u3002","The run graph cannot be shown."),retryLabel:e.t("\u91CD\u8BD5","Retry"),children:(0,ao.jsx)(Lc,{...e})}),CSS:`${oa}
+${Hc}`});
+/*! Bundled license information:
+
+use-sync-external-store/cjs/use-sync-external-store-shim.production.js:
+  (**
+   * @license React
+   * use-sync-external-store-shim.production.js
+   *
+   * Copyright (c) Meta Platforms, Inc. and affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   *)
+
+use-sync-external-store/cjs/use-sync-external-store-shim/with-selector.production.js:
+  (**
+   * @license React
+   * use-sync-external-store-shim/with-selector.production.js
+   *
+   * Copyright (c) Meta Platforms, Inc. and affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   *)
+*/
+
+      })(require, module, exports);
+      return module.exports.plugin;
     },
-});
+  });
+})();

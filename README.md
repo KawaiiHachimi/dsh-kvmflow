@@ -1,16 +1,19 @@
 # KVMFlow
 
-KVMFlow 是 DeepSeek Harness（DSH）原生插件：通过 IP-KVM 控制真实计算机，人工录制 HID 操作与截图，让 DSH 里的 AI 生成可编辑 YAML 工作流，再用确定性状态机逐步回放并做画面验证。第一阶段适配 **Radxa Linkr** 的公开 HTTP API，不引入 FastAPI、Python、独立 Web 服务或其它 Agent 框架。
+KVMFlow 是 DeepSeek Harness（DSH）原生插件：通过 IP-KVM 控制真实计算机，人工录制 HID 操作与截图，让 DSH 里的 AI 生成**带条件分支的图工作流**（类似 Dify 画布 / 蓝图），在画布上可视化编辑，再由图解释器逐节点执行并做画面验证。第一阶段适配 **Radxa Linkr** 的公开 HTTP API，不引入 FastAPI、Python、独立 Web 服务或其它 Agent 框架。
 
 ## 能力
 
-- **原生侧边栏页面**：设备管理、实时 KVM 画面、键鼠输入、录制器、YAML 工作流、执行状态与人工介入。
+- **原生侧边栏页面**：设备管理、实时 KVM 画面、键鼠输入、录制器、工作流画布、执行监督与人工介入。
 - **右侧可停靠标签页**：同一套面板以紧凑布局停靠在右侧栏，可边对话边看/操作 KVM。在右侧栏的“+”新建标签页里选择 KVMFlow 即可打开（也出现在右侧栏指南页的入口卡片中）。
 - **KVM 控制**：`GET /api/public/snapshot` 截图，`POST /api/public/control` 发送 USB HID 事件；请求串行化并限制在设备 5 次/秒的公开 API 限制内。
 - **人工录制**：所有键盘、鼠标、文本操作写入事件流，按 900ms 最小间隔保存操作前截图，操作结束后 700ms 去抖保存操作后截图；可随时命名并划分人工步骤。
 - **AI 集成**：通过 DSH 原生工具注册暴露截图、键鼠、文本、画面验证、录制、工作流生成、执行控制等工具；在真实会话中由现有模型、Agent Loop、会话与 Tool Calling 驱动。
-- **工作流**：可读的块 YAML，每一步包含 `precondition`、`action`、`verify`、`onFailure`；支持 `change`（画面哈希变化）、`image`（参考截图比较）、`vision`（调用当前默认 DSH 视觉模型判断）三种验证。
-- **自动执行**：状态机逐步骤执行，动作前后取画面，失败暂停并等待人工选择重试/跳过/继续/中止。
+- **图工作流（schema v2）**：节点 + 带类型的出口端口，支持 `if` / `switch` / `wait_until` / `loop` / 回边、`vision_classify`（一次模型调用 N 路分支）、`vision_extract` / `locate`（从画面读值、找坐标）、`subflow`、`human`（人工选择出口）、变量与 `{{模板}}`、运行输入（含不落盘的密码）。设计文档见 [docs/design/flow-graph.md](docs/design/flow-graph.md)。
+- **工作流画布**：基于 React Flow 的编辑器：节点面板拖放、端口连线、自动排版、按节点类型生成的属性面板、问题标注、撤销/重做、自动保存、YAML 双向切换，以及在目标机上**单独试运行某个节点**。
+- **自动执行**：图解释器逐节点执行并记录访问轨迹；节点失败先按 `retry` 重试，再走 `error` 出口，没有出口就暂停让人选择重试/跳过/改走某个出口/中止。执行页在流程图上实时高亮当前节点和走过的边。
+- **安全上限**：节点 `maxVisits`、整份工作流的访问总数、视觉调用次数和执行时长（不含等人工的时间）四层上限；中止时释放目标机上所有按住的键和鼠标键。
+- **兼容旧版**：v1 的 `steps:` 工作流在首次读取时自动转成线性图，原文件备份到 `workflows/.backup/<id>.v1.yaml`。
 - **BIOS 预置**：工作流可声明 `bios` 前奏，提前以固定间隔注入热键（默认 F2），等待目标机电源按下、视频信号出现后自动继续；可选人工确认“已进入 BIOS”。
 - **数据位置**：默认 `$DSH_HOME/kvmflow`（通常是 `~/.dsh/kvmflow`），可用插件配置 `dataDir` 覆盖。设备令牌保存在 `devices.json`，权限 `0600`。
 
@@ -28,7 +31,7 @@ plugin_manager install_bundle target=/absolute/path/to/dsh-kvmflow
 - 左侧栏的 **KVMFlow** 图标 → 主栏全宽面板；
 - 右侧栏的 **+**（新建标签页）→ 选择 **KVMFlow** → 停靠在对话右侧，可边对话边操作目标机。
 
-改源码后执行 `npm install && npm run build`，再重新安装一次插件：Host 侧会加载新的 `dist/`，客户端 bundle 刷新页面后生效。
+改源码后执行 `npm install && npm run build`（Host 用 `tsc`，客户端用 esbuild 把 React Flow 打进 bundle，React 取自 DSH 页面），`npm test` 跑引擎与界面测试；再重新安装一次插件：Host 侧会加载新的 `dist/`，客户端 bundle 刷新页面后生效。
 
 ## 首次连接 Radxa Linkr
 
@@ -101,9 +104,9 @@ IP-KVM 的截图分辨率是它协商到的采集模式，不一定等于目标�
 2. 目标机断电/关机。到“录制器”开始录制（例如“进入 BIOS 开启虚拟化”）。
 3. 到“实时画面”手动按目标机电源，并在 POST 阶段点击快捷键按钮（如 F2）或直接使用键盘。
 4. 进入 BIOS 后继续操作，每个关键阶段在“录制器”点击“标记步骤”，填写名称与描述；完成后停止录制。
-5. 在录制详情点击“让 AI 生成工作流”。这会打开一个新的 DSH 会话，AI 使用 `kvmflow_record_get` 读取事件与截图，按你的目标生成 YAML，并调用 `kvmflow_workflow_generate` 或 `kvmflow_workflow_save` 保存。
-6. 到“工作流”页审阅/编辑 YAML，点击“执行”。
-7. 对 BIOS 工作流，执行会先进入 armed 状态并注入热键；此时按目标机电源。视频信号出现后自动继续；任何验证失败都会暂停并显示操作前后截图，选择重试/跳过/继续/中止。
+5. 在录制详情点击“让 AI 生成工作流”。这会打开一个新的 DSH 会话：AI 用 `kvmflow_record_get` 读取事件与截图，用 `kvmflow_workflow_generate` 生成主干，再用 `kvmflow_flow_patch` 在“画面可能不同”的地方补上分支。
+6. 到“工作流”页在画布上审阅：点节点看属性，拖线改连接，必要时点“在目标机上试运行”单独验证某个节点，然后点“执行”。
+7. 对 BIOS 工作流，执行会先进入 armed 状态并注入热键；此时按目标机电源。视频信号出现后自动开始；执行页的流程图会高亮当前节点，需要人工时直接在卡片上选择。
 
 也可以直接在对话里让 AI 操作：
 
@@ -121,63 +124,72 @@ IP-KVM 的截图分辨率是它协商到的采集模式，不一定等于目标�
 | `kvmflow_keyboard` / `kvmflow_mouse` / `kvmflow_text` / `kvmflow_control` | HID 输入 |
 | `kvmflow_verify` | 用默认 DSH 视觉模型判断画面条件 |
 | `kvmflow_record_start` / `_mark_step` / `_stop` / `_status` / `_get` | 录制与证据读取 |
-| `kvmflow_workflow_list` / `_get` / `_save` / `_generate` | 工作流读取、保存、从录制生成 |
-| `kvmflow_run_start` / `_status` / `_control` | 启动、查看、控制执行 |
+| `kvmflow_flow_catalog` | 节点类型、端口与配置字段 |
+| `kvmflow_workflow_list` / `_get` / `_save` / `_generate` | 工作流读取、整篇保存、从录制生成线性主干 |
+| `kvmflow_flow_patch` / `kvmflow_flow_validate` | 增删改节点与连线（批量、校验后才落盘）；不保存的校验 |
+| `kvmflow_node_test` | 在目标机上单独执行一个节点，返回出口、理由、输出与截图 |
+| `kvmflow_run_start` / `_status` / `_control` | 启动（可传 `inputs`）、查看轨迹、控制执行（`route` / `choose` / `retry` / `skip` / `abort` …） |
 
 ## 工作流示例
 
+以“识别当前画面 → 分支处理”为中心的 Windows OOBE 片段：
+
 ```yaml
-version: 1
-id: wf-bios-virtualization
-name: Enter BIOS and enable virtualization
-description: Tap F2 while the target powers on, then enable VT-x.
-bios:
-  hotkey: F2
-  intervalMs: 1200
-  timeoutSec: 180
-  requireConfirm: false
-  settleSec: 2
-steps:
-  - id: step-1
-    name: Open the Advanced tab
-    description: The BIOS main screen is visible.
-    precondition:
-      mode: vision
-      prompt: The BIOS setup utility is visible, not a boot logo or Windows.
-      settleMs: 800
-      timeoutSec: 15
-    action:
-      type: shortcut
-      keys: [ArrowRight, ArrowRight]
-    verify:
-      mode: vision
-      prompt: The Advanced configuration page is visible with CPU or virtualization settings.
-      settleMs: 1000
-      timeoutSec: 15
-    onFailure:
-      strategy: pause
-      retries: 1
-  - id: step-2
-    name: Enable VT-x
-    action:
-      type: key
-      key: Enter
-    verify:
-      mode: change
-      settleMs: 800
-      timeoutSec: 10
-    onFailure:
-      strategy: pause
+version: 2
+name: Windows OOBE 初始化
+inputs:
+  username: { type: string }
+  password: { type: secret }
+start: detect
+nodes:
+  detect:
+    type: vision_classify
+    config:
+      prompt: 当前是 OOBE 的哪一页？
+      labels:
+        region: 地区选择页 Is this the right country or region
+        network: 网络连接页 Let's connect you to a network
+        updating: 正在检查更新或进度圈
+        desktop: 已进入 Windows 桌面
+    maxVisits: 30
+    next: { region: pickRegion, network: findSkip, updating: waitUpdate, desktop: done, unknown: ask }
+  pickRegion:
+    type: click
+    config: { x: 0.78, y: 0.88 }
+    verify: { mode: change }
+    next: { next: detect }
+  findSkip:
+    type: locate
+    config: { target: "I don't have internet 链接" }
+    next: { found: clickSkip, not_found: ask }
+  clickSkip:
+    type: click
+    config: { x: "{{nodes.findSkip.output.x}}", y: "{{nodes.findSkip.output.y}}" }
+    next: { next: detect }
+  waitUpdate:
+    type: wait_until
+    config: { condition: { vision: 进度圈已经消失 }, timeoutSec: 900, pollMs: 5000 }
+    next: { ok: detect, timeout: ask }
+  ask:
+    type: human
+    config: { message: 画面无法识别，请手动处理后选择, options: [retry, giveUp] }
+    next: { retry: detect, giveUp: fail }
+  done: { type: end, config: { result: success } }
+  fail: { type: end, config: { result: failure, reason: 操作者放弃 } }
 ```
 
-动作类型：`key`、`shortcut`、`text`、`click`、`move`、`scroll`、`delay`、`sequence`（原生 Linkr 事件数组）。
+- 节点类型：流程 `if` `switch` `wait_until` `loop` `subflow` `human` `set` `end`；动作 `key` `shortcut` `text` `click` `move` `scroll` `delay` `sequence`；感知 `vision_check` `vision_classify` `vision_extract` `locate` `image_match` `screen_change`。
+- 条件：`{vision: …}`、`{expr: "vars.n < 3"}`、`{change: true}`、`{image: assets/x.jpg}`，可用 `all` / `any` / `not` 组合。
+- 表达式只能读 `vars` `inputs` `nodes.<id>.output` `last` `run`，没有 `eval`，也访问不到任何全局对象。
+- 动作节点可带 `precondition` 与 `verify`；任何节点可带 `retry: {times, delayMs}` 与 `maxVisits`。
+- 画布坐标单独存放在 `<id>.layout.json`，拖动节点不会改动工作流 YAML。
 
 ## 当前边界
 
 - 只实现 Radxa Linkr 驱动；其他 IP-KVM（包括 GL.iNet GL-RM4PE）保留 `driver` 扩展点，未实现前不会伪装成可用。
-- 同一时刻只允许一个执行；多设备并发调度是后续扩展。
+- 同一时刻只允许一个执行；多设备并发调度是后续扩展。图里没有并行分支：一台 KVM 同时只能执行一串 HID 操作。
 - `image` 验证按 JPEG 字节哈希/粗粒度字节差比较，适合静态画面；动态界面应使用 `vision` 或 `change`。
-- `vision` 验证调用当前默认模型；模型不支持图像或调用失败时该步骤暂停，不会静默通过。
+- 视觉节点调用当前默认模型；模型不支持图像或调用失败时节点报错（走 `error` 出口或暂停），不会静默通过。同一帧画面上的同一问题在一次执行里只问一次模型。
 - Linkr `text` 事件只接受可打印 ASCII、Tab、Enter；中文输入请使用目标机输入法或键盘事件。
 - 设备访问令牌与 Web 密码都保存在 `devices.json`（权限 0600，已被 `.gitignore` 忽略），尚未接入 DSH 凭据存储；请勿把该文件提交到版本库。
 - 仓库内的示例地址（`192.168.1.100`）与令牌前缀（`radxa_linkr_...`）都是占位符，不含任何真实凭据。

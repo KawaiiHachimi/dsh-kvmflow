@@ -6,18 +6,20 @@ import { Runner } from './runner.js';
 import { registerTools } from './tools.js';
 import { handleRpc } from './rpc.js';
 import { LinkrWebSession } from './session.js';
+import { FlowService } from './flow/service.js';
 export const name = 'kvmflow';
 /** Host services required before KVMFlow can activate. */
 export const inject = ['tools', 'connection', 'webServer'];
 const PROMPT_TEXT = [
-    'KVMFlow controls a real computer through an IP-KVM. Its tools are kvmflow_* (device list/add, snapshot, keyboard, mouse, text, control, verify, record, workflow, run).',
+    'KVMFlow controls a real computer through an IP-KVM. Its tools are kvmflow_* (device list/add, snapshot, keyboard, mouse, text, control, verify, record, workflow, flow, node test, run).',
     'Operating loop: take kvmflow_snapshot before deciding an action; act in small steps; take another snapshot or call kvmflow_verify after each action. Never assume a click or keypress changed the screen.',
     'UI coordinates are normalized: (0,0) top-left, (1,1) bottom-right. Keyboard keys use KeyboardEvent.code (F2, Escape, Enter, KeyA); shortcuts pass an ordered keys array.',
-    'Recording: start a recording, let the human drive the target or drive it yourself, mark each human-meaningful step with a name and description, stop, then read the recording with kvmflow_record_get. Generate a workflow with kvmflow_workflow_generate or write YAML and save it with kvmflow_workflow_save.',
-    'A workflow step needs a name, an action, and usually a verify condition. Prefer verify.mode "vision" with a concrete visual prompt, or "change" when any visible transition is enough. Use onFailure strategy pause for risky steps.',
-    'BIOS: a workflow with a bios prelude taps the hotkey before power-on, waits for the first video signal, and then runs the steps. Ask the human to press the target power button only after the run reports armed/waiting for power.',
-    'Runs are deterministic and pause for human intervention. Use kvmflow_run_status to inspect the failing step and kvmflow_run_control to retry, skip, continue, confirm BIOS, or abort. Do not start a second run while one is active.',
-    'The KVM token is a credential: do not print it in messages, logs, or workflow files.',
+    'Recording: start a recording, let the human drive the target or drive it yourself, mark each human-meaningful step with a name and description, stop, then read the recording with kvmflow_record_get. kvmflow_workflow_generate turns it into a linear graph.',
+    'Workflows are graphs (schema v2): nodes with typed output ports wired by `next`. Read kvmflow_flow_catalog before authoring. Branch on screens with vision_classify (one call, N ports) or if/switch; wait with wait_until; repeat with loop or a back edge plus maxVisits; read values with vision_extract; find click targets with locate and template the coordinates. Every path should reach an end node.',
+    'Edit an existing workflow with kvmflow_flow_patch (small, validated operations) instead of rewriting the YAML. Check a single node against the live screen with kvmflow_node_test before relying on it.',
+    'BIOS: a workflow with a bios prelude taps the hotkey before power-on, waits for the first video signal, and then starts the graph. Ask the human to press the target power button only after the run reports armed/waiting for power.',
+    'Runs pause for a human when a node fails without an error port, reaches an unconnected port, or is a human node. Read kvmflow_run_status (awaiting.actions, routes, options) and answer with kvmflow_run_control. Do not start a second run while one is active.',
+    'The KVM token is a credential: do not print it in messages, logs, or workflow files. Pass passwords as secret inputs, never as literal text in a workflow.',
 ].join('\n');
 function clientKey(device, minIntervalMs) {
     return `${device.id}|${device.baseUrl}|${device.token}|${minIntervalMs}`;
@@ -70,7 +72,8 @@ export function apply(ctx, config = {}) {
         console.error('[kvmflow] recorder recovery failed:', error);
     });
     const runner = new Runner({ ctx, store, clientFor });
-    registerTools({ ctx, store, recorder, runner, clientFor });
+    const flows = new FlowService(store);
+    registerTools({ ctx, store, recorder, runner, flows, clientFor });
     ctx.effect(() => ctx.webServer.register({
         kind: 'prefix',
         path: '/kvmflow',
@@ -110,7 +113,7 @@ export function apply(ctx, config = {}) {
                 res.end(JSON.stringify({ ok: false, error: { code: 'kvmflow/BAD_REQUEST', message: 'method is required', details: {} } }));
                 return;
             }
-            const result = await handleRpc({ store, recorder, runner, clientFor, sessionFor }, envelope.method, envelope.params);
+            const result = await handleRpc({ store, recorder, runner, flows, clientFor, sessionFor }, envelope.method, envelope.params);
             res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
             res.end(JSON.stringify(result));
         },

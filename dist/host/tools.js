@@ -1,8 +1,9 @@
 /** Agent-facing KVMFlow tools over the same Host operations used by the panel. */
 import { normalizeKey, validateEvent } from './linkr.js';
 import { imageFacts } from './image.js';
-import { parseYaml, YamlError } from './yaml.js';
-import { normalizeWorkflow } from './store.js';
+import { linearFlow } from './flow/convert.js';
+import { flowToYaml } from './flow/normalize.js';
+import { PATCH_OPS_HELP } from './flow/patch.js';
 import { frameToTarget, isFullFrame, mappingExtent } from './view.js';
 import { verifyWithVision } from './model.js';
 const IMAGE_VALUE_SCHEMA = {
@@ -162,7 +163,7 @@ function findRecordingReference(recording, firstSeq) {
  * @param deps - Host services and KVMFlow state.
  */
 export function registerTools(deps) {
-    const { ctx, store, recorder, runner, clientFor } = deps;
+    const { ctx, store, recorder, runner, flows, clientFor } = deps;
     const register = (definition) => {
         const execute = definition.execute;
         ctx.tools.register({
@@ -414,8 +415,12 @@ export function registerTools(deps) {
             const events = [];
             for (let index = 0; index < text.length; index += 120)
                 events.push(['text', text.slice(index, index + 120)]);
-            if (args?.submit === true)
+            // Linkr types the event key by key on the target, so Enter must not be
+            // queued right behind a long string or the command submits early.
+            if (args?.submit === true) {
+                events.push(['delay', Math.min(30_000, 400 + text.length * 60)]);
                 events.push(['keyboard', 'Enter', true], ['delay', 60], ['keyboard', 'Enter', false]);
+            }
             validateEvent(['text', text.slice(0, 120)], 0);
             await clientFor(device).control(events);
             const active = recorder.current();
@@ -599,9 +604,42 @@ export function registerTools(deps) {
             return { summary, images };
         },
     });
+    /** A run record trimmed for the model: the latest trace entries instead of the whole history. */
+    const runForAgent = (run) => {
+        if (run === undefined || run === null)
+            return null;
+        const trace = (run.trace ?? []).slice(-15).map(entry => ({
+            seq: entry.seq,
+            node: entry.nodeId,
+            type: entry.nodeType,
+            status: entry.status,
+            port: entry.port,
+            target: entry.target,
+            reason: entry.reason,
+            ...(entry.output === undefined ? {} : { output: entry.output }),
+            ...(entry.after === undefined ? {} : { screenshot: entry.after }),
+        }));
+        return {
+            id: run.id,
+            workflowId: run.workflowId,
+            workflowName: run.workflowName,
+            status: run.status,
+            phase: run.phase,
+            ...(run.reason === undefined ? {} : { reason: run.reason }),
+            currentNode: run.currentNodeId ?? null,
+            ...(run.awaiting === undefined ? {} : { awaiting: run.awaiting }),
+            visits: run.visits ?? 0,
+            visionCalls: run.visionCalls ?? 0,
+            vars: run.vars ?? {},
+            ...(run.outputs === undefined ? {} : { outputs: run.outputs }),
+            trace,
+            log: run.log.slice(-8).map(entry => `${entry.level}: ${entry.message}`),
+        };
+    };
+    const issueLines = (issues) => issues.length === 0 ? 'No issues.' : issues.map(issue => `- ${issue.severity} ${issue.path}: ${issue.message}`).join('\n');
     register({
         name: 'kvmflow_workflow_list',
-        description: 'List KVMFlow YAML workflows with their step counts and BIOS prelude flag.',
+        description: 'List KVMFlow workflows (schema v2 graphs) with node counts, branch counts, issue counts, and the BIOS prelude flag.',
         parameters: objectSchema({}),
         output: {
             schema: anyObjectSchema(),
@@ -612,52 +650,128 @@ export function registerTools(deps) {
         },
     });
     register({
+        name: 'kvmflow_flow_catalog',
+        description: 'Describe every KVMFlow node type: category, output ports, and config fields. Read this before writing or patching a workflow graph.',
+        parameters: objectSchema({}),
+        output: {
+            schema: anyObjectSchema(),
+            render: (_args, value) => [textBlock(value.text)],
+        },
+        async execute() {
+            const nodes = flows.catalog();
+            const lines = nodes.map(spec => {
+                const ports = spec.dynamicPorts === 'labels'
+                    ? '<one per label>, unknown, error'
+                    : spec.dynamicPorts === 'cases'
+                        ? '<one per case>, default'
+                        : spec.dynamicPorts === 'options'
+                            ? '<one per option>'
+                            : spec.ports.map((port) => port.name).join(', ') || '(none)';
+                const fields = spec.fields.map((field) => `${field.key}${field.required ? '*' : ''}:${field.kind}`).join(', ');
+                return `${spec.type} [${spec.category}] ports: ${ports}; config: ${spec.action ? 'the action fields (see below)' : fields || '(none)'}`;
+            });
+            const text = [
+                'Node types (config fields marked * are required):',
+                ...lines,
+                '',
+                'Action node config fields:',
+                'key {key, holdMs?, repeat?, intervalMs?}; shortcut {keys[]}; text {text, submit?}; click {x, y, button?, count?}; move {x, y}; scroll {x?, y?, wheelY, wheelX?}; delay {ms}; sequence {events[]}.',
+                'Coordinates are 0..1 of the captured frame and may be templates such as "{{nodes.find.output.x}}". Action nodes also take precondition and verify ({mode: change|image|vision|none, prompt, timeoutSec}), retry {times, delayMs}, maxVisits.',
+                '',
+                'Conditions: {vision: "..."} | {image: "assets/x.jpg", maxByteDelta?} | {change: true} | {expr: "vars.n < 3"} | {all: [...]} | {any: [...]} | {not: {...}}.',
+                'Expressions read vars.*, inputs.*, nodes.<id>.output.*, nodes.<id>.visits, last.*, run.visits; functions: len contains startsWith endsWith lower upper trim number string round floor ceil abs min max coalesce.',
+                'Any config string may contain {{expression}} templates.',
+                '',
+                'Document: version: 2, name, start: <node id>, inputs?, vars?, limits? {maxNodeVisits, timeoutSec, maxVisionCalls}, bios?, nodes: {<id>: {type, name?, config, next: {<port>: <node id>}}}.',
+                'Every path should reach an end node {type: end, config: {result: success|failure, reason?, outputs?}}. An unconnected port pauses the run for the operator.',
+            ].join('\n');
+            return { nodes, text };
+        },
+    });
+    register({
         name: 'kvmflow_workflow_get',
-        description: 'Read one workflow as its editable YAML source plus a parsed step summary.',
+        description: 'Read one workflow: its YAML source, the decorated graph (nodes with ports, edges), and validation issues.',
         parameters: objectSchema({ id: { type: 'string', description: 'Workflow id.' } }, ['id']),
         output: {
             schema: anyObjectSchema(),
-            render: (_args, value) => [textBlock(`Workflow ${value.workflow.id}: ${value.workflow.name}\n\n${value.yaml}`)],
+            render: (_args, value) => [textBlock(`Workflow ${value.id}: ${value.name}\n\nIssues:\n${issueLines(value.issues)}\n\n${value.yaml}`)],
         },
         async execute(args) {
-            const id = requireString(args?.id, 'id');
-            const yaml = await store.readWorkflowYaml(id);
-            const workflow = await store.loadWorkflow(id);
-            return { workflow, yaml };
+            const view = await flows.view(requireString(args?.id, 'id'));
+            return { id: view.document.id, name: view.document.name, yaml: view.yaml, issues: view.issues, edges: view.graph.edges };
         },
     });
     register({
         name: 'kvmflow_workflow_save',
-        description: 'Validate and save a KVMFlow workflow from YAML text. The document must contain at least one step; each step has a name and action, and may have precondition, verify, and onFailure. Returns the normalized workflow and the saved YAML. This is the main way to let the agent author or edit a workflow after studying a recording.',
+        description: 'Validate and save a complete workflow from YAML. Schema v2 graph documents are preferred; a v1 `steps:` list is accepted and upgraded to a linear graph. Saving is refused while the document has errors; warnings are reported. For small edits to an existing workflow, prefer kvmflow_flow_patch.',
         parameters: objectSchema({
             yaml: { type: 'string', description: 'Complete workflow YAML.' },
             id: { type: 'string', description: 'Existing workflow id to overwrite; omit to create a new workflow.' },
         }, ['yaml']),
         output: {
             schema: anyObjectSchema(),
-            render: (_args, value) => [textBlock(`Saved workflow ${value.workflow.id} (${value.workflow.name}) with ${value.workflow.steps.length} steps.`)],
+            render: (_args, value) => [textBlock(`Saved workflow ${value.id} (${value.name}), ${value.nodeCount} nodes.\n\nIssues:\n${issueLines(value.issues)}`)],
         },
         async execute(args) {
-            const text = requireString(args?.yaml, 'yaml');
-            let parsed;
-            try {
-                parsed = parseYaml(text);
-            }
-            catch (error) {
-                throw new Error(error instanceof YamlError ? error.message : `cannot parse YAML: ${String(error)}`);
-            }
             const requestedId = optionalString(args?.id);
-            const workflow = normalizeWorkflow(parsed, requestedId ?? '');
-            if (requestedId !== undefined)
-                workflow.id = requestedId;
-            const path = await store.saveWorkflow(workflow);
-            const savedYaml = await store.readWorkflowYaml(workflow.id);
-            return { workflow, path, yaml: savedYaml };
+            const view = await flows.save({ yaml: requireString(args?.yaml, 'yaml'), ...(requestedId === undefined ? {} : { id: requestedId }), strict: true });
+            return { id: view.document.id, name: view.document.name, nodeCount: Object.keys(view.document.nodes).length, issues: view.issues, path: view.path, yaml: view.yaml };
+        },
+    });
+    register({
+        name: 'kvmflow_flow_patch',
+        description: `Edit an existing workflow graph with a batch of operations, applied in order and validated together; nothing is saved if the result has errors. Operations:\n${PATCH_OPS_HELP}`,
+        parameters: objectSchema({
+            id: { type: 'string', description: 'Workflow id.' },
+            ops: {
+                type: 'array',
+                description: 'Operations, each an object with an `op` field.',
+                items: { type: 'object', additionalProperties: true },
+            },
+        }, ['id', 'ops']),
+        output: {
+            schema: anyObjectSchema(),
+            render: (_args, value) => [textBlock(`Patched ${value.id}; added ${value.added.length === 0 ? 'no nodes' : value.added.join(', ')}.\n\nIssues:\n${issueLines(value.issues)}\n\n${value.yaml}`)],
+        },
+        async execute(args) {
+            if (!Array.isArray(args?.ops))
+                throw new Error('ops must be a list');
+            const view = await flows.patch(requireString(args?.id, 'id'), args.ops, true);
+            return { id: view.document.id, added: view.added, issues: view.issues, yaml: view.yaml };
+        },
+    });
+    register({
+        name: 'kvmflow_flow_validate',
+        description: 'Check workflow YAML without saving it: structure errors, unreachable nodes, unconnected ports, unbounded cycles.',
+        parameters: objectSchema({ yaml: { type: 'string' } }, ['yaml']),
+        output: {
+            schema: anyObjectSchema(),
+            render: (_args, value) => [textBlock(`${value.valid ? 'Valid' : 'Invalid'}${value.upgraded ? ' (v1, will be upgraded)' : ''}.\n${issueLines(value.issues)}`)],
+        },
+        async execute(args) {
+            const result = flows.check({ yaml: requireString(args?.yaml, 'yaml') });
+            return { valid: result.document !== undefined && !result.issues.some(issue => issue.severity === 'error'), upgraded: result.upgraded, issues: result.issues };
+        },
+    });
+    register({
+        name: 'kvmflow_node_test',
+        description: 'Run a single node of a saved workflow against the live KVM target and report the port it would take, its reason, output, and screenshot. Use it to check a vision prompt, a locate target, or a click before wiring the graph. Action nodes really send HID input.',
+        parameters: objectSchema({
+            workflowId: { type: 'string' },
+            nodeId: { type: 'string' },
+            deviceId: { type: 'string' },
+        }, ['workflowId', 'nodeId']),
+        output: {
+            schema: anyObjectSchema(),
+            render: (_args, value) => [textBlock(`Node ${value.nodeId} → port ${value.port ?? '(none)'}: ${value.reason ?? ''}${value.output === undefined ? '' : `\noutput: ${JSON.stringify(value.output)}`}`)],
+        },
+        async execute(args) {
+            return runner.nodeTest(requireString(args?.workflowId, 'workflowId'), requireString(args?.nodeId, 'nodeId'), optionalString(args?.deviceId));
         },
     });
     register({
         name: 'kvmflow_workflow_generate',
-        description: 'Create a YAML workflow from a recording and the agent\'s step plan. Each step names an event range from the recording (eventRange: [firstSeq, lastSeq] or events: [seq...]) or an explicit action, plus optional precondition and verify. The tool copies recording screenshots into the workflow assets and writes the YAML.',
+        description: 'Create a linear workflow graph from a recording and the agent\'s step plan. Each step names an event range from the recording (eventRange: [firstSeq, lastSeq] or events: [seq...]) or an explicit action, plus optional precondition and verify. The tool copies recording screenshots into the workflow assets. Add branches afterwards with kvmflow_flow_patch.',
         parameters: objectSchema({
             recordingId: { type: 'string' },
             name: { type: 'string' },
@@ -682,7 +796,7 @@ export function registerTools(deps) {
         }, ['recordingId', 'name', 'steps']),
         output: {
             schema: anyObjectSchema(),
-            render: (_args, value) => [textBlock(`Generated workflow ${value.workflow.id} with ${value.workflow.steps.length} steps.\n\n${value.yaml}`)],
+            render: (_args, value) => [textBlock(`Generated workflow ${value.id} with ${value.nodeCount} nodes.\n\nIssues:\n${issueLines(value.issues)}\n\n${value.yaml}`)],
         },
         async execute(args) {
             const recording = await store.getRecording(requireString(args?.recordingId, 'recordingId'));
@@ -690,59 +804,66 @@ export function registerTools(deps) {
                 throw new Error('steps must be a non-empty array');
             const now = Date.now();
             const workflowId = `wf-${now.toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-            const steps = [];
+            const taken = new Set();
+            const nodes = [];
             for (let index = 0; index < args.steps.length; index += 1) {
                 const input = args.steps[index];
                 if (!isRecord(input))
                     throw new Error(`steps[${index}] must be an object`);
                 const resolved = actionFromRecorded(recording, input);
                 let verify = asVerifySpec(input.verify, { mode: 'change', settleMs: 800, timeoutSec: 12 });
-                let referenceRelative;
                 const reference = findRecordingReference(recording, resolved.firstSeq);
                 if (reference !== undefined) {
                     try {
                         const data = await store.readRecordingShot(recording.id, reference);
-                        referenceRelative = await store.saveWorkflowAsset(workflowId, `step-${index + 1}.jpg`, data);
+                        const relative = await store.saveWorkflowAsset(workflowId, `step-${index + 1}.jpg`, data);
                         if (verify.mode === 'image' && verify.image === undefined)
-                            verify = { ...verify, image: referenceRelative };
+                            verify = { ...verify, image: relative };
                     }
                     catch {
                         // Missing evidence does not block workflow authoring.
                     }
                 }
-                steps.push({
-                    id: typeof input.id === 'string' && input.id !== '' ? input.id : `step-${index + 1}`,
+                const { type, ...config } = resolved.action;
+                let id = typeof input.id === 'string' && /^[A-Za-z][A-Za-z0-9_-]*$/.test(input.id) ? input.id : `step${index + 1}`;
+                while (taken.has(id))
+                    id = `${id}-x`;
+                taken.add(id);
+                const strategy = isRecord(input.onFailure) ? input.onFailure.strategy : undefined;
+                nodes.push({
+                    id,
+                    type,
                     name: typeof input.name === 'string' && input.name !== '' ? input.name : `Step ${index + 1}`,
                     ...(typeof input.description === 'string' && input.description !== '' ? { description: input.description } : {}),
+                    config,
                     ...(input.precondition === undefined ? {} : { precondition: asVerifySpec(input.precondition, { mode: 'none' }) }),
-                    action: resolved.action,
                     verify,
-                    ...(isRecord(input.onFailure) ? { onFailure: input.onFailure } : {}),
-                    ...(referenceRelative === undefined ? {} : {}),
+                    ...(strategy === 'retry' ? { retry: { times: Math.max(1, Number(input.onFailure.retries ?? 1)), delayMs: 0 } } : {}),
                 });
             }
-            const workflow = normalizeWorkflow({
-                version: 1,
+            const { document, issues } = linearFlow({
                 id: workflowId,
                 name: requireString(args?.name, 'name'),
-                description: optionalString(args?.description) ?? '',
+                ...(optionalString(args?.description) === undefined ? {} : { description: optionalString(args?.description) }),
                 ...(optionalString(args?.deviceId) === undefined ? {} : { deviceId: optionalString(args?.deviceId) }),
                 sourceRecording: recording.id,
                 ...(isRecord(args?.bios) ? { bios: args.bios } : {}),
-                steps,
-            }, workflowId);
-            await store.saveWorkflow(workflow);
-            const yaml = await store.readWorkflowYaml(workflow.id);
-            return { workflow, yaml };
+                nodes,
+            });
+            if (issues.length > 0)
+                throw new Error(issues.map(issue => `${issue.path}: ${issue.message}`).join('; '));
+            const view = await flows.save({ id: workflowId, document: flowToYaml(document), strict: true });
+            return { id: view.document.id, nodeCount: Object.keys(view.document.nodes).length, issues: view.issues, yaml: view.yaml };
         },
     });
     register({
         name: 'kvmflow_run_start',
-        description: 'Start a deterministic KVMFlow run of one YAML workflow. With armBios enabled (the default when the workflow declares a BIOS prelude), KVMFlow taps the BIOS hotkey before power-on and waits for the video signal, then executes steps with screen verification. Only one run may be active.',
+        description: 'Start a KVMFlow run of one workflow graph. With armBios enabled (the default when the workflow declares a BIOS prelude), KVMFlow taps the BIOS hotkey before power-on and waits for the video signal, then walks the graph node by node. Pass values for the workflow\'s declared inputs. Only one run may be active.',
         parameters: objectSchema({
             workflowId: { type: 'string' },
             deviceId: { type: 'string' },
             armBios: { type: 'boolean', description: 'Run the BIOS prelude when present (default true).' },
+            inputs: { type: 'object', additionalProperties: true, description: 'Values for the workflow inputs, by name.' },
         }, ['workflowId']),
         output: {
             schema: anyObjectSchema(),
@@ -751,13 +872,14 @@ export function registerTools(deps) {
         async execute(args) {
             const run = await runner.start(requireString(args?.workflowId, 'workflowId'), optionalString(args?.deviceId), {
                 armBios: args?.armBios !== false,
+                ...(isRecord(args?.inputs) ? { inputs: args.inputs } : {}),
             });
-            return { run };
+            return { run: runForAgent(run) };
         },
     });
     register({
         name: 'kvmflow_run_status',
-        description: 'Read the active or latest run, including each step status, verification reason, and pause reason. Use this to supervise execution and decide the next control action.',
+        description: 'Read the active or latest run: status, current node, what it is waiting for (awaiting.actions / routes / options), variables, and the latest node-visit trace with each port and reason.',
         parameters: objectSchema({ runId: { type: 'string', description: 'Run id; omit for the active/latest run.' } }),
         output: {
             schema: anyObjectSchema(),
@@ -766,25 +888,28 @@ export function registerTools(deps) {
         async execute(args) {
             const id = optionalString(args?.runId);
             const run = id === undefined ? await runner.latestRun() : await store.getRun(id);
-            if (run === undefined)
-                return { run: null };
-            return { run };
+            return { run: runForAgent(run) };
         },
     });
     register({
         name: 'kvmflow_run_control',
-        description: 'Control a paused KVMFlow run: retry the failed step, continue past it, skip it, confirm BIOS and continue, resume, pause, or abort. A run that is not paused accepts pause and abort.',
+        description: 'Control a run. While running: pause or abort. While paused: retry the node, skip along its main path, route through a connected port (port), choose a human-node option (option), finish the run, resume after a pause, confirm_bios, or abort. Use only actions listed in awaiting.actions.',
         parameters: objectSchema({
             runId: { type: 'string' },
-            action: { type: 'string', enum: ['pause', 'resume', 'retry', 'continue', 'skip', 'abort', 'confirm_bios'] },
+            action: { type: 'string', enum: ['pause', 'resume', 'retry', 'skip', 'continue', 'route', 'choose', 'finish', 'abort', 'confirm_bios'] },
+            port: { type: 'string', description: 'For route: a port from awaiting.routes.' },
+            option: { type: 'string', description: 'For choose: an option name from awaiting.options.' },
         }, ['runId', 'action']),
         output: {
             schema: anyObjectSchema(),
             render: (_args, value) => [textBlock(`Run ${value.run.id} is now ${value.run.status} (${value.run.phase}).`)],
         },
         async execute(args) {
-            const run = await runner.control(requireString(args?.runId, 'runId'), requireString(args?.action, 'action'));
-            return { run };
+            const run = await runner.control(requireString(args?.runId, 'runId'), requireString(args?.action, 'action'), {
+                ...(optionalString(args?.port) === undefined ? {} : { port: optionalString(args?.port) }),
+                ...(optionalString(args?.option) === undefined ? {} : { option: optionalString(args?.option) }),
+            });
+            return { run: runForAgent(run) };
         },
     });
 }

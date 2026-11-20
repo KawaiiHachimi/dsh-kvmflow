@@ -1,13 +1,19 @@
 /**
  * KVMFlow browser half: a native DSH main panel plus sidebar entry.
  *
- * The module is intentionally self-contained so the DSH client module loader
- * can evaluate it without a bundler. React comes from the browser module
- * table; Host operations go through the authenticated `/kvmflow` RPC channel.
+ * `main.tsx` bundles this module with the graph editor; React comes from the
+ * DSH module table, and Host operations go through the authenticated
+ * `/kvmflow` RPC channel.
  */
-(window as any).__ModuleLoader__.load({
-  id: 'dsh-kvmflow',
-  factory(requireModule: (id: string) => any) {
+import type { FlowUi } from './flow/types';
+
+/**
+ * Build the client plugin.
+ * @param requireModule - resolves modules from the DSH module table.
+ * @param flowUi - graph editor and run graph components.
+ * @returns the plugin's inject list and apply function.
+ */
+export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi): { inject: string[]; apply: (ctx: any) => void } {
     const React = requireModule('react');
     const h = React.createElement;
     const useState = React.useState;
@@ -168,6 +174,69 @@
   .kvmflow-device-select { flex: 1 1 auto; min-width: 0; max-width: none; }
   .kvmflow-thumb { width: 130px; }
   .kvmflow-title { font-size: 17px; }
+}
+
+.kvmflow-pill-btn { appearance: none; cursor: pointer; font: inherit; font-size: 11px; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
+@media (hover: hover) { .kvmflow-pill-btn:hover { border-color: currentColor; } }
+.kvmflow-pill-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+.kvmflow-pill.attention { color: var(--dsw-alias-state-warn-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 55%, var(--dsw-alias-border-l1)); }
+.kvmflow-rec-dot { animation: kvmflow-blink 1.2s ease-in-out infinite; }
+@keyframes kvmflow-blink { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .kvmflow-rec-dot { animation: none; } }
+.kvmflow-tab { display: inline-flex; align-items: center; gap: 6px; }
+.kvmflow-tab-badge { font-size: 10px; line-height: 15px; min-width: 15px; padding: 0 4px; border-radius: 8px; text-align: center; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l1); }
+.kvmflow-tab-badge.alert { color: var(--dsw-alias-state-warn-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 50%, transparent); }
+
+/* Workflows: a narrow list beside a full-height editor. */
+.kvmflow-wf { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 12px; align-items: start; }
+.kvmflow-wf.collapsed { grid-template-columns: minmax(0, 1fr); }
+.kvmflow-wf.collapsed .kvmflow-wf-list { display: none; }
+.kvmflow-wf-list { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 0; max-height: calc(100vh - 170px); overflow: auto; }
+.kvmflow-wf-list-head { display: flex; align-items: center; gap: 6px; }
+.kvmflow-wf-list-title { font-weight: 650; flex: 1 1 auto; }
+.kvmflow-wf-items { display: flex; flex-direction: column; gap: 6px; }
+.kvmflow-wf-item { border: 1px solid var(--dsw-alias-border-l1); border-radius: 9px; padding: 8px 10px; background: var(--dsw-alias-bg-layer-1); cursor: pointer; display: flex; flex-direction: column; gap: 3px; outline: none; }
+.kvmflow-wf-item:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+@media (hover: hover) { .kvmflow-wf-item:hover { border-color: var(--dsw-alias-border-l2); } }
+.kvmflow-wf-item.selected { border-color: var(--dsw-alias-brand-primary); box-shadow: inset 3px 0 0 var(--dsw-alias-brand-primary); }
+.kvmflow-wf-item-name { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12.5px; min-width: 0; }
+.kvmflow-wf-item-name > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kvmflow-wf-item-meta { font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.kvmflow-wf-item-meta.err, .kvmflow-wf-issues { color: var(--dsw-alias-state-warn-primary); }
+.kvmflow-wf-item-meta.err { color: var(--dsw-alias-state-error-primary); word-break: break-word; }
+.kvmflow-wf-item-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 20px; }
+.kvmflow-wf-empty { border: 1px dashed var(--dsw-alias-border-l2); border-radius: 9px; padding: 14px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.kvmflow-wf-empty p { margin: 0; }
+.kvmflow-wf-main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.kvmflow-wf-reopen { appearance: none; align-self: flex-start; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); border-radius: 7px; font: inherit; font-size: 11.5px; padding: 3px 9px; cursor: pointer; }
+@container (max-width: 860px) {
+  .kvmflow-wf { grid-template-columns: minmax(0, 1fr); }
+  .kvmflow-wf-list { position: static; max-height: 260px; }
+}
+.kvmflow-awaiting { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--dsw-alias-bg-layer-2); }
+.kvmflow-awaiting.attention { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 55%, var(--dsw-alias-border-l1)); background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 6%, var(--dsw-alias-bg-layer-1)); }
+.kvmflow-awaiting.human { border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, var(--dsw-alias-border-l1)); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, var(--dsw-alias-bg-layer-1)); }
+.kvmflow-awaiting-title { font-weight: 650; }
+.kvmflow-awaiting-msg { font-size: 12px; }
+.kvmflow-run-stats { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.kvmflow-run-stats .kvmflow-mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.kvmflow-section-title { font-size: 12px; font-weight: 650; margin: 4px 0 6px; }
+.kvmflow-trace { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 360px; overflow: auto; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; }
+.kvmflow-trace-row { display: grid; grid-template-columns: 42px minmax(70px, max-content) max-content minmax(0, 1fr) max-content; gap: 8px; align-items: baseline; padding: 5px 8px; font-size: 11.5px; border-bottom: 1px solid var(--dsw-alias-border-l1); cursor: pointer; }
+.kvmflow-trace-row:last-child { border-bottom: 0; }
+@media (hover: hover) { .kvmflow-trace-row:hover { background: var(--dsw-alias-bg-layer-2); } }
+.kvmflow-trace-row.focus { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent); }
+.kvmflow-trace-row.failed .kvmflow-trace-node { color: var(--dsw-alias-state-error-primary); }
+.kvmflow-trace-seq, .kvmflow-trace-time { color: var(--dsw-alias-label-secondary); font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 10.5px; }
+.kvmflow-trace-node { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kvmflow-trace-port { color: var(--dsw-alias-brand-primary); white-space: nowrap; }
+.kvmflow-trace-port.err { color: var(--dsw-alias-state-error-primary); }
+.kvmflow-trace-reason { color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kvmflow-trace-focus { border: 1px solid var(--dsw-alias-border-l1); border-radius: 9px; padding: 9px 11px; background: var(--dsw-alias-bg-layer-2); display: flex; flex-direction: column; gap: 6px; }
+.kvmflow-pre { margin: 0; font-size: 11px; font-family: var(--ds-font-family-code, ui-monospace, monospace); white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
+@container (max-width: 560px) {
+  .kvmflow-trace-row { grid-template-columns: 36px minmax(0, 1fr) max-content; }
+  .kvmflow-trace-reason, .kvmflow-trace-time { display: none; }
 }
 
 `;
@@ -597,7 +666,10 @@
         const refresh = useCallback(async () => {
           try {
             const next = await rpc('state');
-            setState(next);
+            setState((previous: any) => {
+              if (previous === undefined && (next.devices ?? []).length === 0) setTab('devices');
+              return next;
+            });
             if (deviceId === '' && typeof next.defaultDeviceId === 'string') setDeviceId(next.defaultDeviceId);
             if (deviceId !== '' && Array.isArray(next.devices) && !next.devices.some((device: any) => device.id === deviceId)) {
               setDeviceId(typeof next.defaultDeviceId === 'string' ? next.defaultDeviceId : '');
@@ -638,8 +710,8 @@
         }, [notify, runRpc, t]);
         const shared = useMemo(() => ({
           state, setState, tab, setTab, deviceId, setDeviceId, busy, setBusy, notify, log, logs, setLogs, refresh, rpc, runRpc, t,
-          workflowDraft, setWorkflowDraft, recordDraft, setRecordDraft, handPrompt, probe,
-        }), [state, tab, deviceId, busy, notify, log, logs, refresh, runRpc, t, workflowDraft, recordDraft, handPrompt, probe]);
+          workflowDraft, setWorkflowDraft, recordDraft, setRecordDraft, handPrompt, probe, compact,
+        }), [state, tab, deviceId, busy, notify, log, logs, refresh, runRpc, t, workflowDraft, recordDraft, handPrompt, probe, compact]);
         if (state === undefined) {
           return h('div', { className: 'kvmflow-root' }, h('style', null, CSS), h('div', { className: 'kvmflow-empty' }, busy || t('正在加载 KVMFlow…', 'Loading KVMFlow…')));
         }
@@ -653,15 +725,26 @@
         const selectedDevice = (state.devices ?? []).find((device: any) => device.id === deviceId);
         return h('div', { className: cn('kvmflow-root', compact ? 'compact' : '') },
           h('style', null, CSS),
+          h('style', null, flowUi.CSS),
           h('div', { className: 'kvmflow-head' },
             h('div', { className: 'kvmflow-head-main' },
               h('div', { className: 'kvmflow-title-row' },
                 h('h1', { className: 'kvmflow-title' }, 'KVMFlow'),
-                state.activeRun === undefined || state.activeRun === null ? null : h(Pill, { tone: statusTone(state.activeRun.status) }, `${state.activeRun.status} · ${state.activeRun.phase}`),
-                state.activeRecording === undefined ? null : h(Pill, { tone: 'warn' }, t(`录制中 · ${state.activeRecording.eventCount} 事件`, `Recording · ${state.activeRecording.eventCount} events`)),
+                state.activeRun === undefined || state.activeRun === null ? null : h('button', {
+                  type: 'button',
+                  className: cn('kvmflow-pill', 'kvmflow-pill-btn', statusTone(state.activeRun.status), state.activeRun.awaiting ? 'attention' : ''),
+                  onClick: () => setTab('runs'),
+                  title: t('查看执行', 'Open the run'),
+                }, h('span', { className: cn('kvmflow-dot', state.activeRun.awaiting ? 'err' : 'on') }), state.activeRun.awaiting ? t('等待处理', 'Needs you') : statusLabel(t, state.activeRun.status), ` · ${state.activeRun.workflowName}`),
+                state.activeRecording === undefined ? null : h('button', {
+                  type: 'button',
+                  className: 'kvmflow-pill kvmflow-pill-btn warn',
+                  onClick: () => setTab('recorder'),
+                  title: t('查看录制', 'Open the recorder'),
+                }, h('span', { className: 'kvmflow-dot err kvmflow-rec-dot' }), t(`录制中 · ${state.activeRecording.eventCount} 事件`, `Recording · ${state.activeRecording.eventCount} events`)),
               ),
               h('p', { className: 'kvmflow-sub' },
-                t('IP-KVM 控制、人工录制、AI 生成 YAML 工作流与逐步验证执行。', 'IP-KVM control, manual recording, AI-generated YAML workflows, and verified playback.'),
+                t('IP-KVM 控制、人工录制、AI 编排的分支工作流与逐节点验证执行。', 'IP-KVM control, manual recording, AI-authored branching workflows, and verified playback.'),
               ),
             ),
             h('div', { className: 'kvmflow-head-right' },
@@ -722,17 +805,25 @@
               }
             },
           },
-            tabs.map(entry => h('button', {
-              key: entry.id,
-              type: 'button',
-              role: 'tab',
-              id: `kvmflow-tab-${entry.id}`,
-              tabIndex: tab === entry.id ? 0 : -1,
-              'aria-selected': tab === entry.id,
-              'aria-controls': 'kvmflow-tabpanel',
-              className: cn('kvmflow-tab', tab === entry.id ? 'active' : ''),
-              onClick: () => setTab(entry.id),
-            }, t(entry.zh, entry.en))),
+            tabs.map(entry => {
+              const badge = entry.id === 'devices' ? ((state.devices ?? []).length === 0 ? '!' : '')
+                : entry.id === 'workflows' ? String((state.workflows ?? []).length || '')
+                  : entry.id === 'recorder' ? (state.activeRecording === undefined ? '' : '●')
+                    : entry.id === 'runs' ? (state.activeRun?.awaiting ? '!' : state.activeRun ? '●' : '')
+                      : '';
+              const alert = badge === '!' || (entry.id === 'recorder' && badge === '●');
+              return h('button', {
+                key: entry.id,
+                type: 'button',
+                role: 'tab',
+                id: `kvmflow-tab-${entry.id}`,
+                tabIndex: tab === entry.id ? 0 : -1,
+                'aria-selected': tab === entry.id,
+                'aria-controls': 'kvmflow-tabpanel',
+                className: cn('kvmflow-tab', tab === entry.id ? 'active' : ''),
+                onClick: () => setTab(entry.id),
+              }, t(entry.zh, entry.en), badge === '' ? null : h('span', { className: cn('kvmflow-tab-badge', alert ? 'alert' : '') }, badge));
+            }),
           ),
           h('div', { role: 'tabpanel', id: 'kvmflow-tabpanel', 'aria-labelledby': `kvmflow-tab-${tab}` },
             tab === 'live' ? h(LiveTab, shared) : null,
@@ -1628,12 +1719,11 @@
         const askAi = async (recording: any): Promise<void> => {
           const recordingId = recording.id;
           const prompt = [
-            `请使用 KVMFlow 工具把录制 ${recordingId} 转换成一份可执行、可编辑的 YAML 工作流。`,
-            '先调用 kvmflow_record_get 查看事件序列、人工步骤边界和截图（必要时读取截图）。',
-            '再按用户目标设计步骤：每个步骤写明 name、description、action，尽量补充 precondition（前置画面条件）与 verify（成功验证），并为有风险的动作设置 onFailure: pause。',
-            '需要视觉判断的验证请使用 verify.mode: vision 并写出具体 prompt；屏幕必然发生可见变化时可用 change。',
-            'action 可以直接引用录制事件的 eventRange: [firstSeq, lastSeq]，或使用 key / shortcut / text / click / delay / sequence。',
-            '最后调用 kvmflow_workflow_generate 或 kvmflow_workflow_save 生成/保存 YAML，并告诉我工作流 id。',
+            `请使用 KVMFlow 工具把录制 ${recordingId} 转换成一份可执行的图工作流。`,
+            '先调用 kvmflow_flow_catalog 了解节点类型，再调用 kvmflow_record_get 查看事件序列、人工步骤边界和截图（必要时读取截图）。',
+            '用 kvmflow_workflow_generate 按人工步骤生成主干：每步写明 name、description，引用录制事件的 eventRange，并补充 verify（视觉判断写具体 prompt，确定会变化的画面用 change）。',
+            '然后用 kvmflow_flow_patch 补上条件分支：画面可能不同的地方用 vision_classify 或 if 分支处理，需要等待的地方用 wait_until，可能失败的步骤接 error 出口或 human 节点，所有路径最终到达 end 节点。',
+            '关键节点可用 kvmflow_node_test 在目标机上先单独验证。最后告诉我工作流 id 和分支设计。',
             '',
             `录制名称：${recording.name}`,
             recording.description ? `录制说明：${recording.description}` : '',
@@ -1781,96 +1871,58 @@
         const workflows: any[] = state.workflows ?? [];
         const draft = shared.workflowDraft;
         const setDraft = shared.setWorkflowDraft;
-        const [selectedId, setSelectedIdState] = useState(draft.id);
-        const [detail, setDetail] = useState(undefined);
-        const [newName, setNewName] = useState('');
-        const yaml = draft.yaml;
-        const dirty = draft.dirty;
-        const setSelectedId = useCallback((id: string) => {
-          setSelectedIdState(id);
-          setDraft(current => ({ ...current, id }));
-        }, [setDraft]);
-        const setYaml = useCallback((value: string) => setDraft(current => ({ ...current, yaml: value })), [setDraft]);
-        const setDirty = useCallback((value: boolean) => setDraft(current => ({ ...current, dirty: value })), [setDraft]);
-        useEffect(() => {
-          if (selectedId === '' && workflows.length > 0) setSelectedId(workflows[0].id);
-        }, [workflows.length, selectedId, setSelectedId]);
-        const load = useCallback(async (id: string): Promise<void> => {
-          if (id === '') { setDetail(undefined); setYaml(''); return; }
-          try {
-            const value = await rpc('workflow.get', { id });
-            setDetail(value.workflow);
-            // A pending edit for this same workflow survives a refresh.
-            setDraft(current => current.id === id && current.dirty
-              ? current
-              : { id, yaml: value.yaml, dirty: false });
-          } catch (error: any) {
-            notify(error.message ?? String(error), 'err');
-          }
-        }, [rpc, notify, setDraft, setYaml]);
-        useEffect(() => { void load(selectedId); }, [selectedId, load]);
-        const save = async (): Promise<boolean> => {
-          const value = await runRpc(t('保存工作流', 'Save workflow'), 'workflow.save', { id: selectedId || undefined, yaml });
-          if (value === undefined) return false;
-          notify(t('工作流已保存。', 'Workflow saved.'), 'ok');
-          setSelectedId(value.workflow.id);
-          setDetail(value.workflow);
-          setDraft({ id: value.workflow.id, yaml: value.yaml, dirty: false });
-          await refresh();
-          return true;
+        const selectedId: string = draft.id !== '' && workflows.some((entry: any) => entry.id === draft.id) ? draft.id : (workflows[0]?.id ?? '');
+        const setSelectedId = useCallback((id: string) => setDraft((current: any) => ({ ...current, id })), [setDraft]);
+        const [filter, setFilter] = useState('');
+        const [dirty, setDirty] = useState(false);
+        const [listOpen, setListOpen] = useState(true);
+        const select = (id: string): void => {
+          if (id === selectedId) return;
+          // Autosave is debounced; a switch inside that window would drop the edit.
+          if (dirty && !window.confirm(t('当前工作流还有未保存的修改（可能有错误），仍要切换吗？', 'This workflow has unsaved edits (possibly with errors). Switch anyway?'))) return;
+          setSelectedId(id);
         };
         const create = async (): Promise<void> => {
-          const value = await runRpc(t('新建工作流', 'Create workflow'), 'workflow.create', { name: newName || t('新工作流', 'New workflow'), deviceId: shared.deviceId });
+          const value = await runRpc(t('新建工作流', 'Create workflow'), 'workflow.create', { name: t('新工作流', 'New workflow'), deviceId: shared.deviceId || undefined });
           if (value !== undefined) {
-            setNewName('');
-            setSelectedId(value.workflow.id);
-            setDetail(value.workflow);
-            setDraft({ id: value.workflow.id, yaml: value.yaml, dirty: false });
-            notify(t('已创建工作流骨架。', 'Workflow skeleton created.'), 'ok');
             await refresh();
+            setSelectedId(value.document.id);
+            notify(t('已创建工作流：先判断画面，再在画布上接着搭建。', 'Workflow created: it checks the screen first; build on from there.'), 'ok');
           }
         };
-        const remove = async (): Promise<void> => {
-          const value = await runRpc(t('删除工作流', 'Delete workflow'), 'workflow.delete', { id: selectedId });
+        const remove = async (id: string): Promise<void> => {
+          const value = await runRpc(t('删除工作流', 'Delete workflow'), 'workflow.delete', { id });
           if (value !== undefined) {
             notify(t('工作流已删除。', 'Workflow removed.'), 'ok');
-            setSelectedId('');
-            setDetail(undefined);
-            setDraft({ id: '', yaml: '', dirty: false });
+            if (id === selectedId) setSelectedId('');
             await refresh();
           }
         };
-        const run = async (): Promise<void> => {
-          // Running a stale copy is worse than an extra save: persist the open
-          // draft first so the executed document is the one on screen.
-          if (dirty && !(await save())) return;
-          const value = await runRpc(t('启动执行', 'Start run'), 'run.start', { workflowId: selectedId, deviceId: shared.deviceId });
+        const activeRun = state.activeRun ?? undefined;
+        const runDisabledReason = shared.deviceId === ''
+          ? t('先选择 KVM 设备', 'Select a KVM device first')
+          : activeRun !== undefined && activeRun !== null
+            ? t('已有执行进行中', 'A run is already active')
+            : undefined;
+        const onRun = async (inputs: Record<string, unknown>): Promise<void> => {
+          const value = await runRpc(t('启动执行', 'Start run'), 'run.start', { workflowId: selectedId, deviceId: shared.deviceId, inputs });
           if (value !== undefined) {
             notify(
-              t('执行已启动。', 'Run started.'),
+              value.run.status === 'armed'
+                ? t('已就绪：现在按下目标机电源键。', 'Armed: press the target power button now.')
+                : t('执行已启动。', 'Run started.'),
               'ok',
               { label: t('查看执行', 'Supervise run'), onClick: () => setTab('runs') },
             );
-            setTab('runs');
             await refresh();
           }
         };
-        const runDisabledReason = selectedId === ''
-          ? t('先选择工作流', 'Select a workflow first')
-          : shared.deviceId === ''
-            ? t('先选择 KVM 设备', 'Select a KVM device first')
-            : state.activeRun !== undefined && state.activeRun !== null
-              ? t('已有执行进行中', 'A run is already active')
-              : dirty
-                ? t('将先保存再执行', 'The draft will be saved before running')
-                : undefined;
-        const askAi = async (): Promise<void> => {
-          if (detail === undefined) return;
+        const askAi = async (doc: any): Promise<void> => {
           const prompt = [
-            `请编辑 KVMFlow 工作流 ${detail.id}（当前名称：${detail.name}）。`,
-            '先调用 kvmflow_workflow_get 读取 YAML，再根据我的目标改进 steps：补充前置条件、成功验证和失败处理。',
-            '需要视觉判断的 verify 用 mode: vision 并写出明确的画面条件；可确定画面变化时用 change。',
-            '保存时调用 kvmflow_workflow_save（保留 id），不要覆盖无关字段。',
+            `请编辑 KVMFlow 工作流 ${doc.id}（当前名称：${doc.name}）。`,
+            '先调用 kvmflow_flow_catalog 了解节点类型，再用 kvmflow_workflow_get 读取当前图和问题列表。',
+            '用 kvmflow_flow_patch 做小步修改（add_node / update_node / connect / remove_node），不要整篇重写；画面不确定的地方用 vision_classify 或 if 分支，等待用 wait_until，失败要有 error 出口或 human 节点，所有路径都要到达 end。',
+            '必要时用 kvmflow_node_test 在目标机上单独验证关键节点。完成后总结你改了哪些节点和连线。',
             '',
             '我的修改目标：',
           ].join('\n');
@@ -1880,111 +1932,100 @@
             t('无法自动创建会话，提示词已显示在下方，请手动复制。', 'Could not open a session automatically; copy the prompt shown below.'),
           );
         };
-        return h('div', { className: 'kvmflow-grid two' },
-          h('div', null,
-            h(Card, { title: t('工作流', 'Workflows'), subtitle: `${workflows.length}` },
-              h('div', { className: 'kvmflow-row', style: { marginBottom: '8px' } },
-                h('input', { className: 'kvmflow-input', style: { flex: '1 1 auto' }, value: newName, placeholder: t('新工作流名称', 'New workflow name'), onChange: (event: any) => setNewName(event.target.value) }),
-                h(Btn, { onClick: () => { void create(); }, disabled: busy !== '' }, t('新建', 'New')),
-              ),
-              workflows.length === 0
-                ? h(Empty, null, t('还没有工作流。从录制生成，或新建一个。', 'No workflows yet. Generate one from a recording or create a new one.'))
-                : h('div', { className: 'kvmflow-col' }, workflows.map((workflow: any) => h('div', {
-                  key: workflow.id,
-                  className: cn('kvmflow-device', workflow.id === selectedId ? 'selected' : ''),
-                  onClick: () => setSelectedId(workflow.id),
-                  style: { cursor: 'pointer' },
-                },
-                  h('div', null,
-                    h('div', { className: 'kvmflow-device-name' }, workflow.name),
-                    h('div', { className: 'kvmflow-hint' }, `${t('步骤', 'steps')} ${workflow.stepCount}${workflow.hasBios ? ` · ${t('BIOS 前奏', 'BIOS prelude')}` : ''} · ${formatDateTime(workflow.updatedAt)}`),
-                    workflow.error ? h('div', { className: 'kvmflow-hint', style: { color: 'var(--dsw-alias-state-error-primary)' } }, workflow.error) : null,
-                  ),
-                  workflow.error ? h(Pill, { tone: 'err' }, 'invalid') : h(Pill, null, workflow.id.slice(0, 14)),
-                ))),
+        const needle = filter.trim().toLowerCase();
+        const visible = workflows.filter((entry: any) => needle === '' || `${entry.name} ${entry.id} ${entry.description ?? ''}`.toLowerCase().includes(needle));
+        const Editor = flowUi.FlowEditor;
+        return h('div', { className: cn('kvmflow-wf', listOpen ? '' : 'collapsed') },
+          h('aside', { className: 'kvmflow-wf-list', 'aria-label': t('工作流列表', 'Workflows') },
+            h('div', { className: 'kvmflow-wf-list-head' },
+              h('span', { className: 'kvmflow-wf-list-title' }, t('工作流', 'Workflows'), h('span', { className: 'kvmflow-hint' }, ` ${workflows.length}`)),
+              h(Btn, { kind: 'primary', small: true, onClick: () => { void create(); }, disabled: busy !== '' }, t('+ 新建', '+ New')),
+              h('button', { type: 'button', className: 'kvmflow-icon-btn', onClick: () => setListOpen(false), title: t('收起列表', 'Collapse the list'), 'aria-label': t('收起列表', 'Collapse the list') }, '‹'),
             ),
-            h(Card, { title: t('工作流说明', 'Workflow notes') },
-              h('p', { className: 'kvmflow-hint' },
-                t(
-                  '工作流是 YAML：version、name、可选 bios、steps。每个 step 包含 precondition、action、verify、onFailure。验证支持 change（画面哈希变化）、image（与参考图比较）和 vision（调用默认 DSH 视觉模型判断）。',
-                  'A workflow is YAML: version, name, optional bios, steps. Each step has precondition, action, verify, onFailure. Verification supports change (hash), image (reference), and vision (default DSH visual model).',
+            workflows.length > 4 ? h('input', { className: 'kvmflow-input', placeholder: t('搜索…', 'Search…'), value: filter, onChange: (event: any) => setFilter(event.target.value) }) : null,
+            workflows.length === 0
+              ? h('div', { className: 'kvmflow-wf-empty' },
+                h('p', null, t('还没有工作流。', 'No workflows yet.')),
+                h('p', { className: 'kvmflow-hint' }, t('新建一个空白工作流在画布上搭建，或者先在“录制器”录一遍操作，让 AI 生成。', 'Create one and build it on the canvas, or record a run-through in the Recorder and let the agent generate it.')),
+                h(Btn, { onClick: () => setTab('recorder') }, t('去录制', 'Go to Recorder')),
+              )
+              : h('div', { className: 'kvmflow-wf-items' }, visible.map((entry: any) => h('div', {
+                key: entry.id,
+                role: 'button',
+                tabIndex: 0,
+                className: cn('kvmflow-wf-item', entry.id === selectedId ? 'selected' : '', entry.error ? 'invalid' : ''),
+                onClick: () => select(entry.id),
+                onKeyDown: (event: any) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(entry.id); } },
+              },
+                h('div', { className: 'kvmflow-wf-item-name' },
+                  activeRun?.workflowId === entry.id ? h('span', { className: 'kvmflow-dot on', title: t('执行中', 'running') }) : null,
+                  h('span', null, entry.name),
                 ),
-              ),
-            ),
+                entry.error
+                  ? h('div', { className: 'kvmflow-wf-item-meta err' }, entry.error)
+                  : h('div', { className: 'kvmflow-wf-item-meta' },
+                    t(`${entry.stepCount} 个节点`, `${entry.stepCount} nodes`),
+                    (entry.branchCount ?? 0) > 0 ? ` · ${t(`${entry.branchCount} 个分支`, `${entry.branchCount} branches`)}` : '',
+                    entry.hasBios ? ' · BIOS' : '',
+                    (entry.issueCount ?? 0) > 0 ? h('span', { className: 'kvmflow-wf-issues' }, ` · ${t(`${entry.issueCount} 个问题`, `${entry.issueCount} issues`)}`) : null,
+                  ),
+                h('div', { className: 'kvmflow-wf-item-foot' },
+                  h('span', { className: 'kvmflow-hint' }, formatDateTime(entry.updatedAt)),
+                  entry.id === selectedId ? h(ConfirmButton, {
+                    kind: 'danger',
+                    small: true,
+                    disabled: busy !== '',
+                    confirmLabel: t('删除？', 'Delete?'),
+                    confirmAction: t('删除', 'Delete'),
+                    cancelLabel: t('取消', 'Cancel'),
+                    onConfirm: () => { void remove(entry.id); },
+                  }, t('删除', 'Delete')) : null,
+                ),
+              ))),
           ),
-          h('div', null,
-            h(Card, {
-              title: detail === undefined ? t('YAML 编辑器', 'YAML editor') : detail.name,
-              // Saved state lives in the subtitle; the row stays four even buttons
-              // with one primary action and the destructive one last.
-              subtitle: [
-                selectedId === '' ? t('未选择', 'none') : selectedId,
-                dirty ? t('未保存', 'unsaved') : t('已保存', 'saved'),
-              ].join(' · '),
-            },
-              h(CardActions, null,
-                h(Btn, { onClick: () => { void askAi(); }, disabled: detail === undefined }, t('AI 编辑', 'Edit with AI')),
-                h(Btn, { onClick: () => { void save(); }, disabled: selectedId === '' || busy !== '' || !dirty }, t('保存', 'Save')),
-                h(Btn, {
-                  kind: 'primary',
-                  onClick: () => { void run(); },
-                  disabled: selectedId === '' || busy !== '' || shared.deviceId === '' || (state.activeRun !== undefined && state.activeRun !== null),
-                  title: runDisabledReason,
-                }, t('执行', 'Run')),
-                h(ConfirmButton, {
-                  kind: 'danger',
-                  disabled: selectedId === '' || busy !== '',
-                  confirmLabel: t('删除该工作流？', 'Delete this workflow?'),
-                  confirmAction: t('删除', 'Delete'),
-                  cancelLabel: t('取消', 'Cancel'),
-                  onConfirm: () => { void remove(); },
-                }, t('删除', 'Delete')),
-              ),
-              detail === undefined
-                ? h(Empty, null, t('从左侧选择或新建工作流。', 'Select or create a workflow on the left.'))
-                : h('div', { className: 'kvmflow-col' },
-                  h('div', { className: 'kvmflow-row' },
-                    h(Pill, null, `${t('步骤', 'steps')} ${detail.steps?.length ?? 0}`),
-                    detail.bios ? h(Pill, { tone: 'warn' }, `BIOS ${detail.bios.hotkey ?? 'F2'}`) : null,
-                    detail.sourceRecording
-                      ? h('button', {
-                        type: 'button',
-                        className: 'kvmflow-btn small',
-                        onClick: () => setTab('recorder'),
-                        title: t('查看来源录制', 'Open the source recording'),
-                      }, t('来源录制', 'from recording'))
-                      : null,
-                    h('span', { className: 'kvmflow-hint' }, formatDateTime(detail.updatedAt)),
-                  ),
-                  h('textarea', {
-                    className: 'kvmflow-textarea',
-                    value: yaml,
-                    spellCheck: false,
-                    onChange: (event: any) => { setYaml(event.target.value); setDirty(true); },
-                  }),
-                  h('p', { className: 'kvmflow-hint' }, t('保存时会解析并规范化；YAML 出错会保留原文并显示行号。', 'Saving parses and normalizes the document; YAML errors keep the text and report the line.')),
-                  (detail.steps ?? []).length === 0 ? null : h('div', { className: 'kvmflow-steps' }, (detail.steps ?? []).map((step: any, index: number) => h('div', { key: step.id, className: 'kvmflow-step' },
-                    h('div', { className: 'kvmflow-step-head' },
-                      h('div', { className: 'kvmflow-step-name' }, `${index + 1}. ${step.name}`),
-                      h(Pill, null, step.verify?.mode ?? 'change'),
-                    ),
-                    h('div', { className: 'kvmflow-step-body' },
-                      step.description ? h('div', { className: 'kvmflow-muted' }, step.description) : null,
-                      h('div', { className: 'kvmflow-hint kvmflow-mono' }, `${step.action?.type}${step.action?.key ? ` ${step.action.key}` : ''}${step.action?.keys ? ` ${step.action.keys.join('+')}` : ''}${step.action?.events ? ` · ${step.action.events.length} events` : ''}`),
-                      step.verify?.prompt ? h('div', { className: 'kvmflow-hint' }, `verify: ${step.verify.prompt}`) : null,
-                    ),
-                  ))),
-                ),
-            ),
+          h('section', { className: 'kvmflow-wf-main' },
+            listOpen ? null : h('button', { type: 'button', className: 'kvmflow-wf-reopen', onClick: () => setListOpen(true), 'aria-label': t('展开工作流列表', 'Show the workflow list') }, `› ${t('工作流', 'Workflows')}`),
+            selectedId === ''
+              ? h(Empty, null, t('从左侧选择或新建工作流。', 'Select or create a workflow on the left.'))
+              : h(Editor, {
+                key: selectedId,
+                rpc,
+                t,
+                workflowId: selectedId,
+                workflows: workflows.filter((entry: any) => !entry.error).map((entry: any) => ({ id: entry.id, name: entry.name })),
+                deviceId: shared.deviceId,
+                run: activeRun?.workflowId === selectedId ? activeRun : undefined,
+                compact: shared.compact === true,
+                runDisabledReason,
+                notify,
+                onRun,
+                onAskAi: (doc: any) => { void askAi(doc); },
+                onDelete: () => { void remove(selectedId); },
+                onSaved: () => { void refresh(); },
+                onDirtyChange: setDirty,
+                renderThumb: (path: string | undefined, label: string) => h(ImageThumb, { key: `${path}-${label}`, shared, path, label }),
+              }),
           ),
         );
       }
 
+      const CONTROL_LABELS: Record<string, [string, string]> = {
+        resume: ['继续', 'Resume'],
+        retry: ['重试此节点', 'Retry node'],
+        skip: ['跳过（走主路径）', 'Skip (main path)'],
+        continue: ['跳过（走主路径）', 'Skip (main path)'],
+        finish: ['在此结束', 'Finish here'],
+        abort: ['中止执行', 'Abort'],
+        confirm_bios: ['确认已进入 BIOS', 'Confirm BIOS'],
+        pause: ['暂停', 'Pause'],
+      };
+
       function RunsTab(shared: any): any {
-        const { state, runRpc, rpc, refresh, busy, t, notify } = shared;
+        const { state, runRpc, rpc, refresh, busy, t } = shared;
         const [run, setRun] = useState(state.activeRun ?? undefined);
         const [selectedRunId, setSelectedRunId] = useState('');
         const [pollError, setPollError] = useState('');
+        const [focusNode, setFocusNode] = useState(undefined);
         const refreshRun = useCallback(async (): Promise<void> => {
           const id = selectedRunId || state.activeRun?.id;
           try {
@@ -2005,12 +2046,12 @@
         useEffect(() => {
           void refreshRun();
           if (terminal) return undefined;
-          const timer = setInterval(() => { void refreshRun(); }, 1500);
+          const timer = setInterval(() => { void refreshRun(); }, 1200);
           return () => clearInterval(timer);
         }, [refreshRun, terminal]);
-        const control = async (action: string): Promise<void> => {
+        const control = async (action: string, extra: any = {}): Promise<void> => {
           if (run === undefined) return;
-          const value = await runRpc(t('执行控制', 'Run control'), 'run.control', { id: run.id, action });
+          const value = await runRpc(t('执行控制', 'Run control'), 'run.control', { id: run.id, action, ...extra });
           if (value !== undefined) {
             setRun(value.run);
             await refresh();
@@ -2018,47 +2059,109 @@
         };
         const current = run ?? state.activeRun;
         const awaiting = current?.awaiting;
-        const actions: string[] = awaiting?.actions ?? [];
-        const canPause = current !== undefined && (current.status === 'running' || current.status === 'armed') && !actions.includes('pause');
-        const actionLabels: Record<string, [string, string]> = {
-          resume: ['继续', 'Resume'], retry: ['重试步骤', 'Retry step'], continue: ['忽略并继续', 'Continue'], skip: ['跳过', 'Skip'], abort: ['中止', 'Abort'], confirm_bios: ['确认已进入 BIOS', 'Confirm BIOS'], pause: ['暂停', 'Pause'],
-        };
+        const actions: string[] = (awaiting?.actions ?? []).filter((action: string) => action !== 'route');
+        const live = current !== undefined && !['succeeded', 'failed', 'aborted'].includes(current.status);
+        const canPause = live && (current.status === 'running' || current.status === 'armed') && awaiting === undefined;
+        const trace: any[] = current?.trace ?? [];
+        const graphRun = current?.schema === 2;
+        const nodeName = (id: string): string => (current?.steps ?? []).find((step: any) => step.id === id)?.name ?? id;
+        const focusTrace = focusNode === undefined ? undefined : [...trace].reverse().find((entry: any) => entry.nodeId === focusNode);
+        const RunGraph = flowUi.RunGraph;
+        const portName = (port: string): string => ({ next: t('下一步', 'next'), error: t('出错', 'error'), true: t('是', 'true'), false: t('否', 'false'), ok: t('满足', 'ok'), timeout: t('超时', 'timeout'), body: t('循环体', 'body'), done: t('结束循环', 'done'), found: t('找到', 'found'), not_found: t('未找到', 'not found'), unknown: t('无法识别', 'unknown'), default: t('其他', 'default'), success: t('成功', 'success'), failure: t('失败', 'failure') } as Record<string, string>)[port] ?? port;
         return h('div', { className: 'kvmflow-grid two' },
           h('div', null,
             h(Card, {
-              title: t('执行状态', 'Run status'),
-              subtitle: current === undefined ? t('暂无执行', 'none') : current.id,
+              title: current === undefined ? t('执行状态', 'Run status') : current.workflowName,
+              subtitle: current === undefined ? t('暂无执行', 'none') : `${current.id} · ${formatDateTime(current.createdAt)}`,
             },
               h(CardActions, null,
-                h(Btn, { onClick: () => { void refreshRun(); } }, t('刷新', 'Refresh')),
+                current === undefined ? null : h(Pill, { tone: statusTone(current.status) }, statusLabel(t, current.status)),
+                current === undefined ? null : h('span', { className: 'kvmflow-hint' }, current.phase),
+                h('span', { style: { flex: '1 1 auto' } }),
                 canPause ? h(Btn, { onClick: () => { void control('pause'); }, disabled: busy !== '' }, t('暂停', 'Pause')) : null,
-                current === undefined || current.status === 'succeeded' || current.status === 'failed' || current.status === 'aborted' ? null : h(Btn, { kind: 'danger', onClick: () => { void control('abort'); }, disabled: busy !== '' }, t('中止', 'Abort')),
+                live ? h(Btn, { kind: 'danger', onClick: () => { void control('abort'); }, disabled: busy !== '' }, t('中止', 'Abort')) : null,
               ),
-              pollError === '' ? null : h('div', { className: 'kvmflow-notice err', style: { marginBottom: '8px' } }, pollError),
+              pollError === '' ? null : h('div', { className: 'kvmflow-notice err' }, pollError),
               current === undefined
-                ? h(Empty, null, t('还没有执行记录。先在“工作流”页启动一个工作流。', 'No runs yet. Start one from the Workflows tab.'))
+                ? h(Empty, null, t('还没有执行记录。在“工作流”页打开一个工作流并点击“执行”。', 'No runs yet. Open a workflow on the Workflows tab and press Run.'))
                 : h('div', { className: 'kvmflow-col' },
-                  h('div', { className: 'kvmflow-row' },
-                    h(Pill, { tone: statusTone(current.status) }, statusLabel(t, current.status)),
-                    h(Pill, null, current.phase),
-                    current.bios ? h(Pill, { tone: 'warn' }, `BIOS ${current.bios.hotkey} · every ${current.bios.intervalMs}ms`) : null,
-                  ),
-                  current.reason ? h('div', { className: 'kvmflow-notice err', style: { marginBottom: 0 } }, current.reason) : null,
-                  awaiting ? h('div', { className: 'kvmflow-notice', style: { marginBottom: 0 } },
-                    h('span', null, awaiting.message),
-                    h('div', { className: 'kvmflow-actions' }, actions.map(action => h(Btn, { key: action, kind: action === 'abort' ? 'danger' : action === 'confirm_bios' || action === 'retry' ? 'primary' : undefined, onClick: () => { void control(action); }, disabled: busy !== '' }, actionLabels[action]?.[0] ?? action))),
+                  current.status === 'armed' ? h('div', { className: 'kvmflow-awaiting' },
+                    h('div', { className: 'kvmflow-awaiting-title' }, t('现在按下目标机电源键', 'Press the target power button now')),
+                    h('div', { className: 'kvmflow-hint' }, t(`正在每 ${current.bios?.intervalMs ?? 1200}ms 按一次 ${current.bios?.hotkey ?? 'F2'}，检测到画面后自动开始。`, `Tapping ${current.bios?.hotkey ?? 'F2'} every ${current.bios?.intervalMs ?? 1200}ms; the graph starts once video appears.`)),
                   ) : null,
-                  h('div', { className: 'kvmflow-split' }),
-                  h('div', { className: 'kvmflow-steps' }, (current.steps ?? []).map((step: any) => h('div', { key: step.id, className: cn('kvmflow-step', step.status) },
+                  awaiting ? h('div', { className: cn('kvmflow-awaiting', awaiting.kind === 'human' ? 'human' : 'attention') },
+                    h('div', { className: 'kvmflow-awaiting-title' },
+                      awaiting.kind === 'human' ? t('需要你选择下一步', 'Your decision is needed')
+                        : awaiting.kind === 'unrouted' ? t('流程走到了未连接的出口', 'The run reached an unconnected port')
+                          : awaiting.kind === 'bios_confirm' ? t('请确认已进入 BIOS', 'Confirm the target is in BIOS')
+                            : t('需要人工介入', 'Intervention needed'),
+                      awaiting.nodeId ? h('span', { className: 'kvmflow-hint' }, ` · ${nodeName(awaiting.nodeId)}`) : null,
+                    ),
+                    h('div', { className: 'kvmflow-awaiting-msg' }, awaiting.message),
+                    (awaiting.options ?? []).length === 0 ? null : h('div', { className: 'kvmflow-actions' },
+                      (awaiting.options ?? []).map((option: any) => h(Btn, { key: option.name, kind: 'primary', onClick: () => { void control('choose', { option: option.name }); }, disabled: busy !== '' }, option.label ?? option.name)),
+                    ),
+                    (awaiting.routes ?? []).length === 0 ? null : h('div', { className: 'kvmflow-actions' },
+                      h('span', { className: 'kvmflow-hint' }, t('改走：', 'Route via:')),
+                      (awaiting.routes ?? []).map((port: string) => h(Btn, { key: port, onClick: () => { void control('route', { port }); }, disabled: busy !== '' }, portName(port))),
+                    ),
+                    h('div', { className: 'kvmflow-actions' }, actions.map(action => h(Btn, {
+                      key: action,
+                      kind: action === 'abort' ? 'danger' : action === 'confirm_bios' || action === 'retry' || action === 'resume' ? 'primary' : undefined,
+                      onClick: () => { void control(action); },
+                      disabled: busy !== '',
+                    }, t(...(CONTROL_LABELS[action] ?? [action, action]) as [string, string])))),
+                  ) : null,
+                  !awaiting && current.reason && current.status !== 'succeeded' ? h('div', { className: 'kvmflow-notice err', style: { marginBottom: 0 } }, current.reason) : null,
+                  current.status === 'succeeded' && current.outputs !== undefined ? h('div', { className: 'kvmflow-notice ok', style: { marginBottom: 0 } }, `${t('输出', 'Outputs')}: ${JSON.stringify(current.outputs)}`) : null,
+                  graphRun ? h(RunGraph, {
+                    rpc,
+                    t,
+                    workflowId: current.workflowId,
+                    run: current,
+                    height: shared.compact ? 300 : 380,
+                    ...(focusNode === undefined ? {} : { selectedNodeId: focusNode }),
+                    onSelectNode: (id: string | undefined) => setFocusNode(id),
+                  }) : null,
+                  graphRun ? h('div', { className: 'kvmflow-run-stats' },
+                    h('span', null, t(`节点访问 ${current.visits ?? 0}`, `${current.visits ?? 0} node visits`)),
+                    h('span', null, t(`视觉调用 ${current.visionCalls ?? 0}`, `${current.visionCalls ?? 0} vision calls`)),
+                    Object.keys(current.vars ?? {}).length === 0 ? null : h('span', { className: 'kvmflow-mono', title: JSON.stringify(current.vars, null, 2) }, `vars ${JSON.stringify(current.vars).slice(0, 80)}`),
+                  ) : null,
+                  focusTrace !== undefined ? h('div', { className: 'kvmflow-trace-focus' },
+                    h('div', { className: 'kvmflow-step-head' },
+                      h('div', { className: 'kvmflow-step-name' }, nodeName(focusTrace.nodeId)),
+                      h(Btn, { small: true, onClick: () => setFocusNode(undefined) }, t('关闭', 'Close')),
+                    ),
+                    focusTrace.reason ? h('div', { className: 'kvmflow-muted' }, focusTrace.reason) : null,
+                    focusTrace.output === undefined ? null : h('pre', { className: 'kvmflow-pre' }, JSON.stringify(focusTrace.output, null, 2)),
+                    h('div', { className: 'kvmflow-thumb-row' },
+                      focusTrace.before ? h(ImageThumb, { shared, path: focusTrace.before, label: t('操作前', 'before') }) : null,
+                      focusTrace.after ? h(ImageThumb, { shared, path: focusTrace.after, label: t('画面', 'screen') }) : null,
+                    ),
+                  ) : null,
+                  graphRun ? h('div', null,
+                    h('div', { className: 'kvmflow-section-title' }, t(`执行轨迹（${trace.length}）`, `Trace (${trace.length})`)),
+                    trace.length === 0
+                      ? h('div', { className: 'kvmflow-hint' }, live ? t('等待第一个节点…', 'Waiting for the first node…') : '—')
+                      : h('ol', { className: 'kvmflow-trace' }, [...trace].reverse().slice(0, 120).map((entry: any) => h('li', {
+                        key: entry.seq,
+                        className: cn('kvmflow-trace-row', entry.status, entry.nodeId === focusNode ? 'focus' : ''),
+                        style: entry.depth > 0 ? { paddingLeft: `${8 + entry.depth * 14}px` } : undefined,
+                        onClick: () => setFocusNode(entry.nodeId),
+                      },
+                        h('span', { className: 'kvmflow-trace-seq' }, `#${entry.seq}`),
+                        h('span', { className: 'kvmflow-trace-node' }, entry.depth > 0 ? `↳ ${entry.nodeId}` : nodeName(entry.nodeId)),
+                        entry.port ? h('span', { className: cn('kvmflow-trace-port', entry.port === 'error' ? 'err' : '') }, `→ ${portName(entry.port)}`) : h('span', { className: 'kvmflow-trace-port' }, t('结束', 'end')),
+                        h('span', { className: 'kvmflow-trace-reason', title: entry.reason }, entry.reason ?? ''),
+                        h('span', { className: 'kvmflow-trace-time' }, `${formatTime(entry.at)} · ${entry.durationMs}ms`),
+                      ))),
+                  ) : h('div', { className: 'kvmflow-steps' }, (current.steps ?? []).map((step: any) => h('div', { key: step.id, className: cn('kvmflow-step', step.status) },
                     h('div', { className: 'kvmflow-step-head' },
                       h('div', { className: 'kvmflow-step-name' }, `${step.index + 1}. ${step.name}`),
-                      h('div', { className: 'kvmflow-actions' },
-                        step.attempts > 1 ? h('span', { className: 'kvmflow-hint' }, `×${step.attempts}`) : null,
-                        h(StepStatus, { status: step.status, t }),
-                      ),
+                      h(StepStatus, { status: step.status, t }),
                     ),
                     step.verify ? h('div', { className: 'kvmflow-step-body' }, h('div', { className: 'kvmflow-muted' }, `${step.verify.mode}: ${step.verify.reason}`)) : null,
-                    step.error && (!step.verify || step.verify.reason !== step.error) ? h('div', { className: 'kvmflow-hint', style: { color: 'var(--dsw-alias-state-error-primary)' } }, step.error) : null,
                     h('div', { className: 'kvmflow-thumb-row' },
                       h(ImageThumb, { shared, path: step.before, label: t('操作前', 'before') }),
                       h(ImageThumb, { shared, path: step.after, label: t('操作后', 'after') }),
@@ -2071,7 +2174,7 @@
             h(Card, { title: t('执行日志', 'Run log'), subtitle: `${current?.log?.length ?? 0}` },
               current === undefined
                 ? h('div', { className: 'kvmflow-hint' }, '—')
-                : h('div', { className: 'kvmflow-log' }, (current.log ?? []).slice(-60).map((entry: any, index: number) => h('div', { key: index, className: cn('kvmflow-log-row', entry.level === 'error' ? 'err' : entry.level === 'warn' ? 'warn' : '') },
+                : h('div', { className: 'kvmflow-log' }, (current.log ?? []).slice(-80).reverse().map((entry: any, index: number) => h('div', { key: index, className: cn('kvmflow-log-row', entry.level === 'error' ? 'err' : entry.level === 'warn' ? 'warn' : '') },
                   h('span', { className: 'kvmflow-log-time' }, formatTime(entry.at)),
                   h('span', null, entry.message),
                 ))),
@@ -2081,13 +2184,15 @@
                 ? h('div', { className: 'kvmflow-hint' }, t('暂无历史。', 'No history.'))
                 : h('div', { className: 'kvmflow-col' }, (state.recentRuns ?? []).map((entry: any) => h('div', {
                   key: entry.id,
+                  role: 'button',
+                  tabIndex: 0,
                   className: cn('kvmflow-device', entry.id === current?.id ? 'selected' : ''),
                   style: { cursor: 'pointer' },
-                  onClick: () => { setSelectedRunId(entry.id); void rpc('run.get', { id: entry.id }).then((value: any) => { if (value.run !== null) setRun(value.run); }); },
+                  onClick: () => { setSelectedRunId(entry.id); setFocusNode(undefined); void rpc('run.get', { id: entry.id }).then((value: any) => { if (value.run !== null) setRun(value.run); }); },
                 },
                   h('div', null,
                     h('div', { className: 'kvmflow-device-name' }, entry.workflowName),
-                    h('div', { className: 'kvmflow-hint' }, `${formatDateTime(entry.createdAt)} · ${t('步骤', 'step')} ${entry.currentStepIndex + 1}/${entry.totalSteps}`),
+                    h('div', { className: 'kvmflow-hint' }, `${formatDateTime(entry.createdAt)}${entry.reason ? ` · ${entry.reason}` : ''}`),
                   ),
                   h(Pill, { tone: statusTone(entry.status) }, statusLabel(t, entry.status)),
                 ))),
@@ -2144,5 +2249,4 @@
       inject: ['slots', 'locale', 'sidebarRightTabs'],
       apply,
     };
-  },
-});
+}

@@ -15,14 +15,17 @@
   "files": [
     "dist",
     "src",
+    "scripts",
+    "docs",
     "locale/*.json",
     "cordis.patch.yml",
     "icon.svg",
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json",
-    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit"
+    "build": "tsc -p tsconfig.json && node scripts/build-client.mjs",
+    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "dsh": {
     "bundle": {
@@ -38,8 +41,15 @@
     }
   },
   "devDependencies": {
-    "typescript": "^5.9.2",
-    "@types/node": "^24.19.2"
+    "@types/node": "^24.19.2",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@xyflow/react": "12.12.1",
+    "esbuild": "0.28.2",
+    "jsdom": "25.0.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "^5.9.2"
   },
   "repository": {
     "type": "git",

@@ -31,38 +31,30 @@ function parseVerdict(text) {
     return { passed: verdict, reason: reason.slice(0, 500), raw: text };
 }
 /**
- * Ask the default DSH model to judge one screenshot against a condition.
+ * Send one screenshot and one instruction to the default DSH model.
  * @param ctx - Host context carrying `llm`, `attachments`, and `agentDefaultModel`.
- * @param request - image bytes and the success condition.
- * @returns the parsed verdict.
+ * @param request - image bytes, the full instruction, and a token budget.
+ * @returns the model's reply text.
  */
-export async function verifyWithVision(ctx, request) {
+export async function askVision(ctx, request) {
     const llm = ctx.get('llm');
     const attachments = ctx.get('attachments');
     const defaults = ctx.get('agentDefaultModel');
     if (llm === undefined || typeof llm.stream !== 'function') {
-        throw new Error('vision verification is unavailable: no LLM service is mounted');
+        throw new Error('vision is unavailable: no LLM service is mounted');
     }
     if (attachments === undefined || typeof attachments.saveImage !== 'function') {
-        throw new Error('vision verification is unavailable: no attachment service is mounted');
+        throw new Error('vision is unavailable: no attachment service is mounted');
     }
     const selection = defaults?.currentSelection?.();
     if (!isRecord(selection) || typeof selection.provider !== 'string' || typeof selection.model !== 'string') {
-        throw new Error('vision verification is unavailable: no default model is selected');
+        throw new Error('vision is unavailable: no default model is selected');
     }
     const attachment = await attachments.saveImage({
         data: request.data,
         mediaType: 'image/jpeg',
-        name: 'kvmflow-verify.jpg',
+        name: 'kvmflow-screen.jpg',
     });
-    const prompt = [
-        'You are a strict KVM screen verifier. Decide whether the attached screenshot satisfies the success condition.',
-        'Answer on the first line with exactly PASS or FAIL. On the second line give one short reason.',
-        'If a required element is partially visible but clearly present, PASS. If the screen is still loading, shows an error, or lacks the required element, FAIL.',
-        '',
-        `Success condition: ${request.condition}`,
-        ...(request.context === undefined || request.context === '' ? [] : ['', `Step context: ${request.context}`]),
-    ].join('\n');
     const chunks = llm.stream({
         provider: selection.provider,
         model: selection.model,
@@ -70,12 +62,12 @@ export async function verifyWithVision(ctx, request) {
         messages: [{
                 role: 'user',
                 content: [
-                    { type: 'text', text: prompt },
+                    { type: 'text', text: request.prompt },
                     { type: 'image', attachment },
                 ],
             }],
         temperature: 0,
-        maxTokens: 400,
+        maxTokens: request.maxTokens ?? 400,
         ...(request.signal === undefined ? {} : { signal: request.signal }),
     });
     let text = '';
@@ -91,13 +83,145 @@ export async function verifyWithVision(ctx, request) {
             }
             if (chunk.reason.kind === 'aborted')
                 failure = 'model call aborted';
-            if (chunk.reason.kind === 'max-tokens')
+            if (chunk.reason.kind === 'max-tokens' && text.trim() === '')
                 failure = 'model reply hit the token limit';
         }
     }
     if (failure !== undefined)
-        throw new Error(`vision verification failed: ${failure}`);
+        throw new Error(`vision call failed: ${failure}`);
     if (text.trim() === '')
-        throw new Error('vision verification returned an empty reply');
+        throw new Error('vision call returned an empty reply');
+    return text;
+}
+/**
+ * Ask the default DSH model to judge one screenshot against a condition.
+ * @param ctx - Host context carrying `llm`, `attachments`, and `agentDefaultModel`.
+ * @param request - image bytes and the success condition.
+ * @returns the parsed verdict.
+ */
+export async function verifyWithVision(ctx, request) {
+    const prompt = [
+        'You are a strict KVM screen verifier. Decide whether the attached screenshot satisfies the success condition.',
+        'Answer on the first line with exactly PASS or FAIL. On the second line give one short reason.',
+        'If a required element is partially visible but clearly present, PASS. If the screen is still loading, shows an error, or lacks the required element, FAIL.',
+        '',
+        `Success condition: ${request.condition}`,
+        ...(request.context === undefined || request.context === '' ? [] : ['', `Step context: ${request.context}`]),
+    ].join('\n');
+    const text = await askVision(ctx, { data: request.data, prompt, maxTokens: 400, ...(request.signal === undefined ? {} : { signal: request.signal }) });
     return parseVerdict(text);
+}
+/** First JSON object in a reply, tolerating code fences and surrounding prose. */
+export function parseJsonObject(text) {
+    const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text);
+    const body = fenced === null ? text : fenced[1];
+    const start = body.indexOf('{');
+    if (start < 0)
+        return undefined;
+    let depth = 0;
+    let quote = false;
+    for (let index = start; index < body.length; index += 1) {
+        const char = body[index];
+        if (quote) {
+            if (char === '\\')
+                index += 1;
+            else if (char === '"')
+                quote = false;
+            continue;
+        }
+        if (char === '"')
+            quote = true;
+        else if (char === '{')
+            depth += 1;
+        else if (char === '}') {
+            depth -= 1;
+            if (depth === 0) {
+                try {
+                    const value = JSON.parse(body.slice(start, index + 1));
+                    return isRecord(value) ? value : undefined;
+                }
+                catch {
+                    return undefined;
+                }
+            }
+        }
+    }
+    return undefined;
+}
+/**
+ * Pick one label for a screenshot.
+ * @param ctx - Host context.
+ * @param request - image, labels (name → description) and extra guidance.
+ * @returns the chosen label, or `unknown` when the reply names none of them.
+ */
+export async function classifyWithVision(ctx, request) {
+    const names = Object.keys(request.labels);
+    const prompt = [
+        'You classify a screenshot of a computer screen captured through an IP-KVM.',
+        'Choose the single label whose description matches the screen. If none matches, choose "unknown".',
+        'Reply with only a JSON object: {"label": "<one label name>", "reason": "<one short sentence>"}.',
+        '',
+        ...(request.prompt === undefined || request.prompt === '' ? [] : [`Guidance: ${request.prompt}`, '']),
+        'Labels:',
+        ...names.map(name => `- ${name}: ${request.labels[name]}`),
+        '- unknown: none of the above',
+    ].join('\n');
+    const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 300, ...(request.signal === undefined ? {} : { signal: request.signal }) });
+    const parsed = parseJsonObject(raw);
+    let label = typeof parsed?.label === 'string' ? parsed.label.trim() : '';
+    if (!names.includes(label)) {
+        // A model that answers in prose usually still names the label verbatim.
+        const mentioned = names.filter(name => new RegExp(`\\b${name.replace(/[-]/g, '\\-')}\\b`).test(raw));
+        label = mentioned.length === 1 ? mentioned[0] : 'unknown';
+    }
+    const reason = typeof parsed?.reason === 'string' ? parsed.reason : raw.slice(0, 300);
+    return { label, reason: reason.slice(0, 500), raw };
+}
+/**
+ * Read named fields off a screenshot.
+ * @param ctx - Host context.
+ * @param request - image, field names and instructions.
+ * @returns the values the model returned for the requested fields.
+ */
+export async function extractWithVision(ctx, request) {
+    const prompt = [
+        'You read information off a screenshot of a computer screen captured through an IP-KVM.',
+        `Instructions: ${request.prompt}`,
+        `Reply with only a JSON object with exactly these keys: ${request.fields.map(field => JSON.stringify(field)).join(', ')}.`,
+        'Use null for a value that is not visible. Copy text exactly as shown.',
+    ].join('\n');
+    const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 600, ...(request.signal === undefined ? {} : { signal: request.signal }) });
+    const parsed = parseJsonObject(raw);
+    if (parsed === undefined)
+        throw new Error(`vision extract did not return JSON: ${raw.slice(0, 200)}`);
+    const values = {};
+    for (const field of request.fields)
+        values[field] = parsed[field] ?? null;
+    return { values, raw };
+}
+/**
+ * Find one element on a screenshot.
+ * @param ctx - Host context.
+ * @param request - image and the element to find.
+ * @returns frame-normalized coordinates of the element's centre, when found.
+ */
+export async function locateWithVision(ctx, request) {
+    const prompt = [
+        'You locate a UI element on a screenshot of a computer screen captured through an IP-KVM.',
+        `Element: ${request.target}`,
+        ...(request.context === undefined || request.context === '' ? [] : [`Context: ${request.context}`]),
+        'Coordinates are fractions of the image: x from 0 (left edge) to 1 (right edge), y from 0 (top edge) to 1 (bottom edge).',
+        'Reply with only a JSON object: {"found": true|false, "x": <number>, "y": <number>, "reason": "<one short sentence>"} giving the centre of the element.',
+    ].join('\n');
+    const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 300, ...(request.signal === undefined ? {} : { signal: request.signal }) });
+    const parsed = parseJsonObject(raw);
+    const reason = typeof parsed?.reason === 'string' ? parsed.reason.slice(0, 500) : raw.slice(0, 300);
+    if (parsed === undefined || parsed.found !== true)
+        return { found: false, reason, raw };
+    const x = Number(parsed.x);
+    const y = Number(parsed.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 1 || y < 0 || y > 1) {
+        return { found: false, reason: `model returned coordinates outside the image: ${JSON.stringify({ x: parsed.x, y: parsed.y })}`, raw };
+    }
+    return { found: true, x, y, reason, raw };
 }

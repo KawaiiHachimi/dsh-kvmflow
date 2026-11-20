@@ -1,27 +1,23 @@
-/** Deterministic workflow execution with pre/post visual verification and human intervention. */
+/**
+ * The run supervisor: one active run at a time, the BIOS prelude, the pause
+ * protocol, and the run record the panel reads.
+ *
+ * Execution itself lives in `flow/interp.ts`; this file owns everything that
+ * touches the store, the device client, DSH's model, and the human.
+ */
 import {
   LinkrClient,
   LinkrError,
-  clickEvents,
-  keyChord,
   keyTap,
-  normalizeKey,
   type LinkrEvent,
 } from './linkr.js';
-import { imageFacts, sha256 } from './image.js';
-import { frameToTarget, type ViewMapping } from './view.js';
-import { verifyWithVision } from './model.js';
+import { imageFacts } from './image.js';
+import { classifyWithVision, extractWithVision, locateWithVision, verifyWithVision } from './model.js';
 import { Store, StoreError } from './store.js';
-import type {
-  DeviceRecord,
-  FailurePolicy,
-  RunRecord,
-  RunStepState,
-  VerifySpec,
-  WorkflowAction,
-  WorkflowRecord,
-  WorkflowStep,
-} from './types.js';
+import { analyzeFlow, hasErrors } from './flow/graph.js';
+import { Interpreter, releaseEvents, type Decision, type DecisionRequest, type GraphRunState, type InterpreterHost, type RunOutcome } from './flow/interp.js';
+import type { FlowDocument, FlowNode } from './flow/schema.js';
+import type { DeviceRecord, RunAwaiting, RunRecord, RunStepState, RunTraceEntry } from './types.js';
 
 export interface RunnerDeps {
   ctx: any;
@@ -31,24 +27,14 @@ export interface RunnerDeps {
   onChange?: (run: RunRecord) => void;
 }
 
-interface CaptureResult {
-  data: Uint8Array;
-  hash: string;
-  bytes: number;
-  width: number;
-  height: number;
-  /** Path relative to the KVMFlow data root. */
-  rel: string;
-}
-
 interface Runtime {
   run: RunRecord;
-  workflow: WorkflowRecord;
+  document: FlowDocument;
   device: DeviceRecord;
   controller: AbortController;
   pauseRequested: boolean;
-  waiter?: (action: string) => void;
-  previousHash?: string;
+  /** Resolver for the pending operator decision. */
+  waiter?: (decision: Decision) => void;
   finished: boolean;
 }
 
@@ -58,13 +44,29 @@ export type ControlAction =
   | 'retry'
   | 'continue'
   | 'skip'
+  | 'finish'
   | 'abort'
-  | 'confirm_bios';
+  | 'confirm_bios'
+  | 'route'
+  | 'choose';
+
+export interface ControlOptions {
+  /** Port to take for `route`. */
+  port?: string;
+  /** Human-node option for `choose`. */
+  option?: string;
+}
+
+export interface StartOptions {
+  armBios?: boolean;
+  /** Values for the document's declared inputs. */
+  inputs?: Record<string, unknown>;
+}
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted === true) {
-      reject(new Error('aborted'));
+      reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
       return;
     }
     const timer = setTimeout(() => {
@@ -73,7 +75,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
     }, Math.max(0, ms));
     const onAbort = (): void => {
       clearTimeout(timer);
-      reject(new Error('aborted'));
+      reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
     };
     signal?.addEventListener('abort', onAbort, { once: true });
   });
@@ -85,92 +87,23 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function buttonMask(button: 'left' | 'right' | 'middle' | undefined): 1 | 2 | 4 {
-  return button === 'right' ? 2 : button === 'middle' ? 4 : 1;
+function isAbort(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'AbortError' || error.message === 'aborted');
 }
 
-function actionEvents(action: WorkflowAction, mapping?: ViewMapping): LinkrEvent[] {
-  // `click`, `move`, and `scroll` carry image-normalized coordinates, so they go
-  // through the same frame-to-target conversion as a human click. A `sequence`
-  // holds raw HID events captured in target space and is never converted.
-  const point = (x: number, y: number): { x: number; y: number } => frameToTarget(mapping, x, y);
-  switch (action.type) {
-    case 'key': {
-      const events: LinkrEvent[] = [];
-      const repeat = Math.max(1, action.repeat ?? 1);
-      for (let index = 0; index < repeat; index += 1) {
-        events.push(...keyTap(action.key, action.holdMs));
-        if (index < repeat - 1) events.push(['delay', Math.max(0, action.intervalMs ?? 120)]);
-      }
-      return events;
-    }
-    case 'shortcut':
-      return keyChord(action.keys, action.holdMs);
-    case 'text': {
-      const chunks: string[] = [];
-      const size = Math.max(1, action.chunkSize ?? 120);
-      for (let index = 0; index < action.text.length; index += size) chunks.push(action.text.slice(index, index + size));
-      const events: LinkrEvent[] = [];
-      for (const chunk of chunks) {
-        events.push(['text', chunk]);
-        events.push(['delay', 60]);
-      }
-      if (action.submit === true) events.push(...keyTap('Enter'));
-      return events;
-    }
-    case 'click': {
-      const target = point(action.x, action.y);
-      return clickEvents(target.x, target.y, buttonMask(action.button), Math.max(1, action.count ?? 1));
-    }
-    case 'move': {
-      const target = point(action.x, action.y);
-      return [['mouse_abs', 0, target.x, target.y, 0, 0]];
-    }
-    case 'scroll': {
-      const target = point(action.x ?? 0.5, action.y ?? 0.5);
-      return [['mouse_abs', 0, target.x, target.y, action.wheelY, action.wheelX ?? 0]];
-    }
-    case 'delay':
-      return [];
-    case 'sequence':
-      return action.events.map(event => validateSequenceEvent(event));
-    default:
-      throw new Error(`unsupported action ${JSON.stringify((action as { type?: string }).type)}`);
-  }
+/** Node rows for the panel: every node in the document, plus their latest state. */
+function initialNodes(document: FlowDocument): RunStepState[] {
+  return Object.values(document.nodes).map((node, index): RunStepState => ({
+    index,
+    id: node.id,
+    name: node.name,
+    type: node.type,
+    status: 'pending',
+    attempts: 0,
+  }));
 }
 
-function validateSequenceEvent(event: LinkrEvent): LinkrEvent {
-  return event;
-}
-
-function describeAction(action: WorkflowAction): string {
-  switch (action.type) {
-    case 'key':
-      return `key ${action.key}${(action.repeat ?? 1) > 1 ? ` x${action.repeat}` : ''}`;
-    case 'shortcut':
-      return `shortcut ${action.keys.join('+')}`;
-    case 'text':
-      return `text ${JSON.stringify(action.text.slice(0, 60))}${action.text.length > 60 ? '…' : ''}`;
-    case 'click':
-      return `click ${action.button ?? 'left'} (${action.x.toFixed(3)}, ${action.y.toFixed(3)})${(action.count ?? 1) > 1 ? ` x${action.count}` : ''}`;
-    case 'move':
-      return `move (${action.x.toFixed(3)}, ${action.y.toFixed(3)})`;
-    case 'scroll':
-      return `scroll ${action.wheelY}`;
-    case 'delay':
-      return `delay ${action.ms}ms`;
-    case 'sequence':
-      return `sequence ${action.events.length} events`;
-    default:
-      return 'action';
-  }
-}
-
-function defaultVerify(action: WorkflowAction): VerifySpec {
-  return { mode: action.type === 'delay' ? 'none' : 'change', settleMs: 800, timeoutSec: 12, pollMs: 600 };
-}
-
-/** Execute one workflow at a time with a deterministic, inspectable state machine. */
+/** One workflow run at a time, with a deterministic, inspectable node trace. */
 export class Runner {
   private readonly ctx: any;
   private readonly store: Store;
@@ -210,44 +143,54 @@ export class Runner {
    * Start one workflow.
    * @param workflowId - workflow file id.
    * @param deviceId - optional device override.
-   * @param options - BIOS arming and initial step.
+   * @param options - BIOS arming and input values.
+   * @returns the run record as soon as it is armed or running.
    */
-  async start(workflowId: string, deviceId?: string, options: { armBios?: boolean } = {}): Promise<RunRecord> {
+  async start(workflowId: string, deviceId?: string, options: StartOptions = {}): Promise<RunRecord> {
     const active = this.activeRun();
     if (active !== undefined) {
       throw new StoreError('RUN_ACTIVE', `run ${active.id} is still active; control it before starting another`);
     }
-    const workflow = await this.store.loadWorkflow(workflowId);
-    const device = this.store.getDevice(deviceId ?? workflow.deviceId);
+    const document = await this.store.loadFlow(workflowId);
+    const issues = analyzeFlow(document);
+    if (hasErrors(issues)) {
+      const first = issues.find(issue => issue.severity === 'error');
+      throw new StoreError('INVALID_FLOW', `workflow ${workflowId} has errors: ${first?.message ?? 'unknown'}`);
+    }
+    const device = this.store.getDevice(deviceId ?? document.deviceId);
+    const inputs = this.collectInputs(document, options.inputs ?? {});
     const now = Date.now();
+    const nodes = initialNodes(document);
     const run: RunRecord = {
       id: `run-${now.toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-      workflowId: workflow.id,
-      workflowName: workflow.name,
+      workflowId: document.id,
+      workflowName: document.name,
       deviceId: device.id,
       status: 'starting',
       phase: 'prepare',
       createdAt: now,
       updatedAt: now,
       currentStepIndex: 0,
-      steps: workflow.steps.map((step, index): RunStepState => ({
-        index,
-        id: step.id,
-        name: step.name,
-        status: 'pending',
-        attempts: 0,
-      })),
+      schema: 2,
+      steps: nodes,
       log: [],
+      trace: [],
+      vars: { ...document.vars },
+      inputs: Object.fromEntries(Object.entries(document.inputs).map(([name, spec]) => [name, {
+        provided: inputs.values[name] !== undefined,
+        secret: spec.type === 'secret',
+        ...(spec.type === 'secret' ? {} : { value: inputs.values[name] }),
+      }])),
+      visits: 0,
+      visionCalls: 0,
     };
-    if (workflow.bios !== undefined && options.armBios !== false) {
-      // Report the armed state before the worker starts so the caller can
-      // ask the human to press the power button at the right moment.
+    if (document.bios !== undefined && options.armBios !== false) {
       run.status = 'armed';
       run.phase = 'bios: waiting for power';
     }
     const runtime: Runtime = {
       run,
-      workflow,
+      document,
       device,
       controller: new AbortController(),
       pauseRequested: false,
@@ -255,29 +198,54 @@ export class Runner {
     };
     this.runtimes.set(run.id, runtime);
     this.lastRunId = run.id;
-    this.log(runtime, 'info', `Starting workflow "${workflow.name}" on ${device.name}`);
+    this.log(runtime, 'info', `Starting workflow "${document.name}" on ${device.name} (${Object.keys(document.nodes).length} nodes)`);
     await this.persist(runtime);
-    void this.worker(runtime, options).catch(error => {
-      // worker already records terminal failures; this protects teardown.
+    void this.worker(runtime, { armBios: options.armBios, inputs }).catch(error => {
       console.error('[kvmflow] run worker crashed:', error);
     });
     return run;
   }
 
   /**
+   * Fill and check the document's declared inputs.
+   * @param document - workflow document.
+   * @param provided - caller-supplied values.
+   * @returns values by input name.
+   */
+  private collectInputs(document: FlowDocument, provided: Record<string, unknown>): { values: Record<string, unknown> } {
+    const values: Record<string, unknown> = {};
+    const missing: string[] = [];
+    for (const [name, spec] of Object.entries(document.inputs)) {
+      const value = provided[name] ?? spec.default;
+      if (value === undefined || value === null || value === '') {
+        if (spec.required) missing.push(name);
+        continue;
+      }
+      values[name] = spec.type === 'number' ? Number(value) : spec.type === 'boolean' ? Boolean(value) : String(value);
+    }
+    if (missing.length > 0) {
+      throw new StoreError('MISSING_INPUT', `workflow ${document.id} needs inputs: ${missing.join(', ')}`);
+    }
+    const unknown = Object.keys(provided).filter(name => !Object.hasOwn(document.inputs, name));
+    return { values: { ...values, ...(unknown.length === 0 ? {} : {}) } };
+  }
+
+  /**
    * Apply a human control action to a paused or running run.
    * @param runId - run id.
    * @param action - control verb.
+   * @param options - port or option for `route` / `choose`.
+   * @returns the run record.
    */
-  async control(runId: string, action: ControlAction): Promise<RunRecord> {
+  async control(runId: string, action: ControlAction, options: ControlOptions = {}): Promise<RunRecord> {
     const runtime = this.runtimes.get(runId);
     if (runtime === undefined || runtime.finished) {
       throw new StoreError('RUN_NOT_ACTIVE', `run ${JSON.stringify(runId)} is not active`);
     }
-    this.log(runtime, 'info', `Operator action: ${action}`);
+    this.log(runtime, 'info', `Operator action: ${action}${options.port === undefined ? '' : ` ${options.port}`}${options.option === undefined ? '' : ` ${options.option}`}`);
     if (action === 'abort') {
       runtime.controller.abort();
-      runtime.waiter?.('abort');
+      runtime.waiter?.({ action: 'abort' });
       runtime.waiter = undefined;
       await this.persist(runtime);
       return runtime.run;
@@ -291,24 +259,48 @@ export class Runner {
     if (waiter === undefined) {
       throw new StoreError('RUN_NOT_WAITING', `run ${JSON.stringify(runId)} is not waiting for a decision`);
     }
+    const decision = this.toDecision(action, options, runtime.run.awaiting);
     runtime.waiter = undefined;
     runtime.pauseRequested = false;
-    if (runtime.run.awaiting?.kind === 'bios_confirm') {
-      waiter(action === 'confirm_bios' ? 'confirm_bios' : action === 'retry' ? 'retry' : 'confirm_bios');
-    } else if (action === 'resume') {
-      waiter('retry');
-    } else {
-      waiter(action);
+    runtime.run.awaiting = undefined;
+    runtime.run.reason = undefined;
+    if (runtime.run.status === 'paused') {
+      runtime.run.status = 'running';
+      runtime.run.phase = 'running';
     }
+    waiter(decision);
     await this.persist(runtime);
     return runtime.run;
+  }
+
+  private toDecision(action: ControlAction, options: ControlOptions, awaiting: RunAwaiting | undefined): Decision {
+    if (awaiting?.kind === 'bios_confirm') return { action: action === 'abort' ? 'abort' : 'resume' };
+    switch (action) {
+      case 'retry':
+        return { action: 'retry' };
+      case 'resume':
+        return { action: 'resume' };
+      case 'skip':
+      case 'continue':
+        return { action: 'skip' };
+      case 'finish':
+        return { action: 'finish' };
+      case 'route':
+        if (options.port === undefined || options.port === '') throw new StoreError('INVALID_ROUTE', 'route needs a port');
+        return { action: 'route', port: options.port };
+      case 'choose':
+        if (options.option === undefined || options.option === '') throw new StoreError('INVALID_CHOICE', 'choose needs an option');
+        return { action: 'choose', option: options.option };
+      default:
+        throw new StoreError('INVALID_CONTROL', `control ${JSON.stringify(action)} cannot answer a paused run`);
+    }
   }
 
   /** Abort any live run when the plugin unloads. */
   dispose(): void {
     for (const runtime of this.runtimes.values()) {
       runtime.controller.abort();
-      runtime.waiter?.('abort');
+      runtime.waiter?.({ action: 'abort' });
       runtime.waiter = undefined;
     }
     this.runtimes.clear();
@@ -326,53 +318,106 @@ export class Runner {
     this.onChange?.(runtime.run);
   }
 
-  private async worker(runtime: Runtime, options: { armBios?: boolean }): Promise<void> {
-    const { run, workflow } = runtime;
+  /** Copy interpreter state back into the run record. */
+  private syncState(runtime: Runtime, state: GraphRunState): void {
+    const run = runtime.run;
+    run.vars = state.vars;
+    run.visits = Object.values(state.visits).reduce((sum, count) => sum + count, 0);
+    run.visionCalls = state.visionCalls;
+    run.trace = state.trace;
+    run.currentNodeId = state.currentNodeId;
+    if (state.phase !== '') run.phase = state.phase;
+    for (const node of run.steps) {
+      const result = state.results[node.id];
+      if (result === undefined) continue;
+      node.attempts = result.visits;
+      node.port = result.port;
+      node.output = result.output;
+      if (result.status === 'running') node.status = 'acting';
+      else if (result.status === 'passed') node.status = 'passed';
+      else if (result.status === 'failed') node.status = 'failed';
+      else if (result.status === 'pending') node.status = 'pending';
+    }
+    const seek = run.trace[run.trace.length - 1];
+    if (seek !== undefined) {
+      const node = run.steps.find(step => step.id === seek.nodeId);
+      if (node !== undefined) {
+        if (seek.before !== undefined) node.before = seek.before;
+        if (seek.after !== undefined) node.after = seek.after;
+        if (seek.reason !== undefined) node.verify = { mode: 'vision', passed: seek.status === 'ok', reason: seek.reason };
+      }
+    }
+    run.currentStepIndex = Math.max(0, run.steps.findIndex(step => step.id === run.currentNodeId));
+  }
+
+  private async requestDecision(runtime: Runtime, request: DecisionRequest): Promise<Decision> {
+    if (runtime.controller.signal.aborted) return { action: 'abort' };
+    const kind: RunAwaiting['kind'] = request.kind === 'human' ? 'human' : request.kind === 'unrouted' ? 'unrouted' : 'failure';
+    runtime.run.status = 'paused';
+    runtime.run.phase = request.kind === 'human' ? 'awaiting operator' : 'awaiting intervention';
+    runtime.run.reason = request.message;
+    runtime.run.awaiting = {
+      kind,
+      message: request.message,
+      nodeId: request.nodeId,
+      actions: request.actions,
+      ...(request.routes === undefined || request.routes.length === 0 ? {} : { routes: request.routes }),
+      ...(request.options === undefined || request.options.length === 0 ? {} : { options: request.options }),
+    };
+    this.log(runtime, 'warn', request.message);
+    await this.persist(runtime);
+    return new Promise<Decision>(resolve => {
+      if (runtime.controller.signal.aborted) {
+        resolve({ action: 'abort' });
+        return;
+      }
+      runtime.waiter = resolve;
+      runtime.controller.signal.addEventListener('abort', () => resolve({ action: 'abort' }), { once: true });
+    });
+  }
+
+  private async worker(runtime: Runtime, options: { armBios?: boolean; inputs: Record<string, unknown> }): Promise<void> {
+    const { run, document } = runtime;
+    const state: GraphRunState = {
+      vars: { ...document.vars },
+      inputs: options.inputs,
+      visits: {},
+      trace: [],
+      visionCalls: 0,
+      phase: '',
+      results: {},
+    };
+    const host = this.buildHost(runtime, state);
     try {
       run.startedAt = Date.now();
-      if (!(workflow.bios !== undefined && options.armBios !== false)) {
+      if (!(document.bios !== undefined && options.armBios !== false)) {
         run.status = 'running';
         run.phase = 'running';
       }
       await this.persist(runtime);
-      if (workflow.bios !== undefined && options.armBios !== false) {
+      if (document.bios !== undefined && options.armBios !== false) {
         const proceed = await this.biosPhase(runtime);
         if (!proceed) return;
       }
-      if (workflow.bios !== undefined && options.armBios === false) {
+      if (document.bios !== undefined && options.armBios === false) {
         this.log(runtime, 'info', 'BIOS prelude skipped by operator');
       }
-      for (let index = 0; index < workflow.steps.length; index += 1) {
-        if (runtime.controller.signal.aborted) throw new Error('aborted');
-        if (runtime.pauseRequested) {
-          await this.pauseForOperator(runtime);
-          if (runtime.run.status === 'aborted') return;
-        }
-        run.currentStepIndex = index;
-        const step = workflow.steps[index];
-        const state = run.steps[index];
-        if (state.status === 'passed' || state.status === 'skipped') continue;
-        run.phase = `step ${index + 1}/${workflow.steps.length}`;
-        await this.persist(runtime);
-        const outcome = await this.runStep(runtime, step, state);
-        if (outcome === 'abort') {
-          run.status = 'aborted';
-          run.phase = 'aborted';
-          run.reason = 'operator aborted the run';
-          run.endedAt = Date.now();
-          this.log(runtime, 'warn', 'Run aborted by operator');
-          await this.persist(runtime);
-          return;
-        }
-      }
-      run.status = 'succeeded';
-      run.phase = 'done';
-      run.reason = undefined;
+      const interpreter = new Interpreter(document, host, state, {
+        inputs: options.inputs,
+        secretInputs: Object.entries(document.inputs).filter(([, spec]) => spec.type === 'secret').map(([name]) => name),
+      });
+      const outcome: RunOutcome = await interpreter.run();
+      this.syncState(runtime, state);
+      run.status = outcome.result === 'success' ? 'succeeded' : 'failed';
+      run.phase = outcome.result === 'success' ? 'done' : 'failed';
+      run.reason = outcome.reason;
+      run.outputs = outcome.outputs;
       run.endedAt = Date.now();
-      this.log(runtime, 'info', 'Workflow completed successfully');
+      this.log(runtime, outcome.result === 'success' ? 'info' : 'warn', `Workflow ${outcome.result}${outcome.reason === undefined ? '' : `: ${outcome.reason}`}`);
       await this.persist(runtime);
     } catch (error) {
-      if (runtime.controller.signal.aborted) {
+      this.syncState(runtime, state);
+      if (isAbort(error) || runtime.controller.signal.aborted) {
         run.status = 'aborted';
         run.phase = 'aborted';
         run.reason = 'aborted';
@@ -387,15 +432,193 @@ export class Runner {
       }
       await this.persist(runtime);
     } finally {
+      // Whatever happened, the target must not be left with a key held down.
+      try {
+        await host.releaseAll();
+      } catch {
+        // best effort
+      }
       runtime.finished = true;
       runtime.waiter = undefined;
       this.lastRunId = run.id;
     }
   }
 
+  private buildHost(runtime: Runtime, state: GraphRunState): InterpreterHost {
+    const device = runtime.device;
+    const client = this.clientFor(device);
+    const runId = runtime.run.id;
+    return {
+      signal: runtime.controller.signal,
+      device: {
+        snapshot: async () => {
+          const snapshot = await client.snapshot();
+          return { data: snapshot.data };
+        },
+        control: async (events: LinkrEvent[]) => {
+          if (events.length > 0) await client.control(events);
+        },
+        ...(device.viewMapping === undefined ? {} : { viewMapping: device.viewMapping }),
+      },
+      vision: {
+        check: async request => verifyWithVision(this.ctx, {
+          data: request.data,
+          condition: request.condition,
+          ...(request.context === undefined ? {} : { context: request.context }),
+          signal: runtime.controller.signal,
+        }),
+        classify: async request => classifyWithVision(this.ctx, {
+          data: request.data,
+          labels: request.labels,
+          ...(request.prompt === undefined ? {} : { prompt: request.prompt }),
+          signal: runtime.controller.signal,
+        }),
+        extract: async request => extractWithVision(this.ctx, {
+          data: request.data,
+          fields: request.fields,
+          prompt: request.prompt,
+          signal: runtime.controller.signal,
+        }),
+        locate: async request => locateWithVision(this.ctx, {
+          data: request.data,
+          target: request.target,
+          ...(request.context === undefined ? {} : { context: request.context }),
+          signal: runtime.controller.signal,
+        }),
+      },
+      saveShot: async (tag, data) => {
+        const rel = await this.store.saveRunShot(runId, data, tag);
+        return `runs/${runId}/${rel}`;
+      },
+      readAsset: async (workflowId, relative) => this.store.readWorkflowAsset(workflowId, relative),
+      loadSubflow: async id => this.store.loadFlow(id),
+      log: (level, message) => this.log(runtime, level, message),
+      flush: async () => {
+        this.syncState(runtime, state);
+        await this.persist(runtime);
+      },
+      decide: async (request: DecisionRequest) => this.requestDecision(runtime, request),
+      sleep: async ms => sleep(ms, runtime.controller.signal),
+      releaseAll: async () => {
+        try {
+          await client.control(releaseEvents());
+        } catch {
+          // Releasing is best effort; the run is already stopping.
+        }
+      },
+    };
+  }
+
+  /**
+   * Run one node against the live target without starting a full run, so an
+   * author can check a vision prompt or a click before wiring the graph.
+   * @param workflowId - workflow the node belongs to.
+   * @param nodeId - node to execute.
+   * @param deviceId - optional device override.
+   * @returns the node's ports, reason and saved frames.
+   */
+  async nodeTest(workflowId: string, nodeId: string, deviceId?: string): Promise<{
+    nodeId: string;
+    port?: string;
+    reason?: string;
+    output?: unknown;
+    before?: string;
+    after?: string;
+    durationMs: number;
+    visionCalls: number;
+  }> {
+    if (this.activeRun() !== undefined) {
+      throw new StoreError('RUN_ACTIVE', 'finish or abort the active run before testing single nodes');
+    }
+    const document = await this.store.loadFlow(workflowId);
+    const node = document.nodes[nodeId];
+    if (node === undefined) throw new StoreError('NODE_NOT_FOUND', `node ${JSON.stringify(nodeId)} does not exist in ${workflowId}`);
+    const device = this.store.getDevice(deviceId ?? document.deviceId);
+    const testId = `test-${Date.now().toString(36)}`;
+    // Route every port at a synthetic end node so the interpreter stops after
+    // this one node instead of pausing at an unconnected port.
+    const stopId = 'test-end';
+    const testNode: FlowNode = { ...node, next: Object.fromEntries(Object.keys(node.next).map(port => [port, stopId])) };
+    if (Object.keys(testNode.next).length === 0) testNode.next = { next: stopId };
+    const documentForTest: FlowDocument = {
+      ...document,
+      start: nodeId,
+      nodes: {
+        ...document.nodes,
+        [nodeId]: testNode,
+        [stopId]: { id: stopId, type: 'end', name: 'Test end', config: { result: 'success' }, next: {}, retry: { times: 0, delayMs: 0 }, maxVisits: 1 },
+      },
+    };
+    const state: GraphRunState = {
+      vars: { ...document.vars },
+      inputs: {},
+      visits: {},
+      trace: [],
+      visionCalls: 0,
+      phase: '',
+      results: {},
+    };
+    const controller = new AbortController();
+    const runtime: Runtime = {
+      run: {
+        id: testId,
+        workflowId: document.id,
+        workflowName: document.name,
+        deviceId: device.id,
+        status: 'running',
+        phase: `test ${nodeId}`,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        currentStepIndex: 0,
+        steps: [],
+        log: [],
+      },
+      document: documentForTest,
+      device,
+      controller,
+      pauseRequested: false,
+      finished: false,
+    };
+    const host = this.buildHost(runtime, state);
+    // A single-node test must never block the caller on a human decision.
+    const decider = host.decide;
+    host.decide = async request => {
+      this.log(runtime, 'warn', `node test paused: ${request.message}`);
+      return { action: 'finish' };
+    };
+    const interpreter = new Interpreter(documentForTest, host, state, {
+      secretInputs: Object.entries(document.inputs).filter(([, spec]) => spec.type === 'secret').map(([name]) => name),
+    });
+    const started = Date.now();
+    let outcome: RunOutcome;
+    try {
+      outcome = await interpreter.run();
+    } finally {
+      host.decide = decider;
+      runtime.finished = true;
+      try {
+        await host.releaseAll();
+      } catch {
+        // best effort
+      }
+    }
+    const entry: RunTraceEntry | undefined = state.trace.find(item => item.nodeId === nodeId);
+    return {
+      nodeId,
+      ...(entry?.port === undefined ? {} : { port: entry.port }),
+      ...(entry?.reason === undefined ? {} : { reason: entry.reason }),
+      ...(entry?.output === undefined ? {} : { output: entry.output }),
+      ...(entry?.before === undefined ? {} : { before: entry.before }),
+      ...(entry?.after === undefined ? {} : { after: entry.after }),
+      durationMs: Date.now() - started,
+      visionCalls: state.visionCalls,
+      ...(entry === undefined ? { reason: outcome.reason ?? 'the node produced no trace entry' } : {}),
+    };
+  }
+
   private async biosPhase(runtime: Runtime): Promise<boolean> {
-    const { run, workflow, device } = runtime;
-    const bios = workflow.bios ?? {};
+    const { run, document, device } = runtime;
+    const bios = document.bios ?? { hotkey: 'F2', intervalMs: 1200, timeoutSec: 180, requireConfirm: false, settleSec: 2 };
     const hotkey = bios.hotkey?.trim() || 'F2';
     const intervalMs = Math.max(300, bios.intervalMs ?? 1200);
     const timeoutSec = Math.max(5, bios.timeoutSec ?? 180);
@@ -413,13 +636,13 @@ export class Runner {
     this.log(runtime, 'info', `BIOS prelude armed: tapping ${hotkey} every ${intervalMs}ms, waiting up to ${timeoutSec}s for the target power button`);
     await this.persist(runtime);
     while (true) {
-      if (runtime.controller.signal.aborted) throw new Error('aborted');
+      if (runtime.controller.signal.aborted) throw Object.assign(new Error('aborted'), { name: 'AbortError' });
       const started = Date.now();
       let nextTap = 0;
       let lastPoll = 0;
       let detected = false;
       while (Date.now() - started < timeoutSec * 1000) {
-        if (runtime.controller.signal.aborted) throw new Error('aborted');
+        if (runtime.controller.signal.aborted) throw Object.assign(new Error('aborted'), { name: 'AbortError' });
         if (runtime.pauseRequested) {
           await this.pauseForOperator(runtime);
           if (runtime.controller.signal.aborted) return false;
@@ -460,19 +683,13 @@ export class Runner {
         await sleep(200, runtime.controller.signal);
       }
       if (!detected) {
-        run.status = 'paused';
-        run.phase = 'bios: timeout';
-        run.reason = `no video signal within ${timeoutSec}s`;
-        run.awaiting = {
+        const decision = await this.requestDecision(runtime, {
+          nodeId: '',
           kind: 'failure',
           message: `BIOS prelude timed out after ${timeoutSec}s without a video signal. Power on the target, check HDMI/USB, then retry or abort.`,
           actions: ['retry', 'abort'],
-        };
-        this.log(runtime, 'warn', run.awaiting.message);
-        await this.persist(runtime);
-        const action = await this.waitForControl(runtime, 'failure', run.awaiting.message, ['retry', 'abort']);
-        run.awaiting = undefined;
-        if (action === 'abort') throw new Error('aborted');
+        });
+        if (decision.action === 'abort') throw Object.assign(new Error('aborted'), { name: 'AbortError' });
         run.status = 'armed';
         run.phase = 'bios: waiting for power';
         run.reason = undefined;
@@ -481,18 +698,22 @@ export class Runner {
       }
       if (settleSec > 0) await sleep(settleSec * 1000, runtime.controller.signal);
       if (requireConfirm) {
-        run.status = 'paused';
-        run.phase = 'bios: confirm';
-        run.awaiting = {
+        runtime.run.status = 'paused';
+        runtime.run.phase = 'bios: confirm';
+        runtime.run.awaiting = {
           kind: 'bios_confirm',
           message: 'Video signal detected. Confirm that the target is in BIOS to continue, or abort.',
           actions: ['confirm_bios', 'abort'],
         };
         this.log(runtime, 'info', 'Waiting for operator confirmation that BIOS is visible');
         await this.persist(runtime);
-        const action = await this.waitForControl(runtime, 'bios_confirm', run.awaiting.message, ['confirm_bios', 'abort']);
-        run.awaiting = undefined;
-        if (action === 'abort') throw new Error('aborted');
+        const decision = await new Promise<Decision>(resolve => {
+          runtime.waiter = resolve;
+          runtime.controller.signal.addEventListener('abort', () => resolve({ action: 'abort' }), { once: true });
+        });
+        runtime.run.awaiting = undefined;
+        runtime.waiter = undefined;
+        if (decision.action === 'abort') throw Object.assign(new Error('aborted'), { name: 'AbortError' });
       }
       run.status = 'running';
       run.phase = 'bios: entered';
@@ -503,269 +724,20 @@ export class Runner {
 
   private async pauseForOperator(runtime: Runtime): Promise<void> {
     runtime.pauseRequested = false;
-    runtime.run.status = 'paused';
-    runtime.run.phase = 'paused';
-    runtime.run.reason = 'paused by operator';
-    runtime.run.awaiting = {
+    const decision = await this.requestDecision(runtime, {
+      nodeId: runtime.run.currentNodeId ?? '',
       kind: 'failure',
-      message: 'Paused before the next step. Resume to continue, or abort the run.',
+      message: 'Paused by operator. Resume to continue, or abort the run.',
       actions: ['resume', 'abort'],
-    };
-    this.log(runtime, 'info', 'Run paused by operator');
-    await this.persist(runtime);
-    const action = await this.waitForControl(runtime, 'failure', runtime.run.awaiting.message, ['resume', 'abort']);
+    });
     runtime.run.awaiting = undefined;
-    if (action === 'abort') {
+    if (decision.action === 'abort') {
       runtime.run.status = 'aborted';
-      return;
+      throw Object.assign(new Error('aborted'), { name: 'AbortError' });
     }
     runtime.run.status = 'running';
     runtime.run.phase = 'running';
     runtime.run.reason = undefined;
     await this.persist(runtime);
-  }
-
-  private waitForControl(runtime: Runtime, kind: 'failure' | 'bios_confirm', message: string, actions: string[]): Promise<string> {
-    return new Promise<string>(resolve => {
-      if (runtime.controller.signal.aborted) {
-        resolve('abort');
-        return;
-      }
-      runtime.waiter = resolve;
-      runtime.controller.signal.addEventListener('abort', () => resolve('abort'), { once: true });
-      runtime.run.awaiting = { kind, message, actions };
-      if (runtime.run.status !== 'paused') {
-        runtime.run.status = 'paused';
-        runtime.run.phase = 'awaiting';
-      }
-      void this.persist(runtime);
-    });
-  }
-
-  private async capture(runtime: Runtime, tag: string): Promise<CaptureResult | undefined> {
-    try {
-      const snapshot = await this.clientFor(runtime.device).snapshot();
-      const facts = imageFacts(snapshot.data);
-      const rel = await this.store.saveRunShot(runtime.run.id, snapshot.data, tag);
-      return { data: snapshot.data, hash: facts.sha256, bytes: facts.bytes, width: facts.width, height: facts.height, rel: `runs/${runtime.run.id}/${rel}` };
-    } catch (error) {
-      this.log(runtime, 'warn', `Screen capture failed (${tag}): ${describeError(error)}`);
-      return undefined;
-    }
-  }
-
-  private async evaluate(
-    runtime: Runtime,
-    spec: VerifySpec | undefined,
-    before: CaptureResult | undefined,
-    label: string,
-  ): Promise<{ passed: boolean; reason: string; after?: CaptureResult; output?: string }> {
-    const mode = spec?.mode ?? 'none';
-    if (mode === 'none') return { passed: true, reason: 'no verification requested' };
-    const settleMs = Math.max(0, spec?.settleMs ?? 800);
-    const timeoutSec = Math.max(1, spec?.timeoutSec ?? 12);
-    const pollMs = Math.max(100, spec?.pollMs ?? 600);
-    if (settleMs > 0) await sleep(settleMs, runtime.controller.signal);
-    const deadline = Date.now() + timeoutSec * 1000;
-    let lastReason = 'no frame captured';
-    let visionAttempts = 0;
-    let after: CaptureResult | undefined;
-    while (Date.now() <= deadline) {
-      if (runtime.controller.signal.aborted) throw new Error('aborted');
-      after = await this.capture(runtime, label);
-      if (after === undefined) {
-        lastReason = 'screen capture unavailable (target may be off or HDMI disconnected)';
-      } else if (mode === 'change') {
-        const requireChange = spec?.changed ?? true;
-        const reference = before?.hash ?? runtime.previousHash;
-        if (reference === undefined) {
-          return { passed: requireChange, reason: requireChange ? 'no prior frame to compare; treating as passed' : 'no prior frame and unchanged requested', after };
-        }
-        const changed = reference !== after.hash;
-        if (changed === requireChange) return { passed: true, reason: changed ? 'screen changed' : 'screen unchanged', after };
-        lastReason = requireChange ? 'screen did not change' : 'screen changed but was expected to stay the same';
-      } else if (mode === 'image') {
-        if (spec?.image === undefined || spec.image === '') {
-          return { passed: false, reason: 'image verification has no reference image', after };
-        }
-        try {
-          const reference = await this.store.readWorkflowAsset(runtime.workflow.id, spec.image);
-          const refHash = sha256(reference);
-          if (refHash === after.hash) return { passed: true, reason: 'screen matches the reference image', after };
-          const delta = Math.abs(reference.length - after.bytes);
-          if (spec.maxByteDelta !== undefined && delta <= spec.maxByteDelta) {
-            return { passed: true, reason: `screen is similar to the reference image (${delta} byte delta)`, after };
-          }
-          lastReason = `screen differs from the reference image (${delta} byte delta)`;
-        } catch (error) {
-          return { passed: false, reason: `reference image unavailable: ${describeError(error)}`, after };
-        }
-      } else if (mode === 'vision') {
-        if (visionAttempts >= 2) {
-          lastReason = `${lastReason} (vision attempts exhausted)`;
-          break;
-        }
-        visionAttempts += 1;
-        try {
-          const verdict = await verifyWithVision(this.ctx, {
-            data: after.data,
-            condition: spec?.prompt?.trim() || `The screen satisfies step "${runtime.run.workflowName}" and shows progress away from the pre-action state.`,
-            context: runtime.workflow.steps[runtime.run.currentStepIndex]?.description,
-            signal: runtime.controller.signal,
-          });
-          if (verdict.passed) return { passed: true, reason: verdict.reason || 'vision model passed the screen', after, output: verdict.raw };
-          lastReason = verdict.reason || 'vision model rejected the screen';
-        } catch (error) {
-          lastReason = `vision verification failed: ${describeError(error)}`;
-        }
-      } else {
-        return { passed: false, reason: `unsupported verification mode ${JSON.stringify(mode)}`, after };
-      }
-      if (Date.now() + pollMs > deadline) break;
-      await sleep(Math.min(pollMs, Math.max(100, deadline - Date.now())), runtime.controller.signal);
-    }
-    return { passed: false, reason: lastReason, after };
-  }
-
-  private async runStep(runtime: Runtime, step: WorkflowStep, state: RunStepState): Promise<'passed' | 'failed_continue' | 'skipped' | 'abort'> {
-    const action = step.action;
-    const policy: FailurePolicy = step.onFailure ?? { strategy: 'pause', retries: 0 };
-    const verify = step.verify ?? defaultVerify(action);
-    let attempts = 0;
-    while (true) {
-      if (runtime.controller.signal.aborted) return 'abort';
-      attempts += 1;
-      state.attempts = attempts;
-      state.startedAt = Date.now();
-      state.status = 'precheck';
-      state.error = undefined;
-      runtime.run.currentStepIndex = state.index;
-      runtime.run.phase = `step ${state.index + 1}/${runtime.run.steps.length}: ${step.name}`;
-      this.log(runtime, 'info', `Step ${state.index + 1} attempt ${attempts}: ${step.name}`);
-      await this.persist(runtime);
-
-      const needsFrame = verify.mode !== 'none' || step.precondition?.mode !== undefined && step.precondition.mode !== 'none';
-      const before = needsFrame ? await this.capture(runtime, `step-${state.index + 1}-before`) : undefined;
-      if (before !== undefined) state.before = before.rel;
-      if (needsFrame && before === undefined) {
-        const actionTaken = await this.handleFailure(runtime, step, state, 'screen capture unavailable before the action', policy);
-        if (actionTaken === 'retry') { attempts -= 1; continue; }
-        if (actionTaken === 'failed_continue') return 'failed_continue';
-        if (actionTaken === 'skipped') return 'skipped';
-        return 'abort';
-      }
-
-      if (step.precondition !== undefined && step.precondition.mode !== 'none') {
-        state.status = 'precheck';
-        await this.persist(runtime);
-        const pre = await this.evaluate(runtime, step.precondition, before, `step-${state.index + 1}-precondition`);
-        if (!pre.passed) {
-          const actionTaken = await this.handleFailure(runtime, step, state, `precondition failed: ${pre.reason}`, policy);
-          if (actionTaken === 'retry') { attempts -= 1; continue; }
-          if (actionTaken === 'failed_continue') return 'failed_continue';
-          if (actionTaken === 'skipped') return 'skipped';
-          return 'abort';
-        }
-      }
-
-      state.status = 'acting';
-      await this.persist(runtime);
-      try {
-        if (action.type === 'delay') {
-          await sleep(action.ms, runtime.controller.signal);
-        } else {
-          const events = actionEvents(action, runtime.device.viewMapping);
-          if (events.length > 0) await this.clientFor(runtime.device).control(events);
-        }
-      } catch (error) {
-        state.error = describeError(error);
-        this.log(runtime, 'error', `Action failed in step ${state.index + 1}: ${state.error}`);
-        const actionTaken = await this.handleFailure(runtime, step, state, `action failed: ${state.error}`, policy);
-        if (actionTaken === 'retry') { attempts -= 1; continue; }
-        if (actionTaken === 'failed_continue') return 'failed_continue';
-        if (actionTaken === 'skipped') return 'skipped';
-        return 'abort';
-      }
-
-      state.status = 'verifying';
-      await this.persist(runtime);
-      const verdict = await this.evaluate(runtime, verify, before, `step-${state.index + 1}-after`);
-      if (verdict.after !== undefined) state.after = verdict.after.rel;
-      state.verify = { mode: verify.mode ?? 'none', passed: verdict.passed, reason: verdict.reason, ...(verdict.output !== undefined ? { output: verdict.output } : {}) };
-      if (verdict.passed) {
-        state.status = 'passed';
-        state.endedAt = Date.now();
-        runtime.previousHash = verdict.after?.hash;
-        this.log(runtime, 'info', `Step ${state.index + 1} passed: ${verdict.reason}`);
-        await this.persist(runtime);
-        return 'passed';
-      }
-      this.log(runtime, 'warn', `Step ${state.index + 1} verification failed: ${verdict.reason}`);
-      const actionTaken = await this.handleFailure(runtime, step, state, verdict.reason, policy);
-      if (actionTaken === 'retry') { attempts -= 1; continue; }
-      if (actionTaken === 'failed_continue') return 'failed_continue';
-      if (actionTaken === 'skipped') return 'skipped';
-      return 'abort';
-    }
-  }
-
-  private async handleFailure(
-    runtime: Runtime,
-    step: WorkflowStep,
-    state: RunStepState,
-    reason: string,
-    policy: FailurePolicy,
-  ): Promise<'retry' | 'failed_continue' | 'skipped' | 'abort'> {
-    state.status = 'failed';
-    state.endedAt = Date.now();
-    state.error = reason;
-    const message = policy.message?.trim() || `Step "${step.name}" failed: ${reason}`;
-    this.log(runtime, 'warn', message);
-    if (policy.strategy === 'retry' && state.attempts <= (policy.retries ?? 1)) {
-      this.log(runtime, 'info', `Retrying step after failure (attempt ${state.attempts + 1})`);
-      await this.persist(runtime);
-      return 'retry';
-    }
-    if (policy.strategy === 'continue') {
-      state.status = 'failed';
-      this.log(runtime, 'warn', 'Continuing after failure by policy');
-      await this.persist(runtime);
-      return 'failed_continue';
-    }
-    if (policy.strategy === 'abort') {
-      await this.persist(runtime);
-      return 'abort';
-    }
-    runtime.run.status = 'paused';
-    runtime.run.phase = 'awaiting intervention';
-    runtime.run.reason = message;
-    runtime.run.awaiting = {
-      kind: 'failure',
-      message,
-      stepIndex: state.index,
-      actions: ['retry', 'continue', 'skip', 'abort'],
-    };
-    await this.persist(runtime);
-    const action = await this.waitForControl(runtime, 'failure', message, ['retry', 'continue', 'skip', 'abort']);
-    runtime.run.awaiting = undefined;
-    runtime.run.reason = undefined;
-    if (action === 'abort') {
-      runtime.run.status = 'aborted';
-      return 'abort';
-    }
-    runtime.run.status = 'running';
-    runtime.run.phase = `step ${state.index + 1}/${runtime.run.steps.length}: ${step.name}`;
-    await this.persist(runtime);
-    if (action === 'retry' || action === 'resume') {
-      state.status = 'failed';
-      return 'retry';
-    }
-    if (action === 'skip') {
-      state.status = 'skipped';
-      this.log(runtime, 'info', `Step ${state.index + 1} skipped by operator`);
-      await this.persist(runtime);
-      return 'skipped';
-    }
-    return 'failed_continue';
   }
 }

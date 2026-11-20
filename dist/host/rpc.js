@@ -1,10 +1,11 @@
 /** Authenticated browser RPC surface for the KVMFlow panel. */
 import { LinkrError, validateEvent } from './linkr.js';
 import { imageFacts, toBase64 } from './image.js';
-import { StoreError, normalizeWorkflow } from './store.js';
-import { parseYaml, YamlError } from './yaml.js';
-function fail(code, message) {
-    return { ok: false, error: { code, message, details: {} } };
+import { StoreError } from './store.js';
+import { YamlError } from './yaml.js';
+import { FlowInvalidError } from './flow/service.js';
+function fail(code, message, details = {}) {
+    return { ok: false, error: { code, message, details } };
 }
 function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -13,6 +14,8 @@ function str(value) {
     return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
 }
 function describe(error) {
+    if (error instanceof FlowInvalidError)
+        return fail('kvmflow/INVALID_FLOW', error.message, { issues: error.issues });
     if (error instanceof LinkrError)
         return fail(`kvmflow/linkr/${error.code}`, error.message);
     if (error instanceof StoreError)
@@ -162,64 +165,69 @@ export async function handleRpc(deps, endpoint, payload) {
             case 'workflow.list': {
                 return { ok: true, value: { workflows: await deps.store.listWorkflows() } };
             }
-            case 'workflow.get': {
+            case 'workflow.get':
+            case 'flow.get': {
                 const id = str(args.id);
                 if (id === undefined)
                     return fail('kvmflow/INVALID_INPUT', 'id is required');
-                const yaml = await deps.store.readWorkflowYaml(id);
-                const workflow = await deps.store.loadWorkflow(id);
-                return { ok: true, value: { workflow, yaml } };
+                return { ok: true, value: await deps.flows.view(id) };
             }
-            case 'workflow.save': {
+            case 'flow.catalog':
+                return { ok: true, value: { nodes: deps.flows.catalog() } };
+            case 'flow.check': {
+                const result = deps.flows.check({
+                    ...(typeof args.yaml === 'string' ? { yaml: args.yaml } : {}),
+                    ...(args.document === undefined ? {} : { document: args.document }),
+                    ...(str(args.id) === undefined ? {} : { id: str(args.id) }),
+                });
+                return { ok: true, value: result };
+            }
+            case 'workflow.save':
+            case 'flow.save': {
                 const id = str(args.id);
-                let workflow;
-                if (typeof args.yaml === 'string' && args.yaml.trim() !== '') {
-                    let parsed;
-                    try {
-                        parsed = parseYaml(args.yaml);
-                    }
-                    catch (error) {
-                        return fail('kvmflow/yaml', error instanceof YamlError ? error.message : String(error));
-                    }
-                    workflow = normalizeWorkflow(parsed, id ?? '');
-                    if (id !== undefined)
-                        workflow.id = id;
+                const yaml = typeof args.yaml === 'string' && args.yaml.trim() !== '' ? args.yaml : undefined;
+                if (yaml === undefined && args.document === undefined) {
+                    return fail('kvmflow/INVALID_INPUT', 'yaml or document is required');
                 }
-                else if (id !== undefined) {
-                    workflow = await deps.store.loadWorkflow(id);
-                    if (typeof args.name === 'string' && args.name.trim() !== '')
-                        workflow.name = args.name.trim();
-                    if (typeof args.description === 'string')
-                        workflow.description = args.description;
-                }
-                else {
-                    return fail('kvmflow/INVALID_INPUT', 'yaml is required when creating a workflow');
-                }
-                const path = await deps.store.saveWorkflow(workflow);
-                return { ok: true, value: { workflow, path, yaml: await deps.store.readWorkflowYaml(workflow.id) } };
+                const view = await deps.flows.save({
+                    ...(id === undefined ? {} : { id }),
+                    ...(yaml === undefined ? {} : { yaml }),
+                    ...(args.document === undefined ? {} : { document: args.document }),
+                    ...(isRecord(args.layout) ? { layout: args.layout } : {}),
+                    strict: args.strict === true,
+                });
+                return { ok: true, value: view };
+            }
+            case 'flow.patch': {
+                const id = str(args.id);
+                if (id === undefined)
+                    return fail('kvmflow/INVALID_INPUT', 'id is required');
+                if (!Array.isArray(args.ops))
+                    return fail('kvmflow/INVALID_INPUT', 'ops must be a list');
+                return { ok: true, value: await deps.flows.patch(id, args.ops, args.strict !== false) };
+            }
+            case 'flow.layout': {
+                const id = str(args.id);
+                if (id === undefined || !isRecord(args.layout))
+                    return fail('kvmflow/INVALID_INPUT', 'id and layout are required');
+                await deps.flows.saveLayout(id, args.layout);
+                return { ok: true, value: { saved: id } };
+            }
+            case 'flow.testNode': {
+                const id = str(args.id);
+                const nodeId = str(args.nodeId);
+                if (id === undefined || nodeId === undefined)
+                    return fail('kvmflow/INVALID_INPUT', 'id and nodeId are required');
+                return { ok: true, value: await deps.runner.nodeTest(id, nodeId, str(args.deviceId)) };
             }
             case 'workflow.create': {
-                const name = str(args.name) ?? '新工作流';
-                const now = Date.now();
-                const id = `wf-${now.toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-                const workflow = normalizeWorkflow({
-                    version: 1,
-                    id,
-                    name,
-                    description: str(args.description) ?? '',
+                const view = await deps.flows.create({
+                    name: str(args.name) ?? 'New workflow',
+                    ...(str(args.description) === undefined ? {} : { description: str(args.description) }),
                     ...(str(args.deviceId) === undefined ? {} : { deviceId: str(args.deviceId) }),
-                    ...(str(args.recordingId) === undefined ? {} : { sourceRecording: str(args.recordingId) }),
-                    steps: [{
-                            id: 'step-1',
-                            name: '第一步',
-                            description: '在 KVMFlow 面板中编辑动作与验证条件，或让 AI 根据录制重写此工作流。',
-                            action: { type: 'delay', ms: 1000 },
-                            verify: { mode: 'none' },
-                            onFailure: { strategy: 'pause', retries: 0 },
-                        }],
-                }, id);
-                await deps.store.saveWorkflow(workflow);
-                return { ok: true, value: { workflow, yaml: await deps.store.readWorkflowYaml(id) } };
+                    ...(str(args.recordingId) === undefined ? {} : { recordingId: str(args.recordingId) }),
+                });
+                return { ok: true, value: view };
             }
             case 'workflow.delete': {
                 const id = str(args.id);
@@ -229,7 +237,10 @@ export async function handleRpc(deps, endpoint, payload) {
                 return { ok: true, value: { removed: id } };
             }
             case 'run.start': {
-                const run = await deps.runner.start(str(args.workflowId) ?? '', str(args.deviceId), { armBios: args.armBios !== false });
+                const run = await deps.runner.start(str(args.workflowId) ?? '', str(args.deviceId), {
+                    armBios: args.armBios !== false,
+                    ...(isRecord(args.inputs) ? { inputs: args.inputs } : {}),
+                });
                 return { ok: true, value: { run } };
             }
             case 'run.get': {
@@ -244,7 +255,10 @@ export async function handleRpc(deps, endpoint, payload) {
                 const action = str(args.action);
                 if (action === undefined)
                     return fail('kvmflow/INVALID_INPUT', 'action is required');
-                const run = await deps.runner.control(id, action);
+                const run = await deps.runner.control(id, action, {
+                    ...(str(args.port) === undefined ? {} : { port: str(args.port) }),
+                    ...(str(args.option) === undefined ? {} : { option: str(args.option) }),
+                });
                 return { ok: true, value: { run } };
             }
             case 'run.list': {

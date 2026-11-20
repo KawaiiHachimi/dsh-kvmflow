@@ -139,7 +139,12 @@ export interface WorkflowSummary {
   name: string;
   description?: string;
   deviceId?: string;
+  /** Node count, kept under the v1 name for older clients. */
   stepCount: number;
+  version?: 2;
+  branchCount?: number;
+  issueCount?: number;
+  upgradedFrom?: 1;
   hasBios: boolean;
   updatedAt: number;
   path: string;
@@ -167,10 +172,18 @@ export type RunStepStatus =
 
 export interface RunStepState {
   index: number;
+  /** Node id in a graph run; step id in a legacy run. */
   id: string;
   name: string;
+  /** Node type; absent in runs recorded before schema v2. */
+  type?: string;
   status: RunStepStatus;
+  /** Times the node was entered (graph runs) or attempted (legacy runs). */
   attempts: number;
+  /** Port taken on the latest visit. */
+  port?: string;
+  /** Short summary of the latest output, for the run panel. */
+  output?: unknown;
   startedAt?: number;
   endedAt?: number;
   before?: string;
@@ -191,10 +204,35 @@ export interface RunLogEntry {
 }
 
 export interface RunAwaiting {
-  kind: 'bios_confirm' | 'failure' | 'no_signal';
+  kind: 'bios_confirm' | 'failure' | 'no_signal' | 'human' | 'paused' | 'unrouted';
   message: string;
   stepIndex?: number;
+  /** Node the run is stopped at. */
+  nodeId?: string;
   actions: string[];
+  /** For `route`: connected ports the operator may send the run through. */
+  routes?: string[];
+  /** For `choose`: the options of a human node. */
+  options?: Array<{ name: string; label?: string }>;
+}
+
+/** One entry of a graph run's node-visit trace. */
+export interface RunTraceEntry {
+  seq: number;
+  at: number;
+  durationMs: number;
+  /** Workflow the node belongs to; differs from the run's workflow inside a subflow. */
+  workflowId: string;
+  depth: number;
+  nodeId: string;
+  nodeType: string;
+  status: 'ok' | 'failed' | 'routed' | 'retried';
+  port?: string;
+  target?: string;
+  reason?: string;
+  before?: string;
+  after?: string;
+  output?: unknown;
 }
 
 export interface RunBiosState {
@@ -224,6 +262,18 @@ export interface RunRecord {
   log: RunLogEntry[];
   awaiting?: RunAwaiting;
   bios?: RunBiosState;
+  /** Schema version of the workflow this run executes. */
+  schema?: 2;
+  currentNodeId?: string;
+  /** Node-visit trace of a graph run, newest last, capped. */
+  trace?: RunTraceEntry[];
+  /** Variables after the latest node. Secret inputs never appear here. */
+  vars?: Record<string, unknown>;
+  /** Input names and whether each was provided; values stay in memory. */
+  inputs?: Record<string, { provided: boolean; secret: boolean; value?: unknown }>;
+  visits?: number;
+  visionCalls?: number;
+  outputs?: Record<string, unknown>;
 }
 
 export interface RunSummary {

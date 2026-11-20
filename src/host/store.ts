@@ -5,6 +5,10 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { mkdir, readFile, readdir, rm, stat, writeFile, chmod } from 'node:fs/promises';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseYaml, dumpYaml, YamlError, type YamlValue } from './yaml.js';
+import { flowToYaml, looksLikeV1, normalizeFlow, nodeCounts } from './flow/normalize.js';
+import { upgradeV1 } from './flow/convert.js';
+import { analyzeFlow } from './flow/graph.js';
+import type { FlowDocument, FlowLayout } from './flow/schema.js';
 import { validateEvent, type LinkrEvent } from './linkr.js';
 import { normalizeViewMapping } from './view.js';
 import type {
@@ -206,7 +210,8 @@ function normalizeStep(input: unknown, index: number): WorkflowStep {
 }
 
 /**
- * Validate a workflow-shaped value and fill defaults.
+ * Validate a schema v1 workflow and fill its defaults. Only the upgrade path
+ * and the recording generator use this; everything else works on v2 graphs.
  * @param input - parsed YAML value.
  * @param fallbackId - id to use when the document omits one.
  * @returns a complete workflow record.
@@ -242,18 +247,30 @@ export function normalizeWorkflow(input: unknown, fallbackId = ''): WorkflowReco
   };
 }
 
-function workflowSummary(workflow: WorkflowRecord, path: string): WorkflowSummary {
+function flowSummary(document: FlowDocument, path: string, upgraded: boolean): WorkflowSummary {
+  const counts = nodeCounts(document);
+  const issues = analyzeFlow(document);
   return {
-    id: workflow.id,
-    name: workflow.name,
-    ...(workflow.description !== undefined ? { description: workflow.description } : {}),
-    ...(workflow.deviceId !== undefined ? { deviceId: workflow.deviceId } : {}),
-    stepCount: workflow.steps.length,
-    hasBios: workflow.bios !== undefined,
-    updatedAt: workflow.updatedAt,
+    id: document.id,
+    name: document.name,
+    ...(document.description !== undefined ? { description: document.description } : {}),
+    ...(document.deviceId !== undefined ? { deviceId: document.deviceId } : {}),
+    stepCount: counts.total,
+    version: 2,
+    branchCount: counts.branches,
+    issueCount: issues.length,
+    hasBios: document.bios !== undefined,
+    updatedAt: document.updatedAt,
     path,
+    ...(upgraded ? { upgradedFrom: 1 as const } : {}),
   };
 }
+
+const FLOW_HEADER = [
+  'KVMFlow workflow (schema v2): a graph of nodes.',
+  'Each node has a type, a config, and `next` mapping output ports to node ids.',
+  'Edit it on the KVMFlow canvas, here, or let the agent patch it with kvmflow_flow_patch.',
+].join('\n');
 
 /** One KVMFlow data root with lazy directory creation. */
 export class Store {
@@ -573,31 +590,111 @@ export class Store {
     }
   }
 
-  async loadWorkflow(id: string): Promise<WorkflowRecord> {
-    const text = await this.readWorkflowYaml(id);
+  /** Path of the canvas coordinates beside a workflow. */
+  layoutPath(id: string): string {
+    return join(this.workflowsDir, `${id.replace(/[^a-zA-Z0-9._-]/g, '_')}.layout.json`);
+  }
+
+  /** Where the original of an upgraded v1 workflow is kept. */
+  backupPath(id: string): string {
+    return join(this.workflowsDir, '.backup', `${id.replace(/[^a-zA-Z0-9._-]/g, '_')}.v1.yaml`);
+  }
+
+  /**
+   * Parse YAML text into a graph document without saving it.
+   * @param text - YAML source.
+   * @param id - id to assign.
+   * @returns the document, its normalization problems, and whether it was v1.
+   */
+  parseFlowText(text: string, id: string): { document: FlowDocument; problems: Array<{ path: string; message: string }>; upgraded: boolean } {
     let parsed: YamlValue;
     try {
       parsed = parseYaml(text);
     } catch (error) {
       throw new StoreError('INVALID_WORKFLOW', error instanceof YamlError ? error.message : `cannot parse workflow: ${String(error)}`);
     }
-    const workflow = normalizeWorkflow(parsed, id);
-    workflow.id = id;
-    return workflow;
+    if (looksLikeV1(parsed)) {
+      // Normalize as v1 first so v1 defaults (a `change` verify on every action,
+      // `pause` on failure) survive the upgrade explicitly.
+      const legacy = normalizeWorkflow(parsed, id);
+      // normalizeWorkflow invents random ids for steps that had none; keep the
+      // author's ids and let the upgrade number the rest (step1, step2, …).
+      const rawSteps = (parsed as { steps?: unknown[] }).steps ?? [];
+      legacy.steps = legacy.steps.map((step, index) => {
+        const raw = rawSteps[index] as { id?: unknown } | undefined;
+        return { ...step, id: typeof raw?.id === 'string' ? raw.id : '' };
+      });
+      const { document, issues } = upgradeV1(legacy as any, { fallbackId: id });
+      document.id = id;
+      return { document, problems: issues, upgraded: true };
+    }
+    const { document, issues } = normalizeFlow(parsed, { fallbackId: id });
+    document.id = id;
+    return { document, problems: issues, upgraded: false };
   }
 
-  async saveWorkflow(workflow: WorkflowRecord): Promise<string> {
-    workflow.updatedAt = Date.now();
-    const target = this.workflowPath(workflow.id);
-    const yaml = dumpYaml(workflow as unknown as YamlValue, [
-      `KVMFlow workflow: ${workflow.name}`,
-      'Edit this file from the KVMFlow panel or let the agent rewrite it.',
-      'Every step supports precondition, action, verify, and onFailure.',
-    ].join('\n'));
+  /**
+   * Load a workflow as a graph. A v1 file is upgraded once: the original goes to
+   * `.backup/<id>.v1.yaml` and the v2 document replaces it.
+   * @param id - workflow id.
+   * @returns the normalized document.
+   */
+  async loadFlow(id: string): Promise<FlowDocument> {
+    const text = await this.readWorkflowYaml(id);
+    const { document, problems, upgraded } = this.parseFlowText(text, id);
+    if (problems.length > 0) {
+      throw new StoreError('INVALID_WORKFLOW', problems.map(problem => `${problem.path}: ${problem.message}`).join('; '));
+    }
+    if (upgraded) {
+      const backup = this.backupPath(id);
+      await mkdir(dirname(backup), { recursive: true, mode: 0o700 });
+      if (!existsSync(backup)) await writeFile(backup, text, 'utf8');
+      await this.saveFlow(document, { keepTimestamp: true, upgraded: true });
+    }
+    return document;
+  }
+
+  /**
+   * Write a graph document as YAML.
+   * @param document - normalized document.
+   * @param options - keep the updatedAt stamp (upgrades), and mark an upgrade in the summary.
+   * @returns the file path.
+   */
+  async saveFlow(document: FlowDocument, options: { keepTimestamp?: boolean; upgraded?: boolean } = {}): Promise<string> {
+    if (options.keepTimestamp !== true) document.updatedAt = Date.now();
+    const target = this.workflowPath(document.id);
+    const value = flowToYaml(document) as Record<string, YamlValue>;
+    const yaml = dumpYaml({ ...value, createdAt: document.createdAt, updatedAt: document.updatedAt } as YamlValue, FLOW_HEADER);
     await writeFile(target, yaml, 'utf8');
     const info = await stat(target);
-    this.workflowCache.set(workflow.id, { mtimeMs: info.mtimeMs, summary: workflowSummary(workflow, target) });
+    this.workflowCache.set(document.id, { mtimeMs: info.mtimeMs, summary: flowSummary(document, target, options.upgraded === true) });
     return target;
+  }
+
+  async readLayout(id: string): Promise<FlowLayout | undefined> {
+    try {
+      const parsed: unknown = JSON.parse(await readFile(this.layoutPath(id), 'utf8'));
+      if (!isRecord(parsed) || !isRecord(parsed.nodes)) return undefined;
+      const nodes: FlowLayout['nodes'] = {};
+      for (const [key, point] of Object.entries(parsed.nodes)) {
+        if (isRecord(point) && typeof point.x === 'number' && typeof point.y === 'number' && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+          nodes[key] = { x: Math.round(point.x), y: Math.round(point.y) };
+        }
+      }
+      return { version: typeof parsed.version === 'number' ? parsed.version : 1, nodes };
+    } catch {
+      return undefined;
+    }
+  }
+
+  async saveLayout(id: string, layout: FlowLayout): Promise<void> {
+    const nodes: FlowLayout['nodes'] = {};
+    for (const [key, point] of Object.entries(layout.nodes ?? {})) {
+      if (typeof point?.x === 'number' && typeof point?.y === 'number' && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+        nodes[key] = { x: Math.round(point.x), y: Math.round(point.y) };
+      }
+    }
+    await writeFile(this.layoutPath(id), `${JSON.stringify({ version: layout.version ?? 1, nodes }, null, 2)}\n`, 'utf8');
   }
 
   async listWorkflows(): Promise<WorkflowSummary[]> {
@@ -618,9 +715,10 @@ export class Store {
           summaries.push(cached.summary);
           continue;
         }
-        const workflow = await this.loadWorkflow(id);
-        const summary = workflowSummary(workflow, path);
-        this.workflowCache.set(id, { mtimeMs: info.mtimeMs, summary });
+        const document = await this.loadFlow(id);
+        const fresh = await stat(path);
+        const summary = this.workflowCache.get(id)?.summary ?? flowSummary(document, path, false);
+        this.workflowCache.set(id, { mtimeMs: fresh.mtimeMs, summary });
         summaries.push(summary);
       } catch (error) {
         summaries.push({
@@ -641,6 +739,7 @@ export class Store {
   async deleteWorkflow(id: string): Promise<void> {
     this.workflowCache.delete(id);
     await rm(this.workflowPath(id), { force: true });
+    await rm(this.layoutPath(id), { force: true });
     await rm(this.workflowAssetDir(id), { recursive: true, force: true });
   }
 

@@ -323,8 +323,13 @@ function dumpScalar(value) {
     return value;
 }
 function dumpInline(value) {
-    if (value === null || typeof value !== 'object')
+    if (value === null || typeof value !== 'object') {
+        // Inside a flow collection a comma, bracket, or brace ends the scalar, so
+        // such text must be quoted or it reads back as several elements.
+        if (typeof value === 'string' && /[,[\]{}]/.test(value))
+            return JSON.stringify(value);
         return dumpScalar(value);
+    }
     if (Array.isArray(value))
         return `[${value.map(item => dumpInline(item)).join(', ')}]`;
     const entries = Object.entries(value).filter(([, child]) => child !== undefined);
