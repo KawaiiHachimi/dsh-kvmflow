@@ -791,6 +791,49 @@ export function registerTools(deps: ToolsDeps): void {
   });
 
   register({
+    name: 'kvmflow_flow_compose',
+    description: 'Combine several saved workflows in a chosen order into one new workflow. Use mode="subflow" to chain subflow nodes (compact, stays linked to child edits) or mode="inline" to flatten every node into one standalone editable graph.',
+    parameters: objectSchema({
+      name: { type: 'string', description: 'Name for the new composed workflow.' },
+      description: { type: 'string' },
+      deviceId: { type: 'string' },
+      mode: { type: 'string', enum: ['subflow', 'inline'], description: 'subflow (default) or inline.' },
+      items: {
+        type: 'array',
+        description: 'Ordered stages. Each item has workflowId and optional onFailure (pause | continue | abort).',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['workflowId'],
+          properties: {
+            workflowId: { type: 'string' },
+            onFailure: { type: 'string', enum: ['pause', 'continue', 'abort'] },
+          },
+        },
+      },
+    }, ['name', 'items']),
+    output: {
+      schema: anyObjectSchema(),
+      render: (_args: unknown, value: any) => [textBlock(`Composed workflow ${value.id} (${value.name}, ${value.mode}) with ${value.nodeCount} nodes.\n\nIssues:\n${issueLines(value.issues)}`)],
+    },
+    async execute(args: any) {
+      if (!Array.isArray(args?.items) || args.items.length === 0) throw new Error('items must be a non-empty list');
+      const mode = args?.mode === 'inline' ? 'inline' : 'subflow';
+      const view = await flows.compose({
+        name: requireString(args?.name, 'name'),
+        ...(optionalString(args?.description) === undefined ? {} : { description: optionalString(args?.description) }),
+        ...(optionalString(args?.deviceId) === undefined ? {} : { deviceId: optionalString(args?.deviceId) }),
+        mode,
+        items: args.items.map((item: any) => ({
+          workflowId: requireString(item?.workflowId, 'items[].workflowId'),
+          ...(item?.onFailure === 'pause' || item?.onFailure === 'continue' || item?.onFailure === 'abort' ? { onFailure: item.onFailure } : {}),
+        })),
+      });
+      return { id: view.document.id, name: view.document.name, mode, nodeCount: Object.keys(view.document.nodes).length, issues: view.issues, yaml: view.yaml };
+    },
+  });
+
+  register({
     name: 'kvmflow_workflow_generate',
     description: 'Create a linear workflow graph from a recording and the agent\'s step plan. Each step names an event range from the recording (eventRange: [firstSeq, lastSeq] or events: [seq...]) or an explicit action, plus optional precondition and verify. The tool copies recording screenshots into the workflow assets. Add branches afterwards with kvmflow_flow_patch.',
     parameters: objectSchema({

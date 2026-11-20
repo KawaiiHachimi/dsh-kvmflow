@@ -50,17 +50,33 @@ const workflowId = created.document.id;
 
 const calls = [];
 let activeRun = null;
+let recentRuns = [];
 const device = { id: 'dev-1', name: 'Linkr', driver: 'linkr', baseUrl: 'http://x', hasToken: true, hasWebCredentials: false, createdAt: 1, updatedAt: 1 };
 async function handle(method, params) {
   calls.push([method, params]);
   switch (method) {
-    case 'state': return { dataDir, devices: [device], defaultDeviceId: 'dev-1', recordings: [], workflows: await store.listWorkflows(), recentRuns: [], ...(activeRun ? { activeRun } : {}) };
+    case 'state': return { dataDir, devices: [device], defaultDeviceId: 'dev-1', recordings: [], workflows: await store.listWorkflows(), recentRuns, ...(activeRun ? { activeRun } : {}) };
     case 'flow.catalog': return { nodes: flows.catalog() };
     case 'flow.get': return flows.view(params.id);
     case 'flow.save': return flows.save({ id: params.id, ...(params.yaml ? { yaml: params.yaml } : {}), ...(params.document ? { document: params.document } : {}), ...(params.layout ? { layout: params.layout } : {}) });
     case 'flow.check': return flows.check(params);
+    case 'flow.compose': return flows.compose(params);
+    case 'model.list': return {
+      models: [
+        { provider: 'openai', providerName: 'OpenAI', id: 'gpt-4o', name: 'GPT-4o', supportsImage: true },
+        { provider: 'deepseek', providerName: 'DeepSeek', id: 'deepseek-chat', name: 'DeepSeek Chat', supportsImage: false },
+      ],
+      defaultModel: { provider: 'deepseek', model: 'deepseek-chat' },
+    };
     case 'run.get': return { run: activeRun };
     case 'run.control': calls.push(['control', params]); return { run: activeRun };
+    case 'run.delete': recentRuns = recentRuns.filter(entry => entry.id !== params.id); return { removed: params.id };
+    case 'run.clear': { const n = recentRuns.length; recentRuns = []; return { removed: n }; }
+    case 'history.list': return { items: await store.readTextHistory(), path: store.textHistoryPath };
+    case 'history.add': return { items: await store.addTextHistory(params.text) };
+    case 'history.remove': return { items: await store.removeTextHistory(params.text) };
+    case 'history.clear': return { items: await store.clearTextHistory() };
+    case 'device.probe': return { probe: { reachable: false, authenticated: false, video: false } };
     case 'screen.snapshot': throw Object.assign(new Error('no signal'), { code: 'x' });
     default: return {};
   }
@@ -113,6 +129,18 @@ test('workflows tab renders the canvas, edits through the inspector and autosave
   assert.ok(document.querySelectorAll('.kf-palette-item').length >= 15, 'palette lists node types');
   assert.ok(byText('.kf-save', '已保存'));
 
+  // Workflow settings inspector exposes the DSH vision model selector and persists selection.
+  const modelSelect = document.querySelector('select[aria-label="执行视觉模型"]');
+  assert.ok(modelSelect, 'vision model selector rendered in workflow settings');
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLSelectElement.prototype, 'value').set;
+    setter.call(modelSelect, 'openai\u0000gpt-4o');
+    modelSelect.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  });
+  await settle(900);
+  const withModel = await store.loadFlow(workflowId);
+  assert.deepEqual(withModel.visionModel, { provider: 'openai', model: 'gpt-4o' }, 'visionModel persisted to YAML');
+
   // Selecting a node opens the node inspector; renaming it autosaves.
   await click(cards.find(card => card.textContent.includes('begin')));
   await settle(100);
@@ -144,6 +172,104 @@ test('workflows tab renders the canvas, edits through the inspector and autosave
   await click(byText('.kf-seg button', 'YAML'));
   const yaml = document.querySelector('.kf-yaml-text').value;
   assert.match(yaml, /type: vision_classify/);
+
+  // Compose modal: add the current workflow twice, switch to inline mode, and generate.
+  await click(byText('.kvmflow-wf-list-head button', '组合'));
+  await settle(100);
+  const composeDialog = document.querySelector('[role="dialog"]');
+  assert.ok(composeDialog, 'compose modal opened');
+  await click(byText('.kvmflow-compose-col button', '+ 加入'));
+  await click(byText('.kvmflow-compose-modes button', '展平合并'));
+  await click(byText('.kvmflow-modal-foot button', '生成大工作流'));
+  await settle(300);
+  assert.equal(document.querySelector('[role="dialog"]'), null, 'compose modal closed after create');
+  const all = await store.listWorkflows();
+  assert.equal(all.length, 2, 'composed workflow persisted');
+});
+
+test('devices tab uses modals for add/edit and delete confirmation, and unifies control heights', async () => {
+  await click(byText('[role="tab"]', '设备'));
+  await settle(150);
+  assert.equal(document.querySelector('[role="dialog"]'), null, 'no modal initially');
+  // Open Add Device modal.
+  await click(byText('button', '+ 添加设备'));
+  await settle(80);
+  const addDialog = document.querySelector('[role="dialog"]');
+  assert.ok(addDialog && addDialog.textContent.includes('添加 IP-KVM 设备'), 'add device modal opened');
+  assert.ok(addDialog.textContent.includes('Radxa Linkr'), 'driver selector shown');
+  await click(byText('.kvmflow-modal-foot button', '取消'));
+  await settle(80);
+  assert.equal(document.querySelector('[role="dialog"]'), null, 'add modal closed');
+
+  // Delete uses a modal dialog portaled to document.body so canvas / container-type never clips it.
+  await click(byText('.kvmflow-device button', '删除'));
+  await settle(80);
+  const delDialog = document.querySelector('[role="dialog"]');
+  assert.ok(delDialog && delDialog.textContent.includes('确定要删除设备'), 'delete confirmation modal opened');
+  assert.equal(delDialog.closest('.kvmflow-root'), null, 'modal is portaled outside .kvmflow-root');
+  assert.equal(delDialog.parentElement.parentElement, document.body, 'modal backdrop is a direct child of document.body');
+  await click(byText('.kvmflow-modal-foot button', '取消'));
+  await settle(80);
+  assert.equal(document.querySelector('[role="dialog"]'), null, 'delete modal dismissed');
+
+  // Shared 28px control height across buttons and inline selects.
+  const cssText = [...document.querySelectorAll('style')].map(el => el.textContent).join('\n');
+  assert.match(cssText, /--kvmflow-control-h:\s*28px/);
+  assert.match(cssText, /--dsh-frame-top-clearance/);
+  assert.match(cssText, /\.kvmflow-inline-select\s*\{[^}]*height:\s*var\(--kvmflow-control-h\)/);
+  assert.match(cssText, /\.kf-btn\s*\{[^}]*height:\s*28px/);
+});
+
+test('live tab persists ASCII commands to disk history file and shows red dot when disconnected', async () => {
+  await click(byText('[role="tab"]', '实时画面'));
+  await settle(200);
+  // Device probe returned unreachable: top status dot must be red (err), not green (on).
+  const headDot = document.querySelector('.kvmflow-device-wrap .kvmflow-dot');
+  assert.ok(headDot && headDot.classList.contains('err') && !headDot.classList.contains('on'), 'disconnected device shows red dot');
+
+  const input = document.querySelector('input[placeholder*="ASCII"]');
+  assert.ok(input, 'ASCII text input rendered');
+  const setVal = async val => {
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set;
+      setter.call(input, val);
+      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    });
+  };
+  await setVal('ipconfig /all');
+  await click(byText('button', '输入'));
+  await setVal('whoami');
+  await click(byText('button', '输入'));
+  await settle(100);
+
+  // Panel is collapsed by default; clicking History (2) expands it.
+  assert.equal(document.querySelector('.kvmflow-history-panel'), null, 'history panel collapsed by default');
+  await click(byText('button', '历史 (2)'));
+  await settle(60);
+  assert.ok(document.querySelector('.kvmflow-history-panel'), 'history panel expanded');
+
+  const rows = [...document.querySelectorAll('.kvmflow-history-text')].map(el => el.textContent);
+  assert.deepEqual(rows, ['whoami', 'ipconfig /all'], 'most recent command first');
+  assert.deepEqual(await store.readTextHistory(), ['whoami', 'ipconfig /all'], 'persisted to text-history.txt');
+
+  // Clicking a history row fills the input.
+  await click(byText('.kvmflow-history-text', 'ipconfig /all'));
+  assert.equal(input.value, 'ipconfig /all');
+
+  // Remove one entry via the right-side Delete button.
+  await click(document.querySelector('button[aria-label="删除 whoami"]'));
+  await settle(80);
+  assert.deepEqual([...document.querySelectorAll('.kvmflow-history-text')].map(el => el.textContent), ['ipconfig /all']);
+  assert.deepEqual(await store.readTextHistory(), ['ipconfig /all']);
+
+  // Clear all via confirmation modal.
+  await click(byText('.kvmflow-history-panel button', '清空全部'));
+  await settle(60);
+  assert.ok(document.querySelector('[role="dialog"]'), 'clear history modal opened');
+  await click(byText('.kvmflow-modal-foot button', '清空'));
+  await settle(80);
+  assert.equal(document.querySelector('.kvmflow-history-panel'), null, 'history panel closed after clear');
+  assert.deepEqual(await store.readTextHistory(), []);
 });
 
 test('runs tab shows the run graph, trace and decision buttons', async () => {
@@ -157,6 +283,9 @@ test('runs tab shows the run graph, trace and decision buttons', async () => {
     awaiting: { kind: 'human', message: '请选择', nodeId: 'begin', actions: ['abort'], options: [{ name: 'continue' }, { name: 'stop', label: '停止' }], routes: ['true'] },
     vars: {},
   };
+  recentRuns = [
+    { id: 'run-old', workflowId, workflowName: '旧记录', deviceId: 'dev-1', status: 'succeeded', phase: 'done', createdAt: Date.now() - 10_000, updatedAt: Date.now() - 5000, currentStepIndex: 0, totalSteps: 2 },
+  ];
   await click(byText('[role="tab"]', '执行'));
   await settle(400);
   assert.ok(document.querySelector('.kf-run-graph .react-flow'), 'run graph rendered');
@@ -166,6 +295,15 @@ test('runs tab shows the run graph, trace and decision buttons', async () => {
   await click(byText('.kvmflow-awaiting button', '停止'));
   const control = calls.find(([method]) => method === 'control');
   assert.deepEqual(control[1], { id: 'run-1', action: 'choose', option: 'stop' });
+
+  // Delete one finished history run via modal confirmation.
+  await click(byText('.kvmflow-device button', '清理'));
+  await settle(80);
+  const confirm = document.querySelector('[role="dialog"]');
+  assert.ok(confirm && confirm.textContent.includes('旧记录'), 'delete run modal opened');
+  await click(byText('.kvmflow-modal-foot button', '清理'));
+  await settle(150);
+  assert.equal(recentRuns.length, 0, 'finished run deleted');
 });
 
 test('no React errors were logged', () => {

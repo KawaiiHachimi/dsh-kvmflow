@@ -15,6 +15,8 @@ import type { FlowUi } from './flow/types';
  */
 export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi): { inject: string[]; apply: (ctx: any) => void } {
     const React = requireModule('react');
+    const ReactDOM = requireModule('react-dom');
+    const createPortal = ReactDOM?.createPortal;
     const h = React.createElement;
     const useState = React.useState;
     const useEffect = React.useEffect;
@@ -25,9 +27,10 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
     const CSS = `
 .kvmflow-root {
   container-type: inline-size;
+  --kvmflow-control-h: 28px;
   height: 100%;
   overflow: auto;
-  padding: 14px 22px 64px;
+  padding: max(14px, calc(var(--dsh-frame-top-clearance, 0px) - 6px)) 22px 64px;
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-bg-base);
   box-sizing: border-box;
@@ -71,18 +74,22 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 .kvmflow-muted { color: var(--dsw-alias-label-secondary); }
 .kvmflow-mono { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; }
 /* Buttons, selects, and text inputs share one height so a toolbar row lines up. */
-.kvmflow-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+.kvmflow-btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: var(--kvmflow-control-h); border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; line-height: 1; padding: 0 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
 @media (hover: hover) {
-  .kvmflow-btn:hover:not(:disabled) { border-color: var(--dsw-alias-border-l2); background: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 70%, var(--dsw-alias-bg-base)); }
+  .kvmflow-btn:hover:not(:disabled) { border-color: var(--dsw-alias-border-l2); background: color-mix(in srgb, var(--dsw-alias-label-primary) 10%, var(--dsw-alias-bg-layer-2)); }
 }
 .kvmflow-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
 .kvmflow-btn:disabled { opacity: 0.45; cursor: default; }
 .kvmflow-btn.primary { background: var(--dsw-alias-brand-primary); border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-bg-base); font-weight: 600; }
+@media (hover: hover) {
+  .kvmflow-btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 86%, var(--dsw-alias-label-primary)); border-color: transparent; color: var(--dsw-alias-bg-base); }
+}
 .kvmflow-btn.danger { color: var(--dsw-alias-state-error-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 45%, var(--dsw-alias-border-l1)); }
-.kvmflow-btn.small { padding: 2px 7px; font-size: 11px; }
-.kvmflow-input, .kvmflow-select, .kvmflow-textarea { width: 100%; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-primary); border-radius: 7px; padding: 6px 8px; font: inherit; font-size: 12px; outline: none; }
+.kvmflow-btn.small { height: 24px; padding: 0 8px; font-size: 11px; }
+.kvmflow-input, .kvmflow-select, .kvmflow-textarea { width: 100%; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-primary); border-radius: 7px; padding: 0 8px; font: inherit; font-size: 12px; outline: none; }
+.kvmflow-input, .kvmflow-select { height: var(--kvmflow-control-h); }
 .kvmflow-input:focus, .kvmflow-select:focus, .kvmflow-textarea:focus { border-color: var(--dsw-alias-brand-primary); }
-.kvmflow-textarea { min-height: 260px; resize: vertical; line-height: 1.55; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; }
+.kvmflow-textarea { height: auto; min-height: 260px; padding: 6px 8px; resize: vertical; line-height: 1.55; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; }
 .kvmflow-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .kvmflow-field > label { font-size: 11px; color: var(--dsw-alias-label-secondary); }
 .kvmflow-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -106,14 +113,15 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 .kvmflow-screen-readout { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
 .kvmflow-screen-empty { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-secondary); font-size: 12px; background: var(--dsw-alias-bg-layer-2); }
 /* Square icon control that lines up with the text buttons beside it. */
-.kvmflow-icon-btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex: none; padding: 5px; border-radius: 7px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); cursor: pointer; }
+.kvmflow-icon-btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--kvmflow-control-h); height: var(--kvmflow-control-h); padding: 0; border-radius: 7px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); cursor: pointer; }
 @media (hover: hover) {
-  .kvmflow-icon-btn:hover { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); background: color-mix(in srgb, var(--dsw-alias-label-primary) 14%, var(--dsw-alias-bg-layer-2)); }
+  .kvmflow-icon-btn:hover { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); background: color-mix(in srgb, var(--dsw-alias-label-primary) 10%, var(--dsw-alias-bg-layer-2)); }
 }
 .kvmflow-icon-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
 .kvmflow-icon-btn[aria-pressed='true'] { color: var(--dsw-alias-brand-primary); border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-border-l1)); }
 .kvmflow-screen-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
-.kvmflow-inline-select { width: auto; flex: none; padding: 2px 6px; font-size: 11px; }
+.kvmflow-screen-focus { margin-left: auto; color: var(--dsw-alias-brand-primary); font-weight: 500; }
+.kvmflow-inline-select { width: auto; flex: none; height: var(--kvmflow-control-h); padding: 0 8px; font-size: 12px; }
 .kvmflow-log { max-height: 260px; overflow: auto; display: flex; flex-direction: column; gap: 3px; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 11px; }
 .kvmflow-log-row { display: flex; gap: 8px; border-bottom: 1px dashed color-mix(in srgb, var(--dsw-alias-border-l1) 60%, transparent); padding-bottom: 3px; }
 .kvmflow-log-time { color: var(--dsw-alias-label-secondary); flex: none; }
@@ -134,6 +142,10 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 .kvmflow-kv dd { margin: 0; }
 .kvmflow-device { border: 1px solid var(--dsw-alias-border-l1); border-radius: var(--dsw-radius-sm, 8px); padding: 11px 13px; display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; background: var(--dsw-alias-bg-layer-1); flex-wrap: wrap; min-width: 0; }
 .kvmflow-device > div:first-child { min-width: 0; flex: 1 1 160px; }
+.kvmflow-device.kvmflow-run-item { flex-wrap: nowrap; align-items: center; gap: 8px; padding: 9px 11px; }
+.kvmflow-device.kvmflow-run-item > div:first-child { flex: 1 1 0; min-width: 0; }
+.kvmflow-device.kvmflow-run-item .kvmflow-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kvmflow-device.kvmflow-run-item > .kvmflow-actions { flex: none; flex-wrap: nowrap; }
 .kvmflow-device-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kvmflow-device.selected { border-color: var(--dsw-alias-brand-primary); }
 .kvmflow-device-name { font-weight: 600; min-width: 0; }
@@ -237,6 +249,44 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 @container (max-width: 560px) {
   .kvmflow-trace-row { grid-template-columns: 36px minmax(0, 1fr) max-content; }
   .kvmflow-trace-reason, .kvmflow-trace-time { display: none; }
+}
+
+/* Modal dialog & workflow composer. Portaled to document.body so container-type / sticky / canvas stacking contexts never clip it. */
+.kvmflow-modal-backdrop { --kvmflow-control-h: 28px; position: fixed; inset: 0; z-index: 9999; background: color-mix(in srgb, #000 52%, transparent); display: flex; align-items: center; justify-content: center; padding: 20px; font-size: 13px; line-height: 1.5; color: var(--dsw-alias-label-primary); box-sizing: border-box; }
+.kvmflow-modal-backdrop * { box-sizing: border-box; }
+.kvmflow-modal { width: min(520px, 100%); max-height: calc(100vh - 48px); display: flex; flex-direction: column; background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-md, 12px); box-shadow: 0 18px 44px color-mix(in srgb, #000 32%, transparent); color: var(--dsw-alias-label-primary); overflow: hidden; }
+.kvmflow-modal.wide { width: min(760px, 100%); }
+.kvmflow-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.kvmflow-modal-title { font-size: 14px; font-weight: 650; margin: 0; }
+.kvmflow-modal-sub { font-size: 11.5px; color: var(--dsw-alias-label-secondary); margin-top: 2px; }
+.kvmflow-modal-body { padding: 14px 16px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.kvmflow-modal-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 11px 16px; border-top: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); }
+.kvmflow-modal-msg { margin: 0; font-size: 13px; line-height: 1.55; color: var(--dsw-alias-label-primary); }
+.kvmflow-device-wrap { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.kvmflow-compose-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 12px; min-height: 240px; }
+.kvmflow-compose-col { border: 1px solid var(--dsw-alias-border-l1); border-radius: 9px; padding: 10px; background: var(--dsw-alias-bg-base); display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto; }
+.kvmflow-compose-col-head { font-size: 11.5px; font-weight: 650; color: var(--dsw-alias-label-secondary); display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.kvmflow-compose-item { border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; padding: 7px 9px; background: var(--dsw-alias-bg-layer-1); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kvmflow-compose-item-info { min-width: 0; flex: 1 1 auto; }
+.kvmflow-compose-item-name { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kvmflow-compose-selected { flex-direction: column; align-items: stretch; gap: 6px; }
+.kvmflow-compose-selected-top { display: flex; align-items: center; gap: 6px; }
+.kvmflow-compose-index { width: 20px; height: 20px; border-radius: 50%; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l1); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex: none; color: var(--dsw-alias-label-secondary); }
+.kvmflow-compose-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.kvmflow-compose-mode { appearance: none; text-align: left; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; padding: 9px 11px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); cursor: pointer; display: flex; flex-direction: column; gap: 3px; font: inherit; }
+.kvmflow-compose-mode.on { border-color: var(--dsw-alias-brand-primary); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, var(--dsw-alias-bg-layer-1)); }
+.kvmflow-compose-mode-title { font-size: 12.5px; font-weight: 650; }
+.kvmflow-history-panel { margin-top: 8px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; }
+.kvmflow-history-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--dsw-alias-border-l1); font-size: 11px; color: var(--dsw-alias-label-secondary); background: var(--dsw-alias-bg-layer-1); }
+.kvmflow-history-list { display: flex; flex-direction: column; max-height: 200px; overflow: auto; }
+.kvmflow-history-row { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px dashed color-mix(in srgb, var(--dsw-alias-border-l1) 70%, transparent); }
+.kvmflow-history-row:last-child { border-bottom: 0; }
+.kvmflow-history-text { appearance: none; border: 0; background: transparent; color: var(--dsw-alias-label-primary); font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 11.5px; padding: 3px 4px; cursor: pointer; flex: 1 1 auto; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 5px; }
+@media (hover: hover) {
+  .kvmflow-history-text:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent); }
+}
+@media (max-width: 680px) {
+  .kvmflow-compose-grid, .kvmflow-compose-modes { grid-template-columns: minmax(0, 1fr); }
 }
 
 `;
@@ -450,28 +500,85 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
       );
     }
 
-    /** Two-step destructive control: the first click arms, the second confirms. */
-    function ConfirmButton(props: any): any {
-      const [armed, setArmed] = useState(false);
-      const timer = useRef();
-      useEffect(() => () => { if (timer.current !== undefined) clearTimeout(timer.current); }, []);
+    /** Lightweight modal dialog with Escape and backdrop dismissal. */
+    function Modal(props: any): any {
       useEffect(() => {
-        if (!armed) return undefined;
-        timer.current = setTimeout(() => setArmed(false), 5000);
-        return () => { if (timer.current !== undefined) clearTimeout(timer.current); };
-      }, [armed]);
-      if (!armed) {
-        return h(Btn, {
+        if (!props.open) return undefined;
+        const onKey = (event: KeyboardEvent): void => {
+          if (event.key === 'Escape') props.onClose?.();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [props.open, props.onClose]);
+      if (!props.open) return null;
+      const overlay = h('div', {
+        className: 'kvmflow-modal-backdrop',
+        onClick: (event: any) => {
+          event.stopPropagation();
+          if (event.target === event.currentTarget) props.onClose?.();
+        },
+      },
+        h('div', {
+          className: cn('kvmflow-modal', props.wide ? 'wide' : ''),
+          role: 'dialog',
+          'aria-modal': 'true',
+          'aria-label': props.title,
+          onClick: (event: any) => event.stopPropagation(),
+        },
+          h('div', { className: 'kvmflow-modal-head' },
+            h('div', null,
+              h('h3', { className: 'kvmflow-modal-title' }, props.title),
+              props.subtitle ? h('div', { className: 'kvmflow-modal-sub' }, props.subtitle) : null,
+            ),
+            h('button', {
+              type: 'button',
+              className: 'kvmflow-icon-btn',
+              'aria-label': 'Close',
+              onClick: () => props.onClose?.(),
+            }, '×'),
+          ),
+          h('div', { className: 'kvmflow-modal-body' }, props.children),
+          props.footer ? h('div', { className: 'kvmflow-modal-foot' }, props.footer) : null,
+        ),
+      );
+      return typeof createPortal === 'function' && typeof document !== 'undefined' && document.body !== null
+        ? createPortal(overlay, document.body)
+        : overlay;
+    }
+
+    /** Destructive control backed by a confirmation modal so narrow layouts never jump. */
+    function ConfirmButton(props: any): any {
+      const [open, setOpen] = useState(false);
+      return h(React.Fragment, null,
+        h(Btn, {
           kind: props.kind,
+          className: props.small ? 'small' : props.className,
           disabled: props.disabled,
           title: props.title,
-          onClick: () => setArmed(true),
-        }, props.children);
-      }
-      return h('span', { className: 'kvmflow-confirm' },
-        h('span', { className: 'kvmflow-confirm-text' }, props.confirmLabel ?? 'Confirm?'),
-        h(Btn, { kind: 'danger', disabled: props.disabled, onClick: () => { setArmed(false); props.onConfirm(); } }, props.confirmAction ?? 'Delete'),
-        h(Btn, { onClick: () => setArmed(false) }, props.cancelLabel ?? 'Cancel'),
+          onClick: (event: any) => {
+            event?.stopPropagation?.();
+            setOpen(true);
+          },
+        }, props.children),
+        h(Modal, {
+          open,
+          title: props.confirmTitle ?? props.confirmLabel ?? 'Confirm',
+          onClose: () => setOpen(false),
+          footer: h(React.Fragment, null,
+            h(Btn, { onClick: () => setOpen(false) }, props.cancelLabel ?? 'Cancel'),
+            h(Btn, {
+              kind: 'danger',
+              disabled: props.disabled,
+              onClick: () => {
+                setOpen(false);
+                props.onConfirm();
+              },
+            }, props.confirmAction ?? 'Delete'),
+          ),
+        },
+          h('p', { className: 'kvmflow-modal-msg' }, props.confirmLabel ?? 'Are you sure?'),
+          props.confirmDetail ? h('p', { className: 'kvmflow-hint', style: { margin: 0 } }, props.confirmDetail) : null,
+        ),
       );
     }
 
@@ -630,6 +737,11 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         const [recordDraft, setRecordDraft] = useState({ name: '', description: '', stepName: '', stepDesc: '' });
         const [promptFallback, setPromptFallback] = useState('');
         const [logs, setLogs] = useState([]);
+        const [deviceHealth, setDeviceHealth] = useState({});
+        const reportDeviceHealth = useCallback((id: string, status: 'ok' | 'err') => {
+          if (id === '') return;
+          setDeviceHealth((current: Record<string, 'ok' | 'err'>) => (current[id] === status ? current : { ...current, [id]: status }));
+        }, []);
         const log = useCallback((kind: 'info' | 'err' | 'warn', message: string) => {
           setLogs(current => [...current.slice(-119), { at: Date.now(), kind, message }]);
         }, []);
@@ -701,17 +813,35 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
             return;
           }
           const value = await runRpc(t('测试连接', 'Test connection'), 'device.probe', { deviceId: id });
-          if (value === undefined) return;
+          if (value === undefined) {
+            reportDeviceHealth(id, 'err');
+            return;
+          }
           const probeValue = value.probe ?? {};
+          const connected = probeValue.video === true || (probeValue.reachable === true && probeValue.authenticated === true);
+          reportDeviceHealth(id, connected ? 'ok' : 'err');
           if (probeValue.video === true) notify(t('连接成功，已获取画面信号。', 'Connected; video signal available.'), 'ok');
           else if (probeValue.reachable === false) notify(t('无法连接设备，请检查地址与网络。', 'Cannot reach the device; check the origin and network.'), 'err');
           else if (probeValue.authenticated === false) notify(t('设备可达但访问令牌被拒绝。', 'Device reachable but the access token was rejected.'), 'err');
           else notify(t('设备与令牌有效，但当前没有画面信号（目标机可能未开机）。', 'Device and token are valid, but there is no video signal (the target may be off).'), 'warn');
-        }, [notify, runRpc, t]);
+        }, [notify, reportDeviceHealth, runRpc, t]);
+        useEffect(() => {
+          if (deviceId === '' || state === undefined) return undefined;
+          let cancelled = false;
+          void rpc('device.probe', { deviceId }).then((value: any) => {
+            if (cancelled) return;
+            const probeValue = value?.probe ?? {};
+            const connected = probeValue.video === true || (probeValue.reachable === true && probeValue.authenticated === true);
+            reportDeviceHealth(deviceId, connected ? 'ok' : 'err');
+          }).catch(() => {
+            if (!cancelled) reportDeviceHealth(deviceId, 'err');
+          });
+          return () => { cancelled = true; };
+        }, [deviceId, state !== undefined, reportDeviceHealth]);
         const shared = useMemo(() => ({
           state, setState, tab, setTab, deviceId, setDeviceId, busy, setBusy, notify, log, logs, setLogs, refresh, rpc, runRpc, t,
-          workflowDraft, setWorkflowDraft, recordDraft, setRecordDraft, handPrompt, probe, compact,
-        }), [state, tab, deviceId, busy, notify, log, logs, refresh, runRpc, t, workflowDraft, recordDraft, handPrompt, probe, compact]);
+          workflowDraft, setWorkflowDraft, recordDraft, setRecordDraft, handPrompt, probe, reportDeviceHealth, compact,
+        }), [state, tab, deviceId, busy, notify, log, logs, refresh, runRpc, t, workflowDraft, recordDraft, handPrompt, probe, reportDeviceHealth, compact]);
         if (state === undefined) {
           return h('div', { className: 'kvmflow-root' }, h('style', null, CSS), h('div', { className: 'kvmflow-empty' }, busy || t('正在加载 KVMFlow…', 'Loading KVMFlow…')));
         }
@@ -748,22 +878,27 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
               ),
             ),
             h('div', { className: 'kvmflow-head-right' },
-              h('span', {
-                className: 'kvmflow-pill kvmflow-pill-device',
-                title: selectedDevice === undefined ? t('未选择设备', 'No device') : selectedDevice.name,
-              },
-                h('span', { className: cn('kvmflow-dot', selectedDevice === undefined ? '' : 'on') }),
-                h('span', { className: 'kvmflow-pill-text' }, selectedDevice === undefined ? t('未选择设备', 'No device') : selectedDevice.name),
-              ),
-              h('select', {
-                className: 'kvmflow-select kvmflow-device-select',
-                value: deviceId,
-                onChange: (event: any) => setDeviceId(event.target.value),
-                'aria-label': t('选择设备', 'Select device'),
-                title: selectedDevice === undefined ? '' : `${selectedDevice.name} — ${selectedDevice.baseUrl}`,
-              },
-                h('option', { value: '' }, t('选择 KVM 设备…', 'Select a KVM device…')),
-                (state.devices ?? []).map((device: any) => h('option', { key: device.id, value: device.id }, `${device.name} — ${device.baseUrl}`)),
+              h('span', { className: 'kvmflow-device-wrap' },
+                (() => {
+                  const health = selectedDevice === undefined ? undefined : deviceHealth[selectedDevice.id];
+                  const dotClass = selectedDevice === undefined ? 'err' : health === 'ok' ? 'on' : 'err';
+                  const dotTitle = selectedDevice === undefined
+                    ? t('未连接设备', 'No device connected')
+                    : health === 'ok'
+                      ? t(`已连接：${selectedDevice.name}`, `Connected: ${selectedDevice.name}`)
+                      : t(`未连接或无法访问：${selectedDevice.name}`, `Disconnected or unreachable: ${selectedDevice.name}`);
+                  return h('span', { className: cn('kvmflow-dot', dotClass), title: dotTitle });
+                })(),
+                h('select', {
+                  className: 'kvmflow-select kvmflow-device-select',
+                  value: deviceId,
+                  onChange: (event: any) => setDeviceId(event.target.value),
+                  'aria-label': t('选择设备', 'Select device'),
+                  title: selectedDevice === undefined ? '' : `${selectedDevice.name} — ${selectedDevice.baseUrl}`,
+                },
+                  h('option', { value: '' }, t('选择 KVM 设备…', 'Select a KVM device…')),
+                  (state.devices ?? []).map((device: any) => h('option', { key: device.id, value: device.id }, `${device.name} — ${device.baseUrl}`)),
+                ),
               ),
               h(Btn, { onClick: () => { void refresh(); }, disabled: busy !== '' }, t('刷新', 'Refresh')),
               busy === '' ? null : h('span', { className: 'kvmflow-busy', role: 'status' }, h('span', { className: 'kvmflow-spinner' }), busy),
@@ -837,28 +972,34 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 
       function DevicesTab(shared: any): any {
         const { state, deviceId, setDeviceId, runRpc, refresh, busy, t } = shared;
-        const selected = (state.devices ?? []).find((device: any) => device.id === deviceId);
+        const [modalOpen, setModalOpen] = useState(false);
         const [editingId, setEditingId] = useState('');
         const EMPTY_FORM = {
-          name: '', baseUrl: '', token: '', notes: '',
+          driver: 'linkr', name: '', baseUrl: '', token: '', notes: '',
           webUsername: '', webPassword: '',
         };
         const [form, setForm] = useState(EMPTY_FORM);
-        useEffect(() => {
-          if (selected === undefined) return;
-          if (editingId !== selected.id) {
-            setEditingId(selected.id);
-            setForm({
-              name: selected.name ?? '',
-              baseUrl: selected.baseUrl ?? '',
-              token: '',
-              notes: selected.notes ?? '',
-              webUsername: selected.username ?? '',
-              webPassword: '',
-            });
-          }
-        }, [selected?.id]);
-        const reset = (): void => {
+        const editingDevice = (state.devices ?? []).find((device: any) => device.id === editingId);
+        const openAdd = (): void => {
+          setEditingId('');
+          setForm(EMPTY_FORM);
+          setModalOpen(true);
+        };
+        const openEdit = (device: any): void => {
+          setEditingId(device.id);
+          setForm({
+            driver: device.driver ?? 'linkr',
+            name: device.name ?? '',
+            baseUrl: device.baseUrl ?? '',
+            token: '',
+            notes: device.notes ?? '',
+            webUsername: device.username ?? '',
+            webPassword: '',
+          });
+          setModalOpen(true);
+        };
+        const closeModal = (): void => {
+          setModalOpen(false);
           setEditingId('');
           setForm(EMPTY_FORM);
         };
@@ -875,7 +1016,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
             if (value !== undefined) {
               shared.notify(t('设备已添加', 'Device added'), 'ok');
               if (value.device?.id !== undefined) setDeviceId(value.device.id);
-              reset();
+              closeModal();
               await refresh();
             }
           } else {
@@ -894,7 +1035,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
             const value = await runRpc(t('保存设备', 'Save device'), 'device.update', patch);
             if (value !== undefined) {
               shared.notify(t('设备已保存', 'Device saved'), 'ok');
-              setForm(current => ({ ...current, token: '' }));
+              closeModal();
               await refresh();
             }
           }
@@ -904,52 +1045,77 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
           if (value !== undefined) {
             shared.notify(t('设备已删除', 'Device removed'), 'ok');
             if (deviceId === id) setDeviceId('');
-            reset();
+            if (editingId === id) closeModal();
             await refresh();
           }
         };
-        return h('div', { className: 'kvmflow-grid two' },
-          h('div', null,
-            h(Card, { title: t('KVM 设备', 'KVM devices'), subtitle: `${state.devices?.length ?? 0}` },
-              (state.devices ?? []).length === 0
-                ? h(Empty, null, t('还没有设备。请添加 Radxa Linkr 的地址和访问令牌（在窄屏或右侧栏中表单位于下方）。', 'No devices yet. Add a Radxa Linkr origin and access token in the add form.'))
-                : h('div', { className: 'kvmflow-col' }, (state.devices ?? []).map((device: any) => h('div', {
-                  key: device.id,
-                  className: cn('kvmflow-device', device.id === deviceId ? 'selected' : ''),
-                },
-                  h('div', null,
-                    h('div', { className: 'kvmflow-device-name' }, device.name),
-                    h('div', { className: 'kvmflow-muted kvmflow-mono' }, device.baseUrl),
-                    h('div', { className: 'kvmflow-hint' }, [
-                      device.driver,
-                      device.hasToken ? t('令牌已保存', 'token saved') : t('缺少令牌', 'token missing'),
-                      device.hasWebCredentials ? t('视频账号已配置', 'video account set') : t('无视频账号', 'no video account'),
-                      device.id === state.defaultDeviceId ? t('默认设备', 'default') : '',
-                    ].filter(Boolean).join(' · ')),
-                    device.notes ? h('div', { className: 'kvmflow-hint' }, device.notes) : null,
-                    device.viewMapping === undefined ? null : h('div', { className: 'kvmflow-hint' }, t(
-                      `画面映射：左 ${Math.round(device.viewMapping.left * 100)}% 上 ${Math.round(device.viewMapping.top * 100)}% 右 ${Math.round(device.viewMapping.right * 100)}% 下 ${Math.round(device.viewMapping.bottom * 100)}%`,
-                      `view mapping: left ${Math.round(device.viewMapping.left * 100)}% top ${Math.round(device.viewMapping.top * 100)}% right ${Math.round(device.viewMapping.right * 100)}% bottom ${Math.round(device.viewMapping.bottom * 100)}%`,
-                    )),
-                  ),
-                  h('div', { className: 'kvmflow-actions' },
-                    h(Btn, { onClick: () => { setDeviceId(device.id); }, disabled: device.id === deviceId }, t('使用', 'Use')),
-                    h(Btn, { onClick: () => { setEditingId(device.id); setForm({ name: device.name, baseUrl: device.baseUrl, token: '', notes: device.notes ?? '', webUsername: device.username ?? '', webPassword: '' }); } }, t('编辑', 'Edit')),
-                    h(Btn, { onClick: () => { void shared.probe(device.id); }, disabled: busy !== '' }, t('测试', 'Test')),
-                    h(ConfirmButton, {
-                      kind: 'danger',
-                      disabled: busy !== '',
-                      confirmLabel: t('删除设备及其令牌？', 'Delete device and its token?'),
-                      confirmAction: t('删除', 'Delete'),
-                      cancelLabel: t('取消', 'Cancel'),
-                      onConfirm: () => { void remove(device.id); },
-                    }, t('删除', 'Remove')),
-                  ),
-                ))),
-            ),
+        const canSave = busy === '' && form.baseUrl.trim() !== '' && (editingId !== '' || form.token.trim() !== '');
+        return h('div', null,
+          h(Card, {
+            title: t('KVM 设备', 'KVM devices'),
+            subtitle: `${state.devices?.length ?? 0}`,
+            actions: [
+              h(Btn, { kind: 'primary', onClick: openAdd, disabled: busy !== '' }, t('+ 添加设备', '+ Add device')),
+            ],
+          },
+            (state.devices ?? []).length === 0
+              ? h('div', { className: 'kvmflow-empty' },
+                h('div', { style: { marginBottom: '10px' } }, t('还没有配置 IP-KVM 设备。支持同时管理多台设备并随时切换。', 'No IP-KVM devices yet. You can manage multiple devices and switch between them at any time.')),
+                h(Btn, { kind: 'primary', onClick: openAdd }, t('+ 添加第一台设备', '+ Add your first device')),
+              )
+              : h('div', { className: 'kvmflow-col' }, (state.devices ?? []).map((device: any) => h('div', {
+                key: device.id,
+                className: cn('kvmflow-device', device.id === deviceId ? 'selected' : ''),
+              },
+                h('div', null,
+                  h('div', { className: 'kvmflow-device-name' }, device.name),
+                  h('div', { className: 'kvmflow-muted kvmflow-mono' }, device.baseUrl),
+                  h('div', { className: 'kvmflow-hint' }, [
+                    device.driver === 'linkr' ? 'Radxa Linkr' : device.driver,
+                    device.hasToken ? t('令牌已保存', 'token saved') : t('缺少令牌', 'token missing'),
+                    device.hasWebCredentials ? t('视频账号已配置', 'video account set') : t('无视频账号', 'no video account'),
+                    device.id === deviceId ? t('当前使用中', 'active') : '',
+                  ].filter(Boolean).join(' · ')),
+                  device.notes ? h('div', { className: 'kvmflow-hint' }, device.notes) : null,
+                  device.viewMapping === undefined ? null : h('div', { className: 'kvmflow-hint' }, t(
+                    `画面映射：左 ${Math.round(device.viewMapping.left * 100)}% 上 ${Math.round(device.viewMapping.top * 100)}% 右 ${Math.round(device.viewMapping.right * 100)}% 下 ${Math.round(device.viewMapping.bottom * 100)}%`,
+                    `view mapping: left ${Math.round(device.viewMapping.left * 100)}% top ${Math.round(device.viewMapping.top * 100)}% right ${Math.round(device.viewMapping.right * 100)}% bottom ${Math.round(device.viewMapping.bottom * 100)}%`,
+                  )),
+                ),
+                h('div', { className: 'kvmflow-actions' },
+                  h(Btn, { onClick: () => { setDeviceId(device.id); }, disabled: device.id === deviceId }, device.id === deviceId ? t('使用中', 'Active') : t('使用', 'Use')),
+                  h(Btn, { onClick: () => openEdit(device) }, t('编辑', 'Edit')),
+                  h(Btn, { onClick: () => { void shared.probe(device.id); }, disabled: busy !== '' }, t('测试', 'Test')),
+                  h(ConfirmButton, {
+                    kind: 'danger',
+                    disabled: busy !== '',
+                    confirmTitle: t('删除设备', 'Remove device'),
+                    confirmLabel: t(`确定要删除设备“${device.name}”吗？`, `Remove device "${device.name}"?`),
+                    confirmDetail: t('该设备的访问令牌与 Web 账号将一并从 devices.json 移除。', 'Its access token and web credentials will also be removed from devices.json.'),
+                    confirmAction: t('删除', 'Delete'),
+                    cancelLabel: t('取消', 'Cancel'),
+                    onConfirm: () => { void remove(device.id); },
+                  }, t('删除', 'Remove')),
+                ),
+              ))),
           ),
-          h(Card, { title: editingId === '' ? t('添加设备', 'Add device') : t('编辑设备', 'Edit device') },
+          h(Modal, {
+            open: modalOpen,
+            title: editingId === '' ? t('添加 IP-KVM 设备', 'Add IP-KVM device') : t('编辑设备', 'Edit device'),
+            subtitle: editingId === '' ? t('可添加多台设备，在顶部下拉框随时切换。', 'Add multiple devices and switch between them from the top bar.') : editingDevice?.baseUrl,
+            onClose: closeModal,
+            footer: h(React.Fragment, null,
+              h(Btn, { onClick: closeModal }, t('取消', 'Cancel')),
+              h(Btn, { kind: 'primary', onClick: () => { void save(); }, disabled: !canSave }, editingId === '' ? t('添加', 'Add') : t('保存', 'Save')),
+            ),
+          },
             h('div', { className: 'kvmflow-form-grid' },
+              h(Field, { label: t('设备类型', 'Device driver'), className: 'wide' },
+                h('select', { className: 'kvmflow-select', value: form.driver, onChange: (event: any) => setForm({ ...form, driver: event.target.value }) },
+                  h('option', { value: 'linkr' }, t('Radxa Linkr（公开 HTTP API + WebRTC）', 'Radxa Linkr (Public HTTP API + WebRTC)')),
+                  h('option', { value: 'other', disabled: true }, t('其他 IP-KVM（GL.iNet / PiKVM — 预留扩展点）', 'Other IP-KVM (GL.iNet / PiKVM — coming soon)')),
+                ),
+              ),
               h(Field, { label: t('名称', 'Name'), className: 'wide' },
                 h('input', { className: 'kvmflow-input', value: form.name, placeholder: 'Lab Linkr', onChange: (event: any) => setForm({ ...form, name: event.target.value }) }),
               ),
@@ -962,20 +1128,12 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
               h(Field, { label: t('备注', 'Notes'), className: 'wide' },
                 h('input', { className: 'kvmflow-input', value: form.notes, onChange: (event: any) => setForm({ ...form, notes: event.target.value }) }),
               ),
-              h(Field, { label: t('Web 用户名（实时视频用）', 'Web username (for live video)'), className: 'wide', hint: t('只有实时视频需要 Web 账号；截图与键鼠用访问令牌即可。', 'Only live video needs the web account; snapshots and HID use the access token.') },
+              h(Field, { label: t('Web 用户名（实时视频用）', 'Web username (for live video)'), hint: t('只有实时视频需要 Web 账号。', 'Only live video needs the web account.') },
                 h('input', { className: 'kvmflow-input', value: form.webUsername, autoComplete: 'off', onChange: (event: any) => setForm({ ...form, webUsername: event.target.value }) }),
               ),
-              h(Field, { label: t('Web 密码', 'Web password'), className: 'wide', hint: editingId === '' ? t('与 Web 控制台登录密码相同，保存为 devices.json（0600）。', 'Same as the web console password; stored in devices.json (0600).') : t('留空表示保留现有密码。', 'Leave blank to keep the stored password.') },
-                h('input', { className: 'kvmflow-input', type: 'password', value: form.webPassword, autoComplete: 'new-password', placeholder: editingId === '' ? '' : (selected?.hasWebCredentials ? '••••••••' : t('未设置', 'not set')), onChange: (event: any) => setForm({ ...form, webPassword: event.target.value }) }),
+              h(Field, { label: t('Web 密码', 'Web password'), hint: editingId === '' ? t('与 Web 控制台登录密码相同（0600）。', 'Same as web console password (0600).') : t('留空表示保留现有密码。', 'Leave blank to keep stored password.') },
+                h('input', { className: 'kvmflow-input', type: 'password', value: form.webPassword, autoComplete: 'new-password', placeholder: editingId === '' ? '' : (editingDevice?.hasWebCredentials ? '••••••••' : t('未设置', 'not set')), onChange: (event: any) => setForm({ ...form, webPassword: event.target.value }) }),
               ),
-            ),
-            h('div', { className: 'kvmflow-split' }),
-            h('div', { className: 'kvmflow-form-actions' },
-              h(Btn, { kind: 'primary', onClick: () => { void save(); }, disabled: busy !== '' || form.baseUrl.trim() === '' || (editingId === '' && form.token.trim() === '') }, editingId === '' ? t('添加', 'Add') : t('保存', 'Save')),
-              editingId === '' ? null : h(Btn, { onClick: reset }, t('取消编辑', 'Cancel edit')),
-            ),
-            h('p', { className: 'kvmflow-hint', style: { marginTop: '10px' } },
-              t('第一阶段使用 Radxa Linkr 公开 HTTP API：GET /api/public/snapshot 与 POST /api/public/control。', 'Stage one uses the Radxa Linkr public HTTP API: GET /api/public/snapshot and POST /api/public/control.'),
             ),
           ),
         );
@@ -999,7 +1157,38 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         const [frameError, setFrameError] = useState('');
         const [live, setLive] = useState(true);
         const [pressed, setPressed] = useState({});
+        const [focused, setFocused] = useState(false);
         const [text, setText] = useState('');
+        const [textHistory, setTextHistory] = useState([]);
+        const [historyCursor, setHistoryCursor] = useState(-1);
+        const [historyOpen, setHistoryOpen] = useState(false);
+        useEffect(() => {
+          let cancelled = false;
+          void rpc('history.list').then(async (value: any) => {
+            if (cancelled) return;
+            const disk: string[] = Array.isArray(value?.items) ? value.items : [];
+            if (disk.length > 0) {
+              setTextHistory(disk);
+              return;
+            }
+            // One-time migration from earlier localStorage history into ~/.dsh/kvmflow/text-history.txt.
+            try {
+              const raw = window.localStorage.getItem('kvmflow.textHistory');
+              const legacy = raw ? JSON.parse(raw) : [];
+              if (Array.isArray(legacy) && legacy.length > 0) {
+                const cleaned = legacy.filter((item: unknown) => typeof item === 'string' && item !== '');
+                for (const item of [...cleaned].reverse()) {
+                  await rpc('history.add', { text: item }).catch(() => {});
+                }
+                if (!cancelled) setTextHistory(cleaned);
+                window.localStorage.removeItem('kvmflow.textHistory');
+              }
+            } catch {
+              /* ignore */
+            }
+          }).catch(() => {});
+          return () => { cancelled = true; };
+        }, [rpc]);
         // The target's screen inside the frame, when the frame is letterboxed.
         const [mapping, setMapping] = useState(device?.viewMapping);
         const [pointer, setPointer] = useState(undefined);
@@ -1068,9 +1257,11 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
             const value = await rpc('screen.snapshot', { deviceId });
             setFrame(value);
             setFrameError('');
+            shared.reportDeviceHealth?.(deviceId, 'ok');
             rateStrikes.current = 0;
           } catch (error: any) {
             setFrameError(error.message ?? String(error));
+            shared.reportDeviceHealth?.(deviceId, 'err');
             if (typeof error?.code === 'string' && error.code.includes('RATE_LIMITED')) {
               rateStrikes.current = Math.min(3, rateStrikes.current + 1);
               rateBackoffUntil.current = Date.now() + 1000 * 2 ** rateStrikes.current;
@@ -1127,6 +1318,9 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
           };
         }, [deviceId]);
         const videoLive = previewMode === 'video' && videoStream !== undefined;
+        useEffect(() => {
+          if (videoLive && deviceId !== '') shared.reportDeviceHealth?.(deviceId, 'ok');
+        }, [videoLive, deviceId, shared.reportDeviceHealth]);
         const rpcRef = useRef(rpc);
         rpcRef.current = rpc;
         const translateRef = useRef(t);
@@ -1326,11 +1520,20 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
           for (const key of [...keys].reverse()) events.push(['keyboard', key, false]);
           void send(events, `shortcut ${keys.join('+')}`);
         };
+        const sendTextValue = (raw: string): void => {
+          if (raw === '') return;
+          const events: any[] = [];
+          for (let index = 0; index < raw.length; index += 120) events.push(['text', raw.slice(index, index + 120)]);
+          void send(events, `text ${Math.min(raw.length, 60)}${raw.length > 60 ? '…' : ''}`);
+          setTextHistory((current: string[]) => [raw, ...current.filter(item => item !== raw)].slice(0, 100));
+          void rpc('history.add', { text: raw }).then((value: any) => {
+            if (Array.isArray(value?.items)) setTextHistory(value.items);
+          }).catch(() => {});
+          setHistoryCursor(-1);
+        };
         const typeText = (): void => {
           if (text === '') return;
-          const events: any[] = [];
-          for (let index = 0; index < text.length; index += 120) events.push(['text', text.slice(index, index + 120)]);
-          void send(events, `text ${Math.min(text.length, 60)}${text.length > 60 ? '…' : ''}`);
+          sendTextValue(text);
           setText('');
         };
         const recording = state.activeRecording;
@@ -1425,7 +1628,9 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                 onContextMenu: (event: any) => event.preventDefault(),
                 onKeyDown: keyDown,
                 onKeyUp: keyUp,
+                onFocus: () => setFocused(true),
                 onBlur: () => {
+                  setFocused(false);
                   const codes = Object.keys(pressed);
                   setPressed({});
                   if (codes.length > 0) {
@@ -1494,6 +1699,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                 })(),
                 pointer === undefined ? null : h('span', { className: 'kvmflow-screen-readout' }, `${pointer.x.toFixed(3)}, ${pointer.y.toFixed(3)}`),
                 h('span', null, live ? t('实时', 'LIVE') : t('已暂停', 'PAUSED')),
+                focused ? h('span', { className: 'kvmflow-screen-focus' }, t('键盘已接管 · 按 Tab 退出', 'Keyboard captured · Tab to leave')) : null,
               ),
               deviceId === '' ? null : h('div', { className: 'kvmflow-actions', style: { marginTop: '10px' } },
                 h(Btn, { onClick: () => shortcut(['ControlLeft', 'AltLeft', 'Delete']) }, 'Ctrl+Alt+Del'),
@@ -1516,12 +1722,80 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                   className: 'kvmflow-input',
                   style: { flex: '1 1 auto' },
                   value: text,
-                  placeholder: t('输入 ASCII 文本（Linkr 文本通道）', 'Type ASCII text (Linkr text channel)'),
-                  onChange: (event: any) => setText(event.target.value),
-                  onKeyDown: (event: any) => { if (event.key === 'Enter') typeText(); },
+                  placeholder: t('输入 ASCII 文本（Linkr 文本通道，↑/↓ 翻历史）', 'Type ASCII text (Linkr text channel, ↑/↓ for history)'),
+                  onChange: (event: any) => { setText(event.target.value); setHistoryCursor(-1); },
+                  onKeyDown: (event: any) => {
+                    if (event.key === 'Enter') {
+                      typeText();
+                    } else if (event.key === 'ArrowUp' && textHistory.length > 0) {
+                      event.preventDefault();
+                      const next = Math.min(textHistory.length - 1, historyCursor + 1);
+                      setHistoryCursor(next);
+                      setText(textHistory[next]);
+                    } else if (event.key === 'ArrowDown' && historyCursor >= 0) {
+                      event.preventDefault();
+                      const next = historyCursor - 1;
+                      setHistoryCursor(next);
+                      setText(next < 0 ? '' : textHistory[next]);
+                    }
+                  },
                 }),
-                h(Btn, { onClick: typeText, disabled: text === '' }, t('输入', 'Type')),
+                h(Btn, { onClick: typeText, disabled: text === '' || deviceId === '' }, t('输入', 'Type')),
+                h(Btn, {
+                  onClick: () => setHistoryOpen((open: boolean) => !open),
+                  disabled: textHistory.length === 0,
+                  'aria-expanded': historyOpen,
+                  title: t('展开/收起输入历史', 'Toggle text input history'),
+                }, textHistory.length === 0 ? t('历史', 'History') : t(`历史 (${textHistory.length})`, `History (${textHistory.length})`)),
               ),
+              historyOpen && textHistory.length > 0 ? h('div', { className: 'kvmflow-history-panel', 'aria-label': t('输入历史', 'Text history') },
+                h('div', { className: 'kvmflow-history-head' },
+                  h('span', null, t(`历史输入（${textHistory.length}）· 点击命令填入输入框`, `Text history (${textHistory.length}) · click a command to fill`)),
+                  h(ConfirmButton, {
+                    small: true,
+                    kind: 'danger',
+                    confirmTitle: t('清空输入历史', 'Clear text history'),
+                    confirmLabel: t(`确定要清空全部 ${textHistory.length} 条历史输入吗？`, `Clear all ${textHistory.length} saved text entries?`),
+                    confirmAction: t('清空', 'Clear'),
+                    cancelLabel: t('取消', 'Cancel'),
+                    onConfirm: () => {
+                      setTextHistory([]);
+                      setHistoryCursor(-1);
+                      setHistoryOpen(false);
+                      void rpc('history.clear').catch(() => {});
+                    },
+                  }, t('清空全部', 'Clear all')),
+                ),
+                h('div', { className: 'kvmflow-history-list' }, textHistory.map((item: string) => h('div', { key: item, className: 'kvmflow-history-row' },
+                  h('button', {
+                    type: 'button',
+                    className: 'kvmflow-history-text',
+                    title: item,
+                    onClick: () => { setText(item); setHistoryCursor(-1); },
+                  }, item),
+                  h(Btn, {
+                    small: true,
+                    disabled: deviceId === '',
+                    title: t('直接发送', 'Send now'),
+                    'aria-label': t(`发送 ${item}`, `Send ${item}`),
+                    onClick: () => sendTextValue(item),
+                  }, t('发送', 'Send')),
+                  h(Btn, {
+                    small: true,
+                    kind: 'danger',
+                    title: t('删除此条', 'Remove entry'),
+                    'aria-label': t(`删除 ${item}`, `Remove ${item}`),
+                    onClick: () => {
+                      const next = textHistory.filter((entry: string) => entry !== item);
+                      setTextHistory(next);
+                      if (next.length === 0) setHistoryOpen(false);
+                      void rpc('history.remove', { text: item }).then((value: any) => {
+                        if (Array.isArray(value?.items)) setTextHistory(value.items);
+                      }).catch(() => {});
+                    },
+                  }, t('删除', 'Delete')),
+                ))),
+              ) : null,
             ),
             h(Card, { title: t('键鼠操作日志', 'Input log') },
               h(CardActions, null,
@@ -1807,7 +2081,9 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                 selected.status === 'recording' ? null : h(ConfirmButton, {
                   kind: 'danger',
                   disabled: busy !== '',
-                  confirmLabel: t('删除录制和截图？', 'Delete recording and screenshots?'),
+                  confirmTitle: t('删除录制', 'Delete recording'),
+                  confirmLabel: t(`确定要删除录制“${selected.name}”吗？`, `Delete recording "${selected.name}"?`),
+                  confirmDetail: t('录制的 HID 事件流、人工步骤以及所有截图都会永久删除。', 'All recorded HID events, steps, and screenshots will be permanently deleted.'),
                   confirmAction: t('删除', 'Delete'),
                   cancelLabel: t('取消', 'Cancel'),
                   onConfirm: () => { void removeRecording(); },
@@ -1876,11 +2152,61 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         const [filter, setFilter] = useState('');
         const [dirty, setDirty] = useState(false);
         const [listOpen, setListOpen] = useState(true);
+        const [pendingSwitchId, setPendingSwitchId] = useState('');
+        const [composeOpen, setComposeOpen] = useState(false);
+        const [composeName, setComposeName] = useState('');
+        const [composeMode, setComposeMode] = useState('subflow');
+        const [composeItems, setComposeItems] = useState([]);
         const select = (id: string): void => {
           if (id === selectedId) return;
-          // Autosave is debounced; a switch inside that window would drop the edit.
-          if (dirty && !window.confirm(t('当前工作流还有未保存的修改（可能有错误），仍要切换吗？', 'This workflow has unsaved edits (possibly with errors). Switch anyway?'))) return;
+          if (dirty) {
+            setPendingSwitchId(id);
+            return;
+          }
           setSelectedId(id);
+        };
+        const validWorkflows = workflows.filter((entry: any) => !entry.error);
+        const openCompose = (): void => {
+          setComposeName(t('组合工作流', 'Composed workflow'));
+          setComposeMode('subflow');
+          setComposeItems(selectedId !== '' && validWorkflows.some((w: any) => w.id === selectedId)
+            ? [{ key: `${Date.now()}-0`, workflowId: selectedId, onFailure: 'pause' }]
+            : []);
+          setComposeOpen(true);
+        };
+        const addComposeItem = (workflowId: string): void => {
+          setComposeItems((list: any[]) => [...list, { key: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, workflowId, onFailure: 'pause' }]);
+        };
+        const moveComposeItem = (index: number, delta: number): void => {
+          setComposeItems((list: any[]) => {
+            const target = index + delta;
+            if (target < 0 || target >= list.length) return list;
+            const next = [...list];
+            const [moved] = next.splice(index, 1);
+            next.splice(target, 0, moved);
+            return next;
+          });
+        };
+        const submitCompose = async (): Promise<void> => {
+          if (composeItems.length === 0) return;
+          const value = await runRpc(t('组合工作流', 'Compose workflows'), 'flow.compose', {
+            name: composeName.trim() || t('组合工作流', 'Composed workflow'),
+            deviceId: shared.deviceId || undefined,
+            mode: composeMode,
+            items: composeItems.map((item: any) => ({ workflowId: item.workflowId, onFailure: item.onFailure })),
+          });
+          if (value !== undefined) {
+            setComposeOpen(false);
+            setDirty(false);
+            await refresh();
+            setSelectedId(value.document.id);
+            notify(
+              composeMode === 'subflow'
+                ? t('已生成引用编排大工作流。', 'Composed workflow created (subflow chain).')
+                : t('已展平合并为独立大工作流。', 'Workflows merged into one standalone graph.'),
+              'ok',
+            );
+          }
         };
         const create = async (): Promise<void> => {
           const value = await runRpc(t('新建工作流', 'Create workflow'), 'workflow.create', { name: t('新工作流', 'New workflow'), deviceId: shared.deviceId || undefined });
@@ -1939,6 +2265,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
           h('aside', { className: 'kvmflow-wf-list', 'aria-label': t('工作流列表', 'Workflows') },
             h('div', { className: 'kvmflow-wf-list-head' },
               h('span', { className: 'kvmflow-wf-list-title' }, t('工作流', 'Workflows'), h('span', { className: 'kvmflow-hint' }, ` ${workflows.length}`)),
+              validWorkflows.length >= 1 ? h(Btn, { small: true, onClick: openCompose, disabled: busy !== '', title: t('将多个工作流按顺序组合成一个大工作流', 'Combine multiple workflows in order into one') }, t('组合', 'Compose')) : null,
               h(Btn, { kind: 'primary', small: true, onClick: () => { void create(); }, disabled: busy !== '' }, t('+ 新建', '+ New')),
               h('button', { type: 'button', className: 'kvmflow-icon-btn', onClick: () => setListOpen(false), title: t('收起列表', 'Collapse the list'), 'aria-label': t('收起列表', 'Collapse the list') }, '‹'),
             ),
@@ -1975,7 +2302,9 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                     kind: 'danger',
                     small: true,
                     disabled: busy !== '',
-                    confirmLabel: t('删除？', 'Delete?'),
+                    confirmTitle: t('删除工作流', 'Delete workflow'),
+                    confirmLabel: t(`确定要删除工作流“${entry.name}”吗？`, `Delete workflow "${entry.name}"?`),
+                    confirmDetail: t('该工作流的 YAML、画布布局及参考图资产将被永久删除。', 'Its YAML, canvas layout, and reference assets will be permanently deleted.'),
                     confirmAction: t('删除', 'Delete'),
                     cancelLabel: t('取消', 'Cancel'),
                     onConfirm: () => { void remove(entry.id); },
@@ -2005,6 +2334,117 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                 onDirtyChange: setDirty,
                 renderThumb: (path: string | undefined, label: string) => h(ImageThumb, { key: `${path}-${label}`, shared, path, label }),
               }),
+          ),
+          h(Modal, {
+            open: pendingSwitchId !== '',
+            title: t('放弃未保存的修改？', 'Discard unsaved edits?'),
+            onClose: () => setPendingSwitchId(''),
+            footer: h(React.Fragment, null,
+              h(Btn, { onClick: () => setPendingSwitchId('') }, t('继续编辑', 'Keep editing')),
+              h(Btn, {
+                kind: 'danger',
+                onClick: () => {
+                  const target = pendingSwitchId;
+                  setPendingSwitchId('');
+                  setDirty(false);
+                  setSelectedId(target);
+                },
+              }, t('放弃并切换', 'Discard & switch')),
+            ),
+          },
+            h('p', { className: 'kvmflow-modal-msg' }, t('当前工作流还有未保存的修改（可能存在错误未能自动保存），切换将会丢失这些更改。', 'The current workflow has unsaved changes (possibly blocked by errors). Switching will discard them.')),
+          ),
+          h(Modal, {
+            open: composeOpen,
+            wide: true,
+            title: t('组合多个工作流', 'Compose workflows'),
+            subtitle: t('自由搭配多个工作流的顺序，合并生成一个新的大工作流。', 'Pick workflows in any order and combine them into one new workflow.'),
+            onClose: () => setComposeOpen(false),
+            footer: h(React.Fragment, null,
+              h('span', { className: 'kvmflow-hint', style: { marginRight: 'auto' } },
+                t(`已编排 ${composeItems.length} 个环节`, `${composeItems.length} stage${composeItems.length === 1 ? '' : 's'} selected`),
+              ),
+              h(Btn, { onClick: () => setComposeOpen(false) }, t('取消', 'Cancel')),
+              h(Btn, { kind: 'primary', disabled: busy !== '' || composeItems.length === 0, onClick: () => { void submitCompose(); } }, t('生成大工作流', 'Create composed workflow')),
+            ),
+          },
+            h(Field, { label: t('新工作流名称', 'New workflow name') },
+              h('input', { className: 'kvmflow-input', value: composeName, placeholder: t('例如：装机全流程（BIOS → OOBE → 打印机）', 'e.g. Full setup (BIOS -> OOBE -> Printer)'), onChange: (event: any) => setComposeName(event.target.value) }),
+            ),
+            h('div', { className: 'kvmflow-compose-modes', role: 'radiogroup', 'aria-label': t('组合模式', 'Compose mode') },
+              h('button', {
+                type: 'button',
+                role: 'radio',
+                'aria-checked': composeMode === 'subflow',
+                className: cn('kvmflow-compose-mode', composeMode === 'subflow' ? 'on' : ''),
+                onClick: () => setComposeMode('subflow'),
+              },
+                h('span', { className: 'kvmflow-compose-mode-title' }, t('引用编排（Subflow）', 'Subflow chain')),
+                h('span', { className: 'kvmflow-hint' }, t('每个工作流占一个节点，画布清爽；原工作流改动后自动同步。', 'One subflow node per stage; compact canvas, stays synced with child edits.')),
+              ),
+              h('button', {
+                type: 'button',
+                role: 'radio',
+                'aria-checked': composeMode === 'inline',
+                className: cn('kvmflow-compose-mode', composeMode === 'inline' ? 'on' : ''),
+                onClick: () => setComposeMode('inline'),
+              },
+                h('span', { className: 'kvmflow-compose-mode-title' }, t('展平合并（独立大图）', 'Inline merge')),
+                h('span', { className: 'kvmflow-hint' }, t('把所有节点合进同一张画布，互相独立，可自由跨段增删分支。', 'Flattens every node into one standalone graph you can freely rewire.')),
+              ),
+            ),
+            h('div', { className: 'kvmflow-compose-grid' },
+              h('div', { className: 'kvmflow-compose-col' },
+                h('div', { className: 'kvmflow-compose-col-head' },
+                  h('span', null, t('可选工作流', 'Available workflows')),
+                  h('span', null, String(validWorkflows.length)),
+                ),
+                validWorkflows.length === 0
+                  ? h('div', { className: 'kvmflow-hint' }, t('没有可用的工作流。', 'No valid workflows available.'))
+                  : validWorkflows.map((wf: any) => h('div', { key: wf.id, className: 'kvmflow-compose-item' },
+                    h('div', { className: 'kvmflow-compose-item-info' },
+                      h('div', { className: 'kvmflow-compose-item-name' }, wf.name),
+                      h('div', { className: 'kvmflow-hint' }, t(`${wf.stepCount} 个节点`, `${wf.stepCount} nodes`)),
+                    ),
+                    h(Btn, { small: true, onClick: () => addComposeItem(wf.id) }, t('+ 加入', '+ Add')),
+                  )),
+              ),
+              h('div', { className: 'kvmflow-compose-col' },
+                h('div', { className: 'kvmflow-compose-col-head' },
+                  h('span', null, t('执行顺序（可重复加入）', 'Execution order (repeats allowed)')),
+                  composeItems.length > 0 ? h('button', { type: 'button', className: 'kf-link', onClick: () => setComposeItems([]) }, t('清空', 'Clear')) : null,
+                ),
+                composeItems.length === 0
+                  ? h('div', { className: 'kvmflow-hint', style: { padding: '16px 4px', textAlign: 'center' } }, t('点击左侧“+ 加入”按顺序编排。', 'Click "+ Add" on the left to build the sequence.'))
+                  : composeItems.map((item: any, index: number) => {
+                    const wf = validWorkflows.find((entry: any) => entry.id === item.workflowId);
+                    return h('div', { key: item.key, className: 'kvmflow-compose-item kvmflow-compose-selected' },
+                      h('div', { className: 'kvmflow-compose-selected-top' },
+                        h('span', { className: 'kvmflow-compose-index' }, String(index + 1)),
+                        h('div', { className: 'kvmflow-compose-item-info' },
+                          h('div', { className: 'kvmflow-compose-item-name' }, wf?.name ?? item.workflowId),
+                        ),
+                        h(Btn, { small: true, disabled: index === 0, onClick: () => moveComposeItem(index, -1), title: t('上移', 'Move up') }, '↑'),
+                        h(Btn, { small: true, disabled: index === composeItems.length - 1, onClick: () => moveComposeItem(index, 1), title: t('下移', 'Move down') }, '↓'),
+                        h(Btn, { small: true, kind: 'danger', onClick: () => setComposeItems((list: any[]) => list.filter((_: any, i: number) => i !== index)), title: t('移除', 'Remove') }, '×'),
+                      ),
+                      h('div', { className: 'kvmflow-row', style: { justifyContent: 'space-between' } },
+                        h('span', { className: 'kvmflow-hint' }, t('该段失败时：', 'On stage failure:')),
+                        h('select', {
+                          className: 'kvmflow-select kvmflow-inline-select',
+                          style: { height: '24px', fontSize: '11px' },
+                          value: item.onFailure,
+                          onChange: (event: any) => setComposeItems((list: any[]) => list.map((entry: any, i: number) => (i === index ? { ...entry, onFailure: event.target.value } : entry))),
+                        },
+                          h('option', { value: 'pause' }, t('暂停等待人工', 'Pause for operator')),
+                          h('option', { value: 'continue' }, t('忽略并进入下一段', 'Continue to next stage')),
+                          h('option', { value: 'abort' }, t('中止整个流程', 'Abort the whole run')),
+                        ),
+                      ),
+                    );
+                  }),
+              ),
+            ),
           ),
         );
       }
@@ -2054,6 +2494,27 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
           const value = await runRpc(t('执行控制', 'Run control'), 'run.control', { id: run.id, action, ...extra });
           if (value !== undefined) {
             setRun(value.run);
+            await refresh();
+          }
+        };
+        const deleteHistoryRun = async (id: string): Promise<void> => {
+          const value = await runRpc(t('清理执行记录', 'Delete run'), 'run.delete', { id });
+          if (value !== undefined) {
+            if (selectedRunId === id) setSelectedRunId('');
+            if (run?.id === id) { setRun(undefined); setFocusNode(undefined); }
+            shared.notify(t('已清理该执行记录与截图。', 'Run record and screenshots removed.'), 'ok');
+            await refresh();
+          }
+        };
+        const clearHistoryRuns = async (): Promise<void> => {
+          const value = await runRpc(t('清空历史执行', 'Clear run history'), 'run.clear');
+          if (value !== undefined) {
+            if (state.activeRun === undefined || state.activeRun === null) {
+              setSelectedRunId('');
+              setRun(undefined);
+              setFocusNode(undefined);
+            }
+            shared.notify(t(`已清理 ${value.removed ?? 0} 条历史执行记录。`, `Removed ${value.removed ?? 0} run record(s).`), 'ok');
             await refresh();
           }
         };
@@ -2179,23 +2640,55 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                   h('span', null, entry.message),
                 ))),
             ),
-            h(Card, { title: t('历史执行', 'Recent runs'), subtitle: `${state.recentRuns?.length ?? 0}` },
+            h(Card, {
+              title: t('历史执行', 'Recent runs'),
+              subtitle: `${state.recentRuns?.length ?? 0}`,
+              actions: (state.recentRuns ?? []).some((entry: any) => entry.id !== state.activeRun?.id) ? [
+                h(ConfirmButton, {
+                  small: true,
+                  kind: 'danger',
+                  disabled: busy !== '',
+                  confirmTitle: t('清空历史执行', 'Clear run history'),
+                  confirmLabel: t('确定要清理所有已结束的历史执行记录和截图吗？', 'Remove all finished run records and screenshots?'),
+                  confirmDetail: state.activeRun ? t('当前正在运行的执行不会被删除。', 'The currently active run will be kept.') : undefined,
+                  confirmAction: t('清空', 'Clear'),
+                  cancelLabel: t('取消', 'Cancel'),
+                  onConfirm: () => { void clearHistoryRuns(); },
+                }, t('清空', 'Clear')),
+              ] : undefined,
+            },
               (state.recentRuns ?? []).length === 0
                 ? h('div', { className: 'kvmflow-hint' }, t('暂无历史。', 'No history.'))
-                : h('div', { className: 'kvmflow-col' }, (state.recentRuns ?? []).map((entry: any) => h('div', {
-                  key: entry.id,
-                  role: 'button',
-                  tabIndex: 0,
-                  className: cn('kvmflow-device', entry.id === current?.id ? 'selected' : ''),
-                  style: { cursor: 'pointer' },
-                  onClick: () => { setSelectedRunId(entry.id); setFocusNode(undefined); void rpc('run.get', { id: entry.id }).then((value: any) => { if (value.run !== null) setRun(value.run); }); },
-                },
-                  h('div', null,
-                    h('div', { className: 'kvmflow-device-name' }, entry.workflowName),
-                    h('div', { className: 'kvmflow-hint' }, `${formatDateTime(entry.createdAt)}${entry.reason ? ` · ${entry.reason}` : ''}`),
-                  ),
-                  h(Pill, { tone: statusTone(entry.status) }, statusLabel(t, entry.status)),
-                ))),
+                : h('div', { className: 'kvmflow-col' }, (state.recentRuns ?? []).map((entry: any) => {
+                  const isActive = entry.id === state.activeRun?.id;
+                  return h('div', {
+                    key: entry.id,
+                    role: 'button',
+                    tabIndex: 0,
+                    className: cn('kvmflow-device', 'kvmflow-run-item', entry.id === current?.id ? 'selected' : ''),
+                    style: { cursor: 'pointer' },
+                    onClick: () => { setSelectedRunId(entry.id); setFocusNode(undefined); void rpc('run.get', { id: entry.id }).then((value: any) => { if (value.run !== null) setRun(value.run); }); },
+                  },
+                    h('div', null,
+                      h('div', { className: 'kvmflow-device-name' }, entry.workflowName),
+                      h('div', { className: 'kvmflow-hint' }, `${formatDateTime(entry.createdAt)}${entry.reason ? ` · ${entry.reason}` : ''}`),
+                    ),
+                    h('div', { className: 'kvmflow-actions' },
+                      h(Pill, { tone: statusTone(entry.status) }, statusLabel(t, entry.status)),
+                      isActive ? null : h(ConfirmButton, {
+                        small: true,
+                        kind: 'danger',
+                        disabled: busy !== '',
+                        confirmTitle: t('清理执行记录', 'Delete run record'),
+                        confirmLabel: t(`确定要清理“${entry.workflowName}”的这次执行记录吗？`, `Delete this run of "${entry.workflowName}"?`),
+                        confirmDetail: t('该次执行的日志、轨迹与截图都会从磁盘移除。', 'Its log, trace, and screenshots will be removed from disk.'),
+                        confirmAction: t('清理', 'Delete'),
+                        cancelLabel: t('取消', 'Cancel'),
+                        onConfirm: () => { void deleteHistoryRun(entry.id); },
+                      }, t('清理', 'Delete')),
+                    ),
+                  );
+                })),
             ),
           ),
         );

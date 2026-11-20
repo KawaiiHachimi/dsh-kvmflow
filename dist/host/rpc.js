@@ -4,6 +4,7 @@ import { imageFacts, toBase64 } from './image.js';
 import { StoreError } from './store.js';
 import { YamlError } from './yaml.js';
 import { FlowInvalidError } from './flow/service.js';
+import { listAvailableModels } from './model.js';
 function fail(code, message, details = {}) {
     return { ok: false, error: { code, message, details } };
 }
@@ -220,6 +221,28 @@ export async function handleRpc(deps, endpoint, payload) {
                     return fail('kvmflow/INVALID_INPUT', 'id and nodeId are required');
                 return { ok: true, value: await deps.runner.nodeTest(id, nodeId, str(args.deviceId)) };
             }
+            case 'flow.compose': {
+                if (!Array.isArray(args.items) || args.items.length === 0) {
+                    return fail('kvmflow/INVALID_INPUT', 'items must be a non-empty list of { workflowId, onFailure? }');
+                }
+                const mode = args.mode === 'inline' ? 'inline' : 'subflow';
+                const items = args.items.map((item) => ({
+                    workflowId: typeof item === 'string' ? item : String(item?.workflowId ?? ''),
+                    ...(item?.onFailure === 'continue' || item?.onFailure === 'abort' || item?.onFailure === 'pause'
+                        ? { onFailure: item.onFailure }
+                        : {}),
+                })).filter((item) => item.workflowId !== '');
+                if (items.length === 0)
+                    return fail('kvmflow/INVALID_INPUT', 'each item needs a workflowId');
+                const view = await deps.flows.compose({
+                    name: str(args.name) ?? 'Composed workflow',
+                    ...(str(args.description) === undefined ? {} : { description: str(args.description) }),
+                    ...(str(args.deviceId) === undefined ? {} : { deviceId: str(args.deviceId) }),
+                    mode,
+                    items,
+                });
+                return { ok: true, value: view };
+            }
             case 'workflow.create': {
                 const view = await deps.flows.create({
                     name: str(args.name) ?? 'New workflow',
@@ -236,10 +259,17 @@ export async function handleRpc(deps, endpoint, payload) {
                 await deps.store.deleteWorkflow(id);
                 return { ok: true, value: { removed: id } };
             }
+            case 'model.list': {
+                return { ok: true, value: await listAvailableModels(deps.ctx) };
+            }
             case 'run.start': {
+                const vm = isRecord(args.visionModel) && typeof args.visionModel.provider === 'string' && typeof args.visionModel.model === 'string' && args.visionModel.provider !== '' && args.visionModel.model !== ''
+                    ? { provider: args.visionModel.provider, model: args.visionModel.model }
+                    : undefined;
                 const run = await deps.runner.start(str(args.workflowId) ?? '', str(args.deviceId), {
                     armBios: args.armBios !== false,
                     ...(isRecord(args.inputs) ? { inputs: args.inputs } : {}),
+                    ...(vm === undefined ? {} : { visionModel: vm }),
                 });
                 return { ok: true, value: { run } };
             }
@@ -263,6 +293,38 @@ export async function handleRpc(deps, endpoint, payload) {
             }
             case 'run.list': {
                 return { ok: true, value: { runs: await deps.store.listRuns(30) } };
+            }
+            case 'run.delete': {
+                const id = str(args.id);
+                if (id === undefined)
+                    return fail('kvmflow/INVALID_INPUT', 'id is required');
+                if (deps.runner.activeRun()?.id === id) {
+                    return fail('kvmflow/RUN_ACTIVE', 'cannot delete an active run; abort it first');
+                }
+                await deps.store.deleteRun(id);
+                return { ok: true, value: { removed: id } };
+            }
+            case 'run.clear': {
+                const removed = await deps.store.clearRuns(deps.runner.activeRun()?.id);
+                return { ok: true, value: { removed } };
+            }
+            case 'history.list': {
+                return { ok: true, value: { items: await deps.store.readTextHistory(), path: deps.store.textHistoryPath } };
+            }
+            case 'history.add': {
+                const text = typeof args.text === 'string' ? args.text : '';
+                if (text === '')
+                    return fail('kvmflow/INVALID_INPUT', 'text is required');
+                return { ok: true, value: { items: await deps.store.addTextHistory(text) } };
+            }
+            case 'history.remove': {
+                const text = typeof args.text === 'string' ? args.text : '';
+                if (text === '')
+                    return fail('kvmflow/INVALID_INPUT', 'text is required');
+                return { ok: true, value: { items: await deps.store.removeTextHistory(text) } };
+            }
+            case 'history.clear': {
+                return { ok: true, value: { items: await deps.store.clearTextHistory() } };
             }
             case 'video.status': {
                 const device = deps.store.getDevice(str(args.deviceId));

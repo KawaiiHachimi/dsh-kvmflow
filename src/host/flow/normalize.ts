@@ -522,6 +522,14 @@ function normalizeBios(input: unknown): FlowDocument['bios'] | undefined {
   };
 }
 
+function normalizeVisionModel(input: unknown): FlowDocument['visionModel'] | undefined {
+  if (!isRecord(input)) return undefined;
+  const provider = asString(input.provider, '').trim();
+  const model = asString(input.model, '').trim();
+  if (provider === '' || model === '') return undefined;
+  return { provider, model };
+}
+
 /**
  * Validate a v1 step-shaped document so the caller can report an upgrade hint.
  * @param input - parsed YAML value.
@@ -586,6 +594,7 @@ export function normalizeFlow(
     vars: isRecord(input.vars) ? { ...input.vars } : {},
     limits: normalizeLimits(input.limits),
     ...(normalizeBios(input.bios) === undefined ? {} : { bios: normalizeBios(input.bios) }),
+    ...(normalizeVisionModel(input.visionModel) === undefined ? {} : { visionModel: normalizeVisionModel(input.visionModel) }),
     nodes,
   };
 
@@ -668,6 +677,7 @@ export function flowToYaml(document: FlowDocument): YamlValue {
     ...(Object.keys(document.vars).length === 0 ? {} : { vars: document.vars as unknown as YamlValue }),
     limits: document.limits as unknown as YamlValue,
     ...(document.bios === undefined ? {} : { bios: document.bios as unknown as YamlValue }),
+    ...(document.visionModel === undefined ? {} : { visionModel: document.visionModel as unknown as YamlValue }),
     nodes,
   };
 }

@@ -1,4 +1,18 @@
-/** DSH-model-backed visual verification for recorded screenshots. */
+/** DSH-model-backed visual verification and model discovery for KVMFlow. */
+
+export interface ModelChoice {
+  provider: string;
+  model: string;
+  reasoningEffort?: string;
+}
+
+export interface AvailableModel {
+  provider: string;
+  providerName: string;
+  id: string;
+  name: string;
+  supportsImage: boolean;
+}
 
 export interface VisionVerdict {
   passed: boolean;
@@ -10,6 +24,7 @@ export interface VisionRequest {
   data: Uint8Array;
   condition: string;
   context?: string;
+  model?: ModelChoice;
   signal?: AbortSignal;
 }
 
@@ -43,14 +58,62 @@ function parseVerdict(text: string): VisionVerdict {
 }
 
 /**
- * Send one screenshot and one instruction to the default DSH model.
+ * List every model registered in DSH across active LLM providers, alongside
+ * DSH's current default selection.
+ */
+export async function listAvailableModels(ctx: any): Promise<{ models: AvailableModel[]; defaultModel?: ModelChoice }> {
+  const llm = ctx.get('llm');
+  const defaults = ctx.get('agentDefaultModel');
+  const selection = defaults?.currentSelection?.();
+  const defaultModel: ModelChoice | undefined = isRecord(selection) && typeof selection.provider === 'string' && typeof selection.model === 'string'
+    ? {
+      provider: selection.provider,
+      model: selection.model,
+      ...(typeof selection.reasoningEffort === 'string' ? { reasoningEffort: selection.reasoningEffort } : {}),
+    }
+    : undefined;
+  const models: AvailableModel[] = [];
+  if (llm !== undefined && typeof llm.listProviders === 'function' && typeof llm.listModels === 'function') {
+    let providers: any[] = [];
+    try {
+      providers = llm.listProviders() ?? [];
+    } catch {
+      providers = [];
+    }
+    for (const provider of providers) {
+      if (!isRecord(provider) || typeof provider.id !== 'string') continue;
+      const providerName = typeof provider.name === 'string' && provider.name !== '' ? provider.name : provider.id;
+      try {
+        const list = await llm.listModels(provider.id);
+        if (!Array.isArray(list)) continue;
+        for (const entry of list) {
+          if (!isRecord(entry) || typeof entry.id !== 'string') continue;
+          const modalities = Array.isArray(entry.inputModalities) ? entry.inputModalities : undefined;
+          models.push({
+            provider: provider.id,
+            providerName,
+            id: entry.id,
+            name: typeof entry.name === 'string' && entry.name !== '' ? entry.name : entry.id,
+            supportsImage: modalities === undefined ? true : modalities.includes('image'),
+          });
+        }
+      } catch {
+        // Ignore a provider whose catalog fails to enumerate.
+      }
+    }
+  }
+  return { models, ...(defaultModel === undefined ? {} : { defaultModel }) };
+}
+
+/**
+ * Send one screenshot and one instruction to the chosen (or default) DSH model.
  * @param ctx - Host context carrying `llm`, `attachments`, and `agentDefaultModel`.
- * @param request - image bytes, the full instruction, and a token budget.
+ * @param request - image bytes, the full instruction, optional model override, and a token budget.
  * @returns the model's reply text.
  */
 export async function askVision(
   ctx: any,
-  request: { data: Uint8Array; prompt: string; maxTokens?: number; signal?: AbortSignal },
+  request: { data: Uint8Array; prompt: string; maxTokens?: number; model?: ModelChoice; signal?: AbortSignal },
 ): Promise<string> {
   const llm = ctx.get('llm');
   const attachments = ctx.get('attachments');
@@ -61,7 +124,8 @@ export async function askVision(
   if (attachments === undefined || typeof attachments.saveImage !== 'function') {
     throw new Error('vision is unavailable: no attachment service is mounted');
   }
-  const selection = defaults?.currentSelection?.();
+  const override = request.model !== undefined && request.model.provider !== '' && request.model.model !== '' ? request.model : undefined;
+  const selection = override ?? defaults?.currentSelection?.();
   if (!isRecord(selection) || typeof selection.provider !== 'string' || typeof selection.model !== 'string') {
     throw new Error('vision is unavailable: no default model is selected');
   }
@@ -118,7 +182,7 @@ export async function verifyWithVision(ctx: any, request: VisionRequest): Promis
     `Success condition: ${request.condition}`,
     ...(request.context === undefined || request.context === '' ? [] : ['', `Step context: ${request.context}`]),
   ].join('\n');
-  const text = await askVision(ctx, { data: request.data, prompt, maxTokens: 400, ...(request.signal === undefined ? {} : { signal: request.signal }) });
+  const text = await askVision(ctx, { data: request.data, prompt, maxTokens: 400, ...(request.model === undefined ? {} : { model: request.model }), ...(request.signal === undefined ? {} : { signal: request.signal }) });
   return parseVerdict(text);
 }
 
@@ -168,7 +232,7 @@ export interface ClassifyVerdict {
  */
 export async function classifyWithVision(
   ctx: any,
-  request: { data: Uint8Array; labels: Record<string, string>; prompt?: string; signal?: AbortSignal },
+  request: { data: Uint8Array; labels: Record<string, string>; prompt?: string; model?: ModelChoice; signal?: AbortSignal },
 ): Promise<ClassifyVerdict> {
   const names = Object.keys(request.labels);
   const prompt = [
@@ -181,7 +245,7 @@ export async function classifyWithVision(
     ...names.map(name => `- ${name}: ${request.labels[name]}`),
     '- unknown: none of the above',
   ].join('\n');
-  const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 300, ...(request.signal === undefined ? {} : { signal: request.signal }) });
+  const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 300, ...(request.model === undefined ? {} : { model: request.model }), ...(request.signal === undefined ? {} : { signal: request.signal }) });
   const parsed = parseJsonObject(raw);
   let label = typeof parsed?.label === 'string' ? parsed.label.trim() : '';
   if (!names.includes(label)) {
@@ -201,7 +265,7 @@ export async function classifyWithVision(
  */
 export async function extractWithVision(
   ctx: any,
-  request: { data: Uint8Array; fields: string[]; prompt: string; signal?: AbortSignal },
+  request: { data: Uint8Array; fields: string[]; prompt: string; model?: ModelChoice; signal?: AbortSignal },
 ): Promise<{ values: Record<string, unknown>; raw: string }> {
   const prompt = [
     'You read information off a screenshot of a computer screen captured through an IP-KVM.',
@@ -209,7 +273,7 @@ export async function extractWithVision(
     `Reply with only a JSON object with exactly these keys: ${request.fields.map(field => JSON.stringify(field)).join(', ')}.`,
     'Use null for a value that is not visible. Copy text exactly as shown.',
   ].join('\n');
-  const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 600, ...(request.signal === undefined ? {} : { signal: request.signal }) });
+  const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 600, ...(request.model === undefined ? {} : { model: request.model }), ...(request.signal === undefined ? {} : { signal: request.signal }) });
   const parsed = parseJsonObject(raw);
   if (parsed === undefined) throw new Error(`vision extract did not return JSON: ${raw.slice(0, 200)}`);
   const values: Record<string, unknown> = {};
@@ -225,7 +289,7 @@ export async function extractWithVision(
  */
 export async function locateWithVision(
   ctx: any,
-  request: { data: Uint8Array; target: string; context?: string; signal?: AbortSignal },
+  request: { data: Uint8Array; target: string; context?: string; model?: ModelChoice; signal?: AbortSignal },
 ): Promise<{ found: boolean; x?: number; y?: number; reason: string; raw: string }> {
   const prompt = [
     'You locate a UI element on a screenshot of a computer screen captured through an IP-KVM.',
@@ -234,7 +298,7 @@ export async function locateWithVision(
     'Coordinates are fractions of the image: x from 0 (left edge) to 1 (right edge), y from 0 (top edge) to 1 (bottom edge).',
     'Reply with only a JSON object: {"found": true|false, "x": <number>, "y": <number>, "reason": "<one short sentence>"} giving the centre of the element.',
   ].join('\n');
-  const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 300, ...(request.signal === undefined ? {} : { signal: request.signal }) });
+  const raw = await askVision(ctx, { data: request.data, prompt, maxTokens: 300, ...(request.model === undefined ? {} : { model: request.model }), ...(request.signal === undefined ? {} : { signal: request.signal }) });
   const parsed = parseJsonObject(raw);
   const reason = typeof parsed?.reason === 'string' ? parsed.reason.slice(0, 500) : raw.slice(0, 300);
   if (parsed === undefined || parsed.found !== true) return { found: false, reason, raw };

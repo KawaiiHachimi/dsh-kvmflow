@@ -7,6 +7,7 @@ import { dumpYaml, type YamlValue } from '../yaml.js';
 import { analyzeFlow, hasErrors, toGraph, type FlowIssue } from './graph.js';
 import { catalogForClient, flowToYaml, normalizeFlow } from './normalize.js';
 import { applyPatch, type PatchOp } from './patch.js';
+import { composeFlows, type ComposeMode, type StageFailurePolicy } from './compose.js';
 import type { FlowDocument, FlowGraph, FlowLayout } from './schema.js';
 
 export interface FlowView {
@@ -177,6 +178,62 @@ export class FlowService {
   }
 
   /**
+   * Compose several workflows in order into a new workflow.
+   * @param options - name, mode (`subflow` or `inline`), and ordered items.
+   * @returns the saved view of the new composed workflow.
+   */
+  async compose(options: {
+    name: string;
+    description?: string;
+    deviceId?: string;
+    mode: ComposeMode;
+    items: Array<{ workflowId: string; onFailure?: StageFailurePolicy }>;
+  }): Promise<FlowView> {
+    if (!Array.isArray(options.items) || options.items.length === 0) {
+      throw new StoreError('INVALID_INPUT', 'at least one workflow is required to compose');
+    }
+    const id = newWorkflowId();
+    const stages = [];
+    for (let index = 0; index < options.items.length; index += 1) {
+      const item = options.items[index];
+      const document = await this.store.loadFlow(item.workflowId);
+      let assetMap: Record<string, string> | undefined;
+      if (options.mode === 'inline') {
+        const refs = collectAssetRefs(document);
+        if (refs.size > 0) {
+          assetMap = {};
+          for (const ref of refs) {
+            try {
+              const bytes = await this.store.readWorkflowAsset(document.id, ref);
+              const base = ref.replace(/^assets\//, '');
+              assetMap[ref] = await this.store.saveWorkflowAsset(id, `s${index + 1}_${base}`, bytes);
+            } catch {
+              // Keep the original path if the asset file is missing.
+            }
+          }
+        }
+      }
+      stages.push({
+        document,
+        ...(item.onFailure === undefined ? {} : { onFailure: item.onFailure }),
+        ...(assetMap === undefined ? {} : { assetMap }),
+      });
+    }
+    const { document, issues } = composeFlows({
+      id,
+      name: options.name.trim() || 'Composed workflow',
+      ...(options.description === undefined ? {} : { description: options.description }),
+      ...(options.deviceId === undefined ? {} : { deviceId: options.deviceId }),
+      mode: options.mode,
+      stages,
+    });
+    if (issues.length > 0) throw new FlowInvalidError(structuralIssues(issues));
+    document.id = id;
+    await this.store.saveFlow(document);
+    return this.view(id);
+  }
+
+  /**
    * Store canvas coordinates.
    * @param id - workflow id.
    * @param layout - coordinates.
@@ -193,6 +250,26 @@ export class FlowService {
     }
     return { version: layout.version ?? 1, nodes };
   }
+}
+
+/** Collect any `assets/...` string referenced inside a document. */
+function collectAssetRefs(document: FlowDocument): Set<string> {
+  const refs = new Set<string>();
+  const walk = (value: unknown): void => {
+    if (typeof value === 'string') {
+      if (value.startsWith('assets/')) refs.add(value);
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item);
+      return;
+    }
+    if (value !== null && typeof value === 'object') {
+      for (const child of Object.values(value as Record<string, unknown>)) walk(child);
+    }
+  };
+  walk(document.nodes);
+  return refs;
 }
 
 /** Plain JSON of the issues, for RPC and tool results. */

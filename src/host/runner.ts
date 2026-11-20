@@ -12,7 +12,7 @@ import {
   type LinkrEvent,
 } from './linkr.js';
 import { imageFacts } from './image.js';
-import { classifyWithVision, extractWithVision, locateWithVision, verifyWithVision } from './model.js';
+import { classifyWithVision, extractWithVision, locateWithVision, verifyWithVision, type ModelChoice } from './model.js';
 import { Store, StoreError } from './store.js';
 import { analyzeFlow, hasErrors } from './flow/graph.js';
 import { Interpreter, releaseEvents, type Decision, type DecisionRequest, type GraphRunState, type InterpreterHost, type RunOutcome } from './flow/interp.js';
@@ -31,6 +31,7 @@ interface Runtime {
   run: RunRecord;
   document: FlowDocument;
   device: DeviceRecord;
+  visionModel?: ModelChoice;
   controller: AbortController;
   pauseRequested: boolean;
   /** Resolver for the pending operator decision. */
@@ -61,6 +62,8 @@ export interface StartOptions {
   armBios?: boolean;
   /** Values for the document's declared inputs. */
   inputs?: Record<string, unknown>;
+  /** Optional DSH model override for vision calls during this run. */
+  visionModel?: ModelChoice;
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -188,17 +191,19 @@ export class Runner {
       run.status = 'armed';
       run.phase = 'bios: waiting for power';
     }
+    const visionModel = options.visionModel ?? document.visionModel;
     const runtime: Runtime = {
       run,
       document,
       device,
+      ...(visionModel === undefined ? {} : { visionModel }),
       controller: new AbortController(),
       pauseRequested: false,
       finished: false,
     };
     this.runtimes.set(run.id, runtime);
     this.lastRunId = run.id;
-    this.log(runtime, 'info', `Starting workflow "${document.name}" on ${device.name} (${Object.keys(document.nodes).length} nodes)`);
+    this.log(runtime, 'info', `Starting workflow "${document.name}" on ${device.name} (${Object.keys(document.nodes).length} nodes)${visionModel === undefined ? '' : ` · vision model ${visionModel.provider}/${visionModel.model}`}`);
     await this.persist(runtime);
     void this.worker(runtime, { armBios: options.armBios, inputs }).catch(error => {
       console.error('[kvmflow] run worker crashed:', error);
@@ -465,24 +470,28 @@ export class Runner {
           data: request.data,
           condition: request.condition,
           ...(request.context === undefined ? {} : { context: request.context }),
+          ...(runtime.visionModel === undefined ? {} : { model: runtime.visionModel }),
           signal: runtime.controller.signal,
         }),
         classify: async request => classifyWithVision(this.ctx, {
           data: request.data,
           labels: request.labels,
           ...(request.prompt === undefined ? {} : { prompt: request.prompt }),
+          ...(runtime.visionModel === undefined ? {} : { model: runtime.visionModel }),
           signal: runtime.controller.signal,
         }),
         extract: async request => extractWithVision(this.ctx, {
           data: request.data,
           fields: request.fields,
           prompt: request.prompt,
+          ...(runtime.visionModel === undefined ? {} : { model: runtime.visionModel }),
           signal: runtime.controller.signal,
         }),
         locate: async request => locateWithVision(this.ctx, {
           data: request.data,
           target: request.target,
           ...(request.context === undefined ? {} : { context: request.context }),
+          ...(runtime.visionModel === undefined ? {} : { model: runtime.visionModel }),
           signal: runtime.controller.signal,
         }),
       },
@@ -575,6 +584,7 @@ export class Runner {
       },
       document: documentForTest,
       device,
+      ...(document.visionModel === undefined ? {} : { visionModel: document.visionModel }),
       controller,
       pauseRequested: false,
       finished: false,

@@ -127,6 +127,7 @@ IP-KVM 的截图分辨率是它协商到的采集模式，不一定等于目标�
 | `kvmflow_flow_catalog` | 节点类型、端口与配置字段 |
 | `kvmflow_workflow_list` / `_get` / `_save` / `_generate` | 工作流读取、整篇保存、从录制生成线性主干 |
 | `kvmflow_flow_patch` / `kvmflow_flow_validate` | 增删改节点与连线（批量、校验后才落盘）；不保存的校验 |
+| `kvmflow_flow_compose` | 将多个工作流按顺序组合为一个大工作流（支持 `subflow` 引用编排与 `inline` 展平合并） |
 | `kvmflow_node_test` | 在目标机上单独执行一个节点，返回出口、理由、输出与截图 |
 | `kvmflow_run_start` / `_status` / `_control` | 启动（可传 `inputs`）、查看轨迹、控制执行（`route` / `choose` / `retry` / `skip` / `abort` …） |
 

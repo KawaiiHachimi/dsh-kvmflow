@@ -119,7 +119,7 @@ export function apply(ctx: any, config: Config = {}): void {
         res.end(JSON.stringify({ ok: false, error: { code: 'kvmflow/BAD_REQUEST', message: 'method is required', details: {} } }));
         return;
       }
-      const result = await handleRpc({ store, recorder, runner, flows, clientFor, sessionFor }, envelope.method, envelope.params);
+      const result = await handleRpc({ ctx, store, recorder, runner, flows, clientFor, sessionFor }, envelope.method, envelope.params);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
       res.end(JSON.stringify(result));
     },

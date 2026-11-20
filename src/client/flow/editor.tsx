@@ -7,7 +7,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { DRAG_MIME, FlowCanvas } from './canvas';
 import { DocumentInspector, NodeInspector } from './inspector';
 import { clone, defaultConfig, forwardPort, freshId, portsFor, removeNode, renameNode, runOverlay } from './model';
-import type { FlowDoc, FlowEditorProps, FlowIssue, FlowNodeDoc, FlowView, NodeTypeSpec, Point, RunGraphProps } from './types';
+import type { AvailableModel, FlowDoc, FlowEditorProps, FlowIssue, FlowNodeDoc, FlowView, NodeTypeSpec, Point, RunGraphProps } from './types';
 
 type SaveState = 'saved' | 'dirty' | 'saving' | 'invalid' | 'error';
 
@@ -41,6 +41,22 @@ function useCatalog(rpc: FlowEditorProps['rpc']): Map<string, NodeTypeSpec> | un
   return catalog;
 }
 
+function useModels(rpc: FlowEditorProps['rpc']): { models: AvailableModel[]; defaultModel?: { provider: string; model: string } } {
+  const [state, setState] = useState<{ models: AvailableModel[]; defaultModel?: { provider: string; model: string } }>({ models: [] });
+  useEffect(() => {
+    let live = true;
+    void rpc('model.list').then((value: any) => {
+      if (!live || value === undefined || value === null) return;
+      setState({
+        models: Array.isArray(value.models) ? value.models : [],
+        ...(value.defaultModel ? { defaultModel: value.defaultModel } : {}),
+      });
+    }).catch(() => undefined);
+    return () => { live = false; };
+  }, [rpc]);
+  return state;
+}
+
 function issuesFromError(error: any): FlowIssue[] | undefined {
   const issues = error?.details?.issues;
   return Array.isArray(issues) ? issues : undefined;
@@ -66,6 +82,7 @@ export function FlowEditor(props: FlowEditorProps): ReactNode {
 function EditorInner(props: FlowEditorProps): ReactNode {
   const { rpc, t, workflowId, notify } = props;
   const catalog = useCatalog(rpc);
+  const { models, defaultModel } = useModels(rpc);
   const [doc, setDoc] = useState<FlowDoc | undefined>(undefined);
   const [positions, setPositions] = useState<Record<string, Point>>({});
   const [issues, setIssues] = useState<FlowIssue[]>([]);
@@ -530,7 +547,15 @@ function EditorInner(props: FlowEditorProps): ReactNode {
                   renderThumb={props.renderThumb}
                 />
               ) : (
-                <DocumentInspector doc={doc} issues={issues} t={t} onChange={edit} onSelectNode={id => setSelected(id)} />
+                <DocumentInspector
+                  doc={doc}
+                  issues={issues}
+                  models={models}
+                  {...(defaultModel === undefined ? {} : { defaultModel })}
+                  t={t}
+                  onChange={edit}
+                  onSelectNode={id => setSelected(id)}
+                />
               )}
             </aside>
           ) : null}

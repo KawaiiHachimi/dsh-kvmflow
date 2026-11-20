@@ -67,6 +67,14 @@ export interface FlowInputSpec {
   default?: unknown;
 }
 
+export interface AvailableModel {
+  provider: string;
+  providerName: string;
+  id: string;
+  name: string;
+  supportsImage: boolean;
+}
+
 export interface FlowDoc {
   version: 2;
   id: string;
@@ -81,6 +89,7 @@ export interface FlowDoc {
   vars: Record<string, unknown>;
   limits: { maxNodeVisits: number; timeoutSec: number; maxVisionCalls: number };
   bios?: { hotkey: string; intervalMs: number; timeoutSec: number; requireConfirm: boolean; settleSec: number };
+  visionModel?: { provider: string; model: string };
   nodes: Record<string, FlowNodeDoc>;
 }
 

@@ -133,17 +133,19 @@ export class Runner {
             run.status = 'armed';
             run.phase = 'bios: waiting for power';
         }
+        const visionModel = options.visionModel ?? document.visionModel;
         const runtime = {
             run,
             document,
             device,
+            ...(visionModel === undefined ? {} : { visionModel }),
             controller: new AbortController(),
             pauseRequested: false,
             finished: false,
         };
         this.runtimes.set(run.id, runtime);
         this.lastRunId = run.id;
-        this.log(runtime, 'info', `Starting workflow "${document.name}" on ${device.name} (${Object.keys(document.nodes).length} nodes)`);
+        this.log(runtime, 'info', `Starting workflow "${document.name}" on ${device.name} (${Object.keys(document.nodes).length} nodes)${visionModel === undefined ? '' : ` · vision model ${visionModel.provider}/${visionModel.model}`}`);
         await this.persist(runtime);
         void this.worker(runtime, { armBios: options.armBios, inputs }).catch(error => {
             console.error('[kvmflow] run worker crashed:', error);
@@ -421,24 +423,28 @@ export class Runner {
                     data: request.data,
                     condition: request.condition,
                     ...(request.context === undefined ? {} : { context: request.context }),
+                    ...(runtime.visionModel === undefined ? {} : { model: runtime.visionModel }),
                     signal: runtime.controller.signal,
                 }),
                 classify: async (request) => classifyWithVision(this.ctx, {
                     data: request.data,
                     labels: request.labels,
                     ...(request.prompt === undefined ? {} : { prompt: request.prompt }),
+                    ...(runtime.visionModel === undefined ? {} : { model: runtime.visionModel }),
                     signal: runtime.controller.signal,
                 }),
                 extract: async (request) => extractWithVision(this.ctx, {
                     data: request.data,
                     fields: request.fields,
                     prompt: request.prompt,
+                    ...(runtime.visionModel === undefined ? {} : { model: runtime.visionModel }),
                     signal: runtime.controller.signal,
                 }),
                 locate: async (request) => locateWithVision(this.ctx, {
                     data: request.data,
                     target: request.target,
                     ...(request.context === undefined ? {} : { context: request.context }),
+                    ...(runtime.visionModel === undefined ? {} : { model: runtime.visionModel }),
                     signal: runtime.controller.signal,
                 }),
             },
@@ -524,6 +530,7 @@ export class Runner {
             },
             document: documentForTest,
             device,
+            ...(document.visionModel === undefined ? {} : { visionModel: document.visionModel }),
             controller,
             pauseRequested: false,
             finished: false,

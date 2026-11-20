@@ -1,5 +1,6 @@
 /** Bundle entry: the panel plus the graph editor, with React from the DSH page. */
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import reactFlowCss from '@xyflow/react/dist/style.css';
 import { createPlugin } from './app';
 import { FlowEditor, RunGraph } from './flow/editor';
@@ -10,7 +11,7 @@ import { FLOW_CSS } from './flow/styles';
 declare const require: (id: string) => unknown;
 
 export const plugin = createPlugin(
-  (id: string) => (id === 'react' ? React : require(id)),
+  (id: string) => (id === 'react' ? React : id === 'react-dom' ? ReactDOM : require(id)),
   {
     FlowEditor: (props: FlowEditorProps) => (
       <FlowBoundary message={props.t('工作流编辑器出错了，工作流文件没有受影响。', 'The workflow editor failed; the workflow file is unaffected.')} retryLabel={props.t('重新加载编辑器', 'Reload the editor')}>

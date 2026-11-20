@@ -107,6 +107,11 @@ export interface FlowDocument {
     requireConfirm: boolean;
     settleSec: number;
   };
+  /** Optional DSH model override for vision nodes and verification in this workflow. */
+  visionModel?: {
+    provider: string;
+    model: string;
+  };
   nodes: Record<string, FlowNode>;
 }
 

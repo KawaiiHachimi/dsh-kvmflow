@@ -6,7 +6,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { portLabel } from './canvas';
 import { portsFor, pruneEdges } from './model';
-import type { FieldSpec, FlowDoc, FlowInputSpec, FlowIssue, FlowNodeDoc, NodeTypeSpec, Translate, VerifySpec } from './types';
+import type { AvailableModel, FieldSpec, FlowDoc, FlowInputSpec, FlowIssue, FlowNodeDoc, NodeTypeSpec, Translate, VerifySpec } from './types';
 
 const NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
 
@@ -474,10 +474,28 @@ export function NodeInspector(props: NodeInspectorProps): ReactNode {
 }
 
 /** Document settings shown when no node is selected. */
-export function DocumentInspector(props: { doc: FlowDoc; issues: FlowIssue[]; t: Translate; onChange: (doc: FlowDoc) => void; onSelectNode: (id: string) => void }): ReactNode {
+export function DocumentInspector(props: {
+  doc: FlowDoc;
+  issues: FlowIssue[];
+  models?: AvailableModel[];
+  defaultModel?: { provider: string; model: string };
+  t: Translate;
+  onChange: (doc: FlowDoc) => void;
+  onSelectNode: (id: string) => void;
+}): ReactNode {
   const { doc, t } = props;
   const setInputs = (inputs: Record<string, FlowInputSpec>): void => props.onChange({ ...doc, inputs });
   const docIssues = props.issues;
+  const models = props.models ?? [];
+  const selectedKey = doc.visionModel ? `${doc.visionModel.provider}\u0000${doc.visionModel.model}` : '';
+  const byProvider = new Map<string, { label: string; items: AvailableModel[] }>();
+  for (const model of models) {
+    const group = byProvider.get(model.provider) ?? { label: model.providerName || model.provider, items: [] };
+    group.items.push(model);
+    byProvider.set(model.provider, group);
+  }
+  const hasSelected = selectedKey === '' || models.some(model => `${model.provider}\u0000${model.id}` === selectedKey);
+  const defaultHint = props.defaultModel ? `${props.defaultModel.provider}/${props.defaultModel.model}` : undefined;
   return (
     <div className="kf-inspector-body">
       <div className="kf-inspector-head">
@@ -501,6 +519,50 @@ export function DocumentInspector(props: { doc: FlowDoc; issues: FlowIssue[]; t:
       <Section title={t('基本', 'Basics')}>
         <Row label={t('名称', 'Name')}><Text value={doc.name} onCommit={name => props.onChange({ ...doc, name })} /></Row>
         <Row label={t('说明', 'Description')} wide><Text multiline rows={3} value={doc.description ?? ''} onCommit={description => props.onChange({ ...doc, ...(description === '' ? { description: undefined } : { description }) })} /></Row>
+      </Section>
+      <Section title={t('执行视觉模型', 'Execution vision model')}>
+        <Row
+          label={t('视觉判断 / 分类 / 定位模型', 'Model for vision nodes & checks')}
+          help={t('只影响本工作流执行与单节点试运行，不改变 DSH 对话默认模型。', 'Applies only when running or testing this workflow; leaves DSH chat default unchanged.')}
+          wide
+        >
+          <select
+            className="kf-input kf-select"
+            aria-label={t('执行视觉模型', 'Execution vision model')}
+            value={selectedKey}
+            onChange={event => {
+              const raw = event.target.value;
+              if (raw === '') {
+                const next = { ...doc };
+                delete next.visionModel;
+                props.onChange(next);
+                return;
+              }
+              const sep = raw.indexOf('\u0000');
+              if (sep > 0) {
+                props.onChange({ ...doc, visionModel: { provider: raw.slice(0, sep), model: raw.slice(sep + 1) } });
+              }
+            }}
+          >
+            <option value="">
+              {defaultHint === undefined
+                ? t('跟随 DSH 当前默认模型', 'Follow DSH default model')
+                : t(`跟随 DSH 默认（${defaultHint}）`, `Follow DSH default (${defaultHint})`)}
+            </option>
+            {!hasSelected && doc.visionModel ? (
+              <option value={selectedKey}>{`${doc.visionModel.provider}/${doc.visionModel.model}`}</option>
+            ) : null}
+            {[...byProvider.entries()].map(([provider, group]) => (
+              <optgroup key={provider} label={group.label}>
+                {group.items.map(model => (
+                  <option key={`${model.provider}:${model.id}`} value={`${model.provider}\u0000${model.id}`}>
+                    {model.supportsImage ? `👁 ${model.name}` : `${model.name} (${t('仅文本', 'text only')})`}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </Row>
       </Section>
       <Section title={t('运行输入', 'Run inputs')} open={Object.keys(doc.inputs ?? {}).length > 0} aside={<span className="kf-hint">{'{{inputs.name}}'}</span>}>
         <MapEditor

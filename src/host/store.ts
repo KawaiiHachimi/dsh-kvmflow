@@ -775,6 +775,39 @@ export class Store {
     }
   }
 
+  /** Remove one stored run record and its screenshot directory. */
+  async deleteRun(id: string): Promise<void> {
+    const safe = id.trim();
+    if (safe === '' || safe.includes('/') || safe.includes('\\') || safe.includes('..')) {
+      throw new StoreError('INVALID_PATH', 'invalid run id');
+    }
+    const root = `${resolve(this.runsDir)}${sep}`;
+    const jsonPath = resolve(this.runsDir, `${safe}.json`);
+    const dirPath = resolve(this.runsDir, safe);
+    if (!jsonPath.startsWith(root) || !dirPath.startsWith(root)) {
+      throw new StoreError('INVALID_PATH', 'run path escaped the runs directory');
+    }
+    await rm(jsonPath, { force: true });
+    await rm(dirPath, { recursive: true, force: true });
+  }
+
+  /** Remove every stored run except an optional active run id. */
+  async clearRuns(excludeId?: string): Promise<number> {
+    let entries: string[] = [];
+    try {
+      entries = await readdir(this.runsDir);
+    } catch {
+      return 0;
+    }
+    const ids = new Set<string>();
+    for (const name of entries) {
+      const id = name.endsWith('.json') ? name.slice(0, -5) : name;
+      if (id !== '' && id !== excludeId) ids.add(id);
+    }
+    for (const id of ids) await this.deleteRun(id);
+    return ids.size;
+  }
+
   async listRuns(limit = 30): Promise<RunSummary[]> {
     let names: string[] = [];
     try {
@@ -805,6 +838,50 @@ export class Store {
     }
     runs.sort((a, b) => b.updatedAt - a.updatedAt);
     return runs.slice(0, limit);
+  }
+
+  /** Path of the persisted ASCII text history file (one command per line, like .bash_history). */
+  get textHistoryPath(): string {
+    return join(this.dataDir, 'text-history.txt');
+  }
+
+  async readTextHistory(): Promise<string[]> {
+    try {
+      const raw = await readFile(this.textHistoryPath, 'utf8');
+      return raw.split('\n').map(line => line.replace(/\r$/, '')).filter(line => line !== '');
+    } catch {
+      return [];
+    }
+  }
+
+  private async writeTextHistory(items: string[]): Promise<string[]> {
+    const clean = items
+      .map(item => item.replace(/[\r\n]+/g, ' '))
+      .filter(item => item !== '')
+      .slice(0, 100);
+    await writeFile(this.textHistoryPath, clean.length === 0 ? '' : `${clean.join('\n')}\n`, { encoding: 'utf8', mode: 0o600 });
+    try {
+      await chmod(this.textHistoryPath, 0o600);
+    } catch {
+      // Ignore chmod on filesystems that do not support POSIX modes.
+    }
+    return clean;
+  }
+
+  async addTextHistory(text: string): Promise<string[]> {
+    const entry = text.replace(/[\r\n]+/g, ' ');
+    if (entry === '') return this.readTextHistory();
+    const current = await this.readTextHistory();
+    return this.writeTextHistory([entry, ...current.filter(item => item !== entry)]);
+  }
+
+  async removeTextHistory(text: string): Promise<string[]> {
+    const current = await this.readTextHistory();
+    return this.writeTextHistory(current.filter(item => item !== text));
+  }
+
+  async clearTextHistory(): Promise<string[]> {
+    return this.writeTextHistory([]);
   }
 
   /** Read a JPEG/PNG below the data root as bytes. */

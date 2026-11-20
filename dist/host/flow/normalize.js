@@ -519,6 +519,15 @@ function normalizeBios(input) {
         settleSec: Math.max(0, asNumber(input.settleSec, 2)),
     };
 }
+function normalizeVisionModel(input) {
+    if (!isRecord(input))
+        return undefined;
+    const provider = asString(input.provider, '').trim();
+    const model = asString(input.model, '').trim();
+    if (provider === '' || model === '')
+        return undefined;
+    return { provider, model };
+}
 /**
  * Validate a v1 step-shaped document so the caller can report an upgrade hint.
  * @param input - parsed YAML value.
@@ -582,6 +591,7 @@ export function normalizeFlow(input, options = {}) {
         vars: isRecord(input.vars) ? { ...input.vars } : {},
         limits: normalizeLimits(input.limits),
         ...(normalizeBios(input.bios) === undefined ? {} : { bios: normalizeBios(input.bios) }),
+        ...(normalizeVisionModel(input.visionModel) === undefined ? {} : { visionModel: normalizeVisionModel(input.visionModel) }),
         nodes,
     };
     // Templates and expressions anywhere in a node surface here rather than mid-run.
@@ -661,6 +671,7 @@ export function flowToYaml(document) {
         ...(Object.keys(document.vars).length === 0 ? {} : { vars: document.vars }),
         limits: document.limits,
         ...(document.bios === undefined ? {} : { bios: document.bios }),
+        ...(document.visionModel === undefined ? {} : { visionModel: document.visionModel }),
         nodes,
     };
 }

@@ -33,19 +33,19 @@ export const FLOW_CSS = `
 .kf-chip.warn { color: var(--dsw-alias-state-warn-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent); }
 .kf-chip.run { color: var(--kf-flow); border-color: color-mix(in srgb, var(--kf-flow) 45%, transparent); max-width: 16rem; overflow: hidden; text-overflow: ellipsis; }
 
-.kf-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; line-height: 1.3; }
+.kf-btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 28px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; padding: 0 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; line-height: 1; }
 .kf-btn:disabled { opacity: 0.45; cursor: default; }
 .kf-btn:focus-visible, .kf-icon-btn:focus-visible, .kf-palette-item:focus-visible, .kf-seg button:focus-visible { outline: 2px solid var(--kf-flow); outline-offset: 1px; }
-@media (hover: hover) { .kf-btn:hover:not(:disabled) { border-color: var(--dsw-alias-border-l2); background: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 70%, var(--dsw-alias-bg-base)); } }
+@media (hover: hover) { .kf-btn:hover:not(:disabled) { border-color: var(--dsw-alias-border-l2); background: color-mix(in srgb, var(--dsw-alias-label-primary) 10%, var(--dsw-alias-bg-layer-2)); } }
 .kf-btn-primary { background: var(--kf-flow); border-color: var(--kf-flow); color: var(--dsw-alias-bg-base); font-weight: 600; }
-@media (hover: hover) { .kf-btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--kf-flow) 85%, var(--dsw-alias-label-primary)); border-color: transparent; } }
+@media (hover: hover) { .kf-btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--kf-flow) 86%, var(--dsw-alias-label-primary)); border-color: transparent; color: var(--dsw-alias-bg-base); } }
 .kf-btn-danger { color: var(--kf-error); border-color: color-mix(in srgb, var(--kf-error) 45%, var(--dsw-alias-border-l1)); }
 .kf-btn-ghost { background: transparent; border-style: dashed; color: var(--dsw-alias-label-secondary); }
 .kf-btn[aria-pressed='true'] { color: var(--kf-flow); border-color: color-mix(in srgb, var(--kf-flow) 45%, var(--dsw-alias-border-l1)); }
-.kf-icon-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); border-radius: 6px; width: 24px; height: 24px; flex: none; cursor: pointer; font-size: 14px; line-height: 1; }
+.kf-icon-btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); border-radius: 6px; width: 26px; height: 26px; flex: none; cursor: pointer; font-size: 14px; line-height: 1; }
 .kf-link { appearance: none; border: 0; background: none; padding: 0; color: var(--kf-flow); font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; }
-.kf-seg { display: inline-flex; border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; overflow: hidden; }
-.kf-seg button { appearance: none; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12px; padding: 5px 10px; cursor: pointer; }
+.kf-seg { display: inline-flex; border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; overflow: hidden; height: 28px; }
+.kf-seg button { appearance: none; display: inline-flex; align-items: center; justify-content: center; height: 100%; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12px; padding: 0 10px; cursor: pointer; }
 .kf-seg button.on { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font-weight: 600; }
 
 .kf-workspace { display: grid; grid-template-columns: 172px minmax(0, 1fr) 320px; gap: 8px; height: var(--kf-h); min-height: 0; }

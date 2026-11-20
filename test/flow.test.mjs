@@ -15,6 +15,8 @@ import { applyPatch, PatchError } from '../dist/host/flow/patch.js';
 import { Interpreter } from '../dist/host/flow/interp.js';
 import { Store } from '../dist/host/store.js';
 import { FlowService } from '../dist/host/flow/service.js';
+import { composeFlows } from '../dist/host/flow/compose.js';
+import { askVision, listAvailableModels } from '../dist/host/model.js';
 import { dumpYaml, parseYaml } from '../dist/host/yaml.js';
 
 const evalExpr = (source, scope = {}) => evaluateExpression(parseExpression(source), scope);
@@ -617,6 +619,191 @@ test('service: create, patch strictly, save layout, and refuse an invalid agent 
     assert.equal(check.document, undefined);
     assert.equal(check.issues[0].nodeId, 'a');
     assert.ok(existsSync(store.workflowPath(id)));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ---------- compose ----------
+
+test('compose: subflow mode chains subflow nodes, forwards inputs, and applies failure policies', () => {
+  const first = normalizeFlow({
+    version: 2, id: 'wf-a', name: 'Stage A', bios: { hotkey: 'F2' },
+    inputs: { user: { type: 'string' } }, start: 'step',
+    nodes: { step: { type: 'delay', config: { ms: 10 }, next: { next: 'done' } }, done: { type: 'end', config: { result: 'success' } } },
+  }, { fallbackId: 'wf-a' }).document;
+  const second = normalizeFlow({
+    version: 2, id: 'wf-b', name: 'Stage B',
+    inputs: { host: { type: 'string' } }, start: 'step',
+    nodes: { step: { type: 'delay', config: { ms: 10 }, next: { next: 'done' } }, done: { type: 'end', config: { result: 'success' } } },
+  }, { fallbackId: 'wf-b' }).document;
+
+  const { document, issues } = composeFlows({
+    id: 'wf-combo', name: 'A then B', mode: 'subflow',
+    stages: [{ document: first, onFailure: 'continue' }, { document: second, onFailure: 'abort' }],
+  });
+  assert.deepEqual(issues, []);
+  assert.equal(hasErrors(analyzeFlow(document)), false);
+  assert.equal(document.start, 'stage1');
+  assert.equal(document.bios?.hotkey, 'F2');
+  assert.deepEqual(Object.keys(document.inputs).sort(), ['host', 'user']);
+  assert.equal(document.nodes.stage1.next.success, 'stage2');
+  assert.equal(document.nodes.stage1.next.failure, 'stage2');
+  assert.equal(document.nodes.stage2.next.success, 'done');
+  assert.equal(document.nodes.stage2.next.failure, 'fail');
+  assert.equal(document.nodes.stage1.config.inputs.user, '{{inputs.user}}');
+});
+
+test('compose: inline mode prefixes ids, rewrites nodes.<id> references, stitches ends, and executes', async () => {
+  const first = normalizeFlow({
+    version: 2, id: 'wf-read', name: 'Read', start: 'read',
+    nodes: {
+      read: { type: 'vision_extract', config: { prompt: 'Read IP', fields: ['ip'] }, next: { next: 'save' } },
+      save: { type: 'set', config: { assign: { ip: '{{nodes.read.output.ip}}' } }, next: { next: 'done' } },
+      done: { type: 'end', config: { result: 'success' } },
+    },
+  }, { fallbackId: 'wf-read' }).document;
+  const second = normalizeFlow({
+    version: 2, id: 'wf-type', name: 'Type', start: 'read',
+    nodes: {
+      read: { type: 'text', config: { text: 'ssh {{vars.ip}}' }, next: { next: 'done' } },
+      done: { type: 'end', config: { result: 'success' } },
+    },
+  }, { fallbackId: 'wf-type' }).document;
+
+  const { document, issues } = composeFlows({
+    id: 'wf-flat', name: 'Read and Type', mode: 'inline',
+    stages: [{ document: first }, { document: second }],
+  });
+  assert.deepEqual(issues, []);
+  assert.equal(hasErrors(analyzeFlow(document)), false);
+  assert.equal(document.start, 's1_read');
+  assert.equal(document.nodes.s1_save.config.assign.ip, '{{nodes.s1_read.output.ip}}');
+  assert.equal(document.nodes.s1_save.next.next, 's2_read');
+  assert.equal(document.nodes.s2_read.next.next, 'done');
+
+  const fake = fakeHost({ extracted: { ip: '10.1.2.3' } });
+  const state = freshState();
+  state.vars = { ...document.vars };
+  const outcome = await new Interpreter(document, fake.host, state).run();
+  assert.equal(outcome.result, 'success');
+  assert.deepEqual(fake.sent[0][0], ['text', 'ssh 10.1.2.3']);
+});
+
+test('service: compose inline copies referenced workflow assets under prefixed names', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'kvmflow-compose-'));
+  try {
+    const store = new Store({ dataDir: dir });
+    store.initSync();
+    const flows = new FlowService(store);
+    const refBytes = jpeg('ref-pic');
+    await store.saveWorkflowAsset('wf-img', 'ref.jpg', refBytes);
+    await flows.save({
+      id: 'wf-img',
+      document: {
+        version: 2, name: 'Match', start: 'm',
+        nodes: {
+          m: { type: 'image_match', config: { image: 'assets/ref.jpg' }, next: { true: 'done', false: 'done' } },
+          done: { type: 'end', config: { result: 'success' } },
+        },
+      },
+      strict: true,
+    });
+    const composed = await flows.compose({
+      name: 'Double Match', mode: 'inline',
+      items: [{ workflowId: 'wf-img' }, { workflowId: 'wf-img' }],
+    });
+    assert.equal(composed.document.nodes.s1_m.config.image, 'assets/s1_ref.jpg');
+    assert.equal(composed.document.nodes.s2_m.config.image, 'assets/s2_ref.jpg');
+    const copied = await store.readWorkflowAsset(composed.document.id, 'assets/s1_ref.jpg');
+    assert.deepEqual(new Uint8Array(copied), refBytes);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('visionModel: normalizes, round-trips through YAML, inherits on compose, and overrides DSH default in askVision', async () => {
+  const { document, issues } = normalizeFlow({
+    version: 2, name: 'Vision Override', start: 'done',
+    visionModel: { provider: 'openai', model: 'gpt-4o' },
+    nodes: { done: { type: 'end', config: { result: 'success' } } },
+  }, { fallbackId: 'wf-vm' });
+  assert.deepEqual(issues, []);
+  assert.deepEqual(document.visionModel, { provider: 'openai', model: 'gpt-4o' });
+  const round = normalizeFlow(parseYaml(dumpYaml(flowToYaml(document))), { fallbackId: 'wf-vm' });
+  assert.deepEqual(round.document.visionModel, { provider: 'openai', model: 'gpt-4o' });
+
+  const composed = composeFlows({ id: 'wf-c', name: 'C', mode: 'subflow', stages: [{ document }] });
+  assert.deepEqual(composed.document.visionModel, { provider: 'openai', model: 'gpt-4o' });
+
+  let calledWith;
+  const fakeCtx = {
+    get(key) {
+      if (key === 'llm') {
+        return {
+          listProviders: () => [{ id: 'openai', name: 'OpenAI' }],
+          listModels: async () => [{ provider: 'openai', id: 'gpt-4o', name: 'GPT-4o', inputModalities: ['text', 'image'] }],
+          async *stream(opts) {
+            calledWith = { provider: opts.provider, model: opts.model };
+            yield { type: 'text-delta', text: 'PASS\nok' };
+          },
+        };
+      }
+      if (key === 'attachments') return { saveImage: async () => ({ attachmentId: 'att-1' }) };
+      if (key === 'agentDefaultModel') return { currentSelection: () => ({ provider: 'deepseek', model: 'deepseek-chat' }) };
+      return undefined;
+    },
+  };
+  const listed = await listAvailableModels(fakeCtx);
+  assert.equal(listed.models.length, 1);
+  assert.equal(listed.models[0].supportsImage, true);
+  assert.deepEqual(listed.defaultModel, { provider: 'deepseek', model: 'deepseek-chat' });
+
+  await askVision(fakeCtx, { data: jpeg('x'), prompt: 'check', model: { provider: 'openai', model: 'gpt-4o' } });
+  assert.deepEqual(calledWith, { provider: 'openai', model: 'gpt-4o' });
+});
+
+test('store: deleteRun and clearRuns remove run json and shot folders while sparing an active run', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'kvmflow-runs-'));
+  try {
+    const store = new Store({ dataDir: dir });
+    store.initSync();
+    const mkRun = id => ({
+      id, workflowId: 'wf-1', workflowName: 'Demo', deviceId: 'dev-1', status: 'succeeded', phase: 'done',
+      createdAt: Date.now(), updatedAt: Date.now(), currentStepIndex: 0, steps: [], log: [],
+    });
+    await store.saveRun(mkRun('run-a'));
+    await store.saveRunShot('run-a', jpeg('a'), 'shot');
+    await store.saveRun(mkRun('run-b'));
+    await store.saveRun(mkRun('run-active'));
+
+    await store.deleteRun('run-a');
+    assert.equal(existsSync(join(store.runsDir, 'run-a.json')), false);
+    assert.equal(existsSync(store.runDir('run-a')), false);
+
+    const removed = await store.clearRuns('run-active');
+    assert.equal(removed, 1);
+    const left = await store.listRuns();
+    assert.deepEqual(left.map(entry => entry.id), ['run-active']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('store: text history persists line-by-line to text-history.txt like bash history', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'kvmflow-hist-'));
+  try {
+    const store = new Store({ dataDir: dir });
+    store.initSync();
+    await store.addTextHistory('ipconfig');
+    await store.addTextHistory('whoami');
+    await store.addTextHistory('ipconfig');
+    assert.deepEqual(await store.readTextHistory(), ['ipconfig', 'whoami']);
+    assert.equal(readFileSync(store.textHistoryPath, 'utf8'), 'ipconfig\nwhoami\n');
+    await store.removeTextHistory('whoami');
+    assert.deepEqual(await store.readTextHistory(), ['ipconfig']);
+    await store.clearTextHistory();
+    assert.deepEqual(await store.readTextHistory(), []);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

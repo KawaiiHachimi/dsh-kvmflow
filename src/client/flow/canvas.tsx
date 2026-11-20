@@ -249,6 +249,14 @@ export function FlowCanvas(props: CanvasProps): any {
     return () => clearTimeout(timer);
   }, [props.fitToken]);
 
+  useEffect(() => {
+    if (!readOnly || selectedId === undefined || selectedId === '') return undefined;
+    const timer = setTimeout(() => {
+      void flow.fitView({ nodes: [{ id: selectedId }], maxZoom: 1.15, padding: 0.6, duration: 220 });
+    }, 30);
+    return () => clearTimeout(timer);
+  }, [readOnly, selectedId, flow]);
+
   const onDragOver = useCallback((event: DragEvent) => {
     if (readOnly) return;
     if (!event.dataTransfer.types.includes(DRAG_MIME)) return;
