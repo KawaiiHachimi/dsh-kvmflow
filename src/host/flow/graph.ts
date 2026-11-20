@@ -167,8 +167,13 @@ export function hasErrors(issues: readonly FlowIssue[]): boolean {
  * @returns coordinates for every node.
  */
 export function autoLayout(document: FlowDocument): Record<string, { x: number; y: number }> {
-  const COLUMN = 300;
-  const ROW = 150;
+  const COLUMN = 320;
+  const GAP_Y = 36;
+  const estimateHeight = (id: string): number => {
+    const node = document.nodes[id];
+    const portCount = node === undefined ? 1 : portsForNode(node.type, node.config).length;
+    return 108 + portCount * 20;
+  };
   const rank = new Map<string, number>();
   const order: string[] = [];
   const ids = Object.keys(document.nodes);
@@ -234,9 +239,12 @@ export function autoLayout(document: FlowDocument): Record<string, { x: number; 
   }
   const positions: Record<string, { x: number; y: number }> = {};
   for (const [column, members] of columns) {
-    const offset = -((members.length - 1) * ROW) / 2;
+    const heights = members.map(id => estimateHeight(id));
+    const total = heights.reduce((sum, h) => sum + h, 0) + Math.max(0, members.length - 1) * GAP_Y;
+    let cursor = -total / 2;
     members.forEach((id, row) => {
-      positions[id] = { x: column * COLUMN, y: offset + row * ROW };
+      positions[id] = { x: column * COLUMN, y: Math.round(cursor / 10) * 10 };
+      cursor += heights[row] + GAP_Y;
     });
   }
   return positions;

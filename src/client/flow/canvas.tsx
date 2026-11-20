@@ -9,22 +9,27 @@ import { memo, useCallback, useEffect, useMemo, useState, type DragEvent } from 
 import {
   Background,
   BackgroundVariant,
+  BaseEdge,
   Controls,
+  EdgeLabelRenderer,
   Handle,
   MarkerType,
   MiniMap,
   Position,
   ReactFlow,
   applyNodeChanges,
+  useNodes,
   useReactFlow,
   type Connection,
   type Edge,
   type EdgeChange,
+  type EdgeProps,
   type Node,
   type NodeChange,
   type NodeProps,
 } from '@xyflow/react';
 import { portsFor, summarize, type RunOverlay } from './model';
+import { estimateNodeSize, resolveOverlaps, routeEdge, type Rect } from './routing';
 import type { FlowDoc, FlowIssue, FlowNodeDoc, NodeTypeSpec, Point, PortSpec, Translate } from './types';
 
 export const DRAG_MIME = 'application/x-kvmflow-node';
@@ -116,7 +121,51 @@ export function portLabel(port: { name: string }, t: Translate): string {
   return known === undefined ? port.name : t(known[0], known[1]);
 }
 
+function rectsFromNodes(nodes: ReadonlyArray<Node<CardData>>): Rect[] {
+  return nodes.map(node => {
+    const data = node.data as CardData | undefined;
+    const est = estimateNodeSize(data?.ports?.length ?? 1, true);
+    const width = node.measured?.width ?? est.width;
+    const height = node.measured?.height ?? est.height;
+    return { id: node.id, x: node.position.x, y: node.position.y, width, height };
+  });
+}
+
+/** Orthogonal edge that routes around intermediate cards and separates back-edges. */
+const SmartEdge = memo(function SmartEdge(props: EdgeProps) {
+  const nodes = useNodes<Node<CardData>>();
+  const rects = useMemo(() => rectsFromNodes(nodes), [nodes]);
+  const lane = typeof (props.data as any)?.lane === 'number' ? (props.data as any).lane : 0;
+  const routed = useMemo(() => routeEdge({
+    sourceId: props.source,
+    targetId: props.target,
+    sourceX: props.sourceX,
+    sourceY: props.sourceY,
+    targetX: props.targetX,
+    targetY: props.targetY,
+    rects,
+    lane,
+  }), [props.source, props.target, props.sourceX, props.sourceY, props.targetX, props.targetY, rects, lane]);
+
+  return (
+    <>
+      <BaseEdge id={props.id} path={routed.path} markerEnd={props.markerEnd} style={props.style} interactionWidth={18} />
+      {props.label ? (
+        <EdgeLabelRenderer>
+          <div
+            className="kf-edge-pill nodrag nopan"
+            style={{ transform: `translate(-50%, -50%) translate(${routed.labelX}px,${routed.labelY}px)` }}
+          >
+            {props.label}
+          </div>
+        </EdgeLabelRenderer>
+      ) : null}
+    </>
+  );
+});
+
 const nodeTypes = { kvm: FlowCard };
+const edgeTypes = { smart: SmartEdge };
 
 export interface CanvasProps {
   doc: FlowDoc;
@@ -184,12 +233,15 @@ export function FlowCanvas(props: CanvasProps): any {
 
   const edges = useMemo((): Edge[] => {
     const list: Edge[] = [];
+    const targetCounts = new Map<string, number>();
     for (const [id, node] of Object.entries(doc.nodes)) {
       const ports = portsFor(catalog.get(node.type), node.config ?? {});
       for (const port of ports) {
         const target = node.next?.[port.name];
         if (target === undefined || !Object.hasOwn(doc.nodes, target)) continue;
         const key = `${id}:${port.name}`;
+        const lane = targetCounts.get(target) ?? 0;
+        targetCounts.set(target, lane + 1);
         const taken = overlay?.taken.has(key) === true;
         const latest = overlay?.lastEdge === key;
         const className = [
@@ -205,7 +257,8 @@ export function FlowCanvas(props: CanvasProps): any {
           sourceHandle: port.name,
           target,
           targetHandle: 'in',
-          type: 'smoothstep',
+          type: 'smart',
+          data: { lane },
           className,
           animated: latest && overlay?.current !== undefined,
           deletable: !readOnly,
@@ -218,14 +271,24 @@ export function FlowCanvas(props: CanvasProps): any {
   }, [doc, catalog, overlay, readOnly, t]);
 
   const onNodesChange = useCallback((changes: NodeChange<Node<CardData>>[]) => {
-    setNodes(current => applyNodeChanges(changes, current));
-    const moved: Record<string, Point> = {};
-    for (const change of changes) {
-      if (change.type === 'position' && change.dragging === false && change.position !== undefined) {
-        moved[change.id] = { x: Math.round(change.position.x), y: Math.round(change.position.y) };
+    setNodes(current => {
+      const updated = applyNodeChanges(changes, current);
+      const finishedIds: string[] = [];
+      const moved: Record<string, Point> = {};
+      for (const change of changes) {
+        if (change.type === 'position' && change.dragging === false && change.position !== undefined) {
+          finishedIds.push(change.id);
+          moved[change.id] = { x: Math.round(change.position.x), y: Math.round(change.position.y) };
+        }
       }
-    }
-    if (Object.keys(moved).length > 0) props.onMove?.(moved);
+      if (finishedIds.length === 0) return updated;
+      // Push any overlapping cards apart around the just-dropped node(s).
+      const pushed = resolveOverlaps(rectsFromNodes(updated), finishedIds, 24);
+      const allMoves = { ...moved, ...pushed };
+      queueMicrotask(() => props.onMove?.(allMoves));
+      if (Object.keys(pushed).length === 0) return updated;
+      return updated.map(node => (pushed[node.id] === undefined ? node : { ...node, position: pushed[node.id] }));
+    });
   }, [props.onMove]);
 
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
@@ -279,6 +342,7 @@ export function FlowCanvas(props: CanvasProps): any {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
