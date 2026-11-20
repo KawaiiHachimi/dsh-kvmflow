@@ -173,8 +173,37 @@ test('workflows tab renders the canvas, edits through the inspector and autosave
   const yaml = document.querySelector('.kf-yaml-text').value;
   assert.match(yaml, /type: vision_classify/);
 
-  // Compose modal: add the current workflow twice, switch to inline mode, and generate.
-  await click(byText('.kvmflow-wf-list-head button', '组合'));
+  // Export button triggers the save picker when available.
+  let exportedText = '';
+  dom.window.showSaveFilePicker = async opts => ({
+    name: opts.suggestedName,
+    async createWritable() {
+      return {
+        async write(data) { exportedText = data; },
+        async close() {},
+      };
+    },
+  });
+  await click(byText('.kf-toolbar-actions button', '导出'));
+  await settle(100);
+  assert.match(exportedText, /type: vision_classify/, 'exported YAML contains edited node');
+
+  // Import a local YAML file through the hidden file input.
+  const fileInput = document.querySelector('.kvmflow-wf-list input[type="file"]');
+  assert.ok(fileInput, 'hidden YAML import input rendered');
+  const importedYaml = 'version: 2\nname: Imported Flow\nstart: done\nnodes:\n  done:\n    type: end\n    config:\n      result: success\n';
+  await act(async () => {
+    Object.defineProperty(fileInput, 'files', {
+      configurable: true,
+      value: [{ name: 'imported.yaml', async text() { return importedYaml; } }],
+    });
+    fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  });
+  await settle(250);
+  assert.ok((await store.listWorkflows()).some(w => w.name === 'Imported Flow'), 'imported workflow saved');
+
+  // Compose modal: add a workflow, switch to inline mode, and generate.
+  await click(byText('.kvmflow-wf-list button', '组合'));
   await settle(100);
   const composeDialog = document.querySelector('[role="dialog"]');
   assert.ok(composeDialog, 'compose modal opened');
@@ -184,7 +213,7 @@ test('workflows tab renders the canvas, edits through the inspector and autosave
   await settle(300);
   assert.equal(document.querySelector('[role="dialog"]'), null, 'compose modal closed after create');
   const all = await store.listWorkflows();
-  assert.equal(all.length, 2, 'composed workflow persisted');
+  assert.equal(all.length, 3, 'original + imported + composed workflows persisted');
 });
 
 test('devices tab uses modals for add/edit and delete confirmation, and unifies control heights', async () => {

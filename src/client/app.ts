@@ -2157,6 +2157,28 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         const [composeName, setComposeName] = useState('');
         const [composeMode, setComposeMode] = useState('subflow');
         const [composeItems, setComposeItems] = useState([]);
+        const importInputRef = useRef(null);
+        const importYamlFile = async (file: File | undefined): Promise<void> => {
+          if (file === undefined) return;
+          let text = '';
+          try {
+            text = await file.text();
+          } catch (error: any) {
+            notify(error?.message ?? t('无法读取所选文件。', 'Could not read the selected file.'), 'err');
+            return;
+          }
+          if (text.trim() === '') {
+            notify(t('所选 YAML 文件为空。', 'The selected YAML file is empty.'), 'warn');
+            return;
+          }
+          const value = await runRpc(t('导入工作流', 'Import workflow'), 'flow.save', { yaml: text });
+          if (value !== undefined) {
+            setDirty(false);
+            await refresh();
+            setSelectedId(value.document.id);
+            notify(t(`已导入工作流“${value.document.name}”。`, `Imported workflow "${value.document.name}".`), 'ok');
+          }
+        };
         const select = (id: string): void => {
           if (id === selectedId) return;
           if (dirty) {
@@ -2265,9 +2287,24 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
           h('aside', { className: 'kvmflow-wf-list', 'aria-label': t('工作流列表', 'Workflows') },
             h('div', { className: 'kvmflow-wf-list-head' },
               h('span', { className: 'kvmflow-wf-list-title' }, t('工作流', 'Workflows'), h('span', { className: 'kvmflow-hint' }, ` ${workflows.length}`)),
-              validWorkflows.length >= 1 ? h(Btn, { small: true, onClick: openCompose, disabled: busy !== '', title: t('将多个工作流按顺序组合成一个大工作流', 'Combine multiple workflows in order into one') }, t('组合', 'Compose')) : null,
-              h(Btn, { kind: 'primary', small: true, onClick: () => { void create(); }, disabled: busy !== '' }, t('+ 新建', '+ New')),
               h('button', { type: 'button', className: 'kvmflow-icon-btn', onClick: () => setListOpen(false), title: t('收起列表', 'Collapse the list'), 'aria-label': t('收起列表', 'Collapse the list') }, '‹'),
+            ),
+            h('div', { className: 'kvmflow-actions' },
+              h(Btn, { kind: 'primary', small: true, onClick: () => { void create(); }, disabled: busy !== '' }, t('+ 新建', '+ New')),
+              h(Btn, { small: true, onClick: () => importInputRef.current?.click(), disabled: busy !== '', title: t('从本地选择 YAML 文件导入工作流', 'Import a workflow from a local YAML file') }, t('导入', 'Import')),
+              validWorkflows.length >= 1 ? h(Btn, { small: true, onClick: openCompose, disabled: busy !== '', title: t('将多个工作流按顺序组合成一个大工作流', 'Combine multiple workflows in order into one') }, t('组合', 'Compose')) : null,
+              h('input', {
+                ref: importInputRef,
+                type: 'file',
+                accept: '.yaml,.yml,text/yaml,text/plain',
+                style: { display: 'none' },
+                'aria-label': t('选择要导入的 YAML 文件', 'Choose a YAML file to import'),
+                onChange: (event: any) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  void importYamlFile(file);
+                },
+              }),
             ),
             workflows.length > 4 ? h('input', { className: 'kvmflow-input', placeholder: t('搜索…', 'Search…'), value: filter, onChange: (event: any) => setFilter(event.target.value) }) : null,
             workflows.length === 0

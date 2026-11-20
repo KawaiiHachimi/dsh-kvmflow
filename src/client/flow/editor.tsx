@@ -344,6 +344,53 @@ function EditorInner(props: FlowEditorProps): ReactNode {
     }
   }, [persist, props.deviceId, rpc, saveState, workflowId]);
 
+  const exportYaml = useCallback(async () => {
+    const current = latest.current.doc;
+    if (current === undefined) return;
+    let content = yamlDraft ?? yaml;
+    if (yamlDraft === undefined && saveState !== 'saved') {
+      if (saveTimer.current !== undefined) clearTimeout(saveTimer.current);
+      const ok = await persist();
+      if (ok) {
+        try {
+          const fresh: FlowView = await rpc('flow.get', { id: workflowId });
+          content = fresh.yaml;
+        } catch {
+          // Keep the last known YAML if refetch fails.
+        }
+      }
+    }
+    const safeName = (current.name || current.id || 'workflow').replace(/[\\/:*?"<>|]/g, '_').trim() || 'workflow';
+    const suggestedName = safeName.endsWith('.yaml') || safeName.endsWith('.yml') ? safeName : `${safeName}.yaml`;
+    const picker = (window as any).showSaveFilePicker;
+    if (typeof picker === 'function') {
+      try {
+        const handle = await picker({
+          suggestedName,
+          types: [{ description: 'KVMFlow YAML', accept: { 'text/yaml': ['.yaml', '.yml'] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        notify(t(`已导出到 ${handle.name ?? suggestedName}`, `Exported to ${handle.name ?? suggestedName}`), 'ok');
+        return;
+      } catch (error: any) {
+        if (error?.name === 'AbortError') return;
+        // Fall through to standard browser download if the picker fails.
+      }
+    }
+    const blob = new Blob([content], { type: 'text/yaml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = suggestedName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    notify(t(`已导出 ${suggestedName}`, `Exported ${suggestedName}`), 'ok');
+  }, [notify, persist, rpc, saveState, t, workflowId, yaml, yamlDraft]);
+
   const startRun = useCallback(async () => {
     const current = latest.current.doc;
     if (current === undefined) return;
@@ -408,6 +455,7 @@ function EditorInner(props: FlowEditorProps): ReactNode {
           <button type="button" className="kf-btn" onClick={() => undo(false)} disabled={history.current.past.length === 0} title={t('撤销（⌘Z）', 'Undo (⌘Z)')}>↶</button>
           <button type="button" className="kf-btn" onClick={() => undo(true)} disabled={history.current.future.length === 0} title={t('重做（⇧⌘Z）', 'Redo (⇧⌘Z)')}>↷</button>
           {view === 'canvas' ? <button type="button" className="kf-btn" onClick={() => { void autoLayout(); }}>{t('自动排版', 'Auto layout')}</button> : null}
+          <button type="button" className="kf-btn" onClick={() => { void exportYaml(); }} title={t('导出为本地 YAML 文件', 'Export workflow as a local YAML file')}>{t('导出', 'Export')}</button>
           <button type="button" className="kf-btn" onClick={() => props.onAskAi(doc)}>{t('AI 编辑', 'Edit with AI')}</button>
           <button type="button" className="kf-btn kf-btn-primary" onClick={() => { void startRun(); }} disabled={props.runDisabledReason !== undefined || errorCount > 0} title={props.runDisabledReason ?? (errorCount > 0 ? t('先修正错误', 'Fix the errors first') : undefined)}>
             ▶ {t('执行', 'Run')}
