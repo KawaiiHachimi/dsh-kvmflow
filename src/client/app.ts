@@ -276,6 +276,11 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 .kvmflow-compose-mode { appearance: none; text-align: left; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; padding: 9px 11px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); cursor: pointer; display: flex; flex-direction: column; gap: 3px; font: inherit; }
 .kvmflow-compose-mode.on { border-color: var(--dsw-alias-brand-primary); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, var(--dsw-alias-bg-layer-1)); }
 .kvmflow-compose-mode-title { font-size: 12.5px; font-weight: 650; }
+.kvmflow-preset-row, .kvmflow-custom-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 7px; background: var(--dsw-alias-bg-layer-2); font-size: 11.5px; min-height: 30px; }
+.kvmflow-capture { display: flex; align-items: center; justify-content: center; min-height: 84px; padding: 14px; border: 1px dashed var(--dsw-alias-border-l2); border-radius: 9px; background: var(--dsw-alias-bg-layer-2); cursor: text; outline: none; }
+.kvmflow-capture:focus { border-color: var(--dsw-alias-brand-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent); }
+.kvmflow-capture-hint { color: var(--dsw-alias-label-secondary); font-size: 12.5px; }
+.kvmflow-capture-keys { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 15px; font-weight: 600; color: var(--dsw-alias-brand-primary); }
 .kvmflow-history-panel { margin-top: 8px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; }
 .kvmflow-history-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--dsw-alias-border-l1); font-size: 11px; color: var(--dsw-alias-label-secondary); background: var(--dsw-alias-bg-layer-1); }
 .kvmflow-history-list { display: flex; flex-direction: column; max-height: 200px; overflow: auto; }
@@ -307,6 +312,158 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         return `${url.protocol}//${url.host}${path}`;
       } catch {
         return text;
+      }
+    }
+
+    /** KeyboardEvent.code aliases accepted in the custom-shortcut field. */
+    const KEY_ALIASES: Record<string, string> = {
+      ctrl: 'ControlLeft',
+      control: 'ControlLeft',
+      shift: 'ShiftLeft',
+      alt: 'AltLeft',
+      option: 'AltLeft',
+      win: 'MetaLeft',
+      meta: 'MetaLeft',
+      cmd: 'MetaLeft',
+      command: 'MetaLeft',
+      super: 'MetaLeft',
+      esc: 'Escape',
+      escape: 'Escape',
+      del: 'Delete',
+      delete: 'Delete',
+      ins: 'Insert',
+      insert: 'Insert',
+      enter: 'Enter',
+      return: 'Enter',
+      space: 'Space',
+      tab: 'Tab',
+      spacebar: 'Space',
+      backspace: 'Backspace',
+      bs: 'Backspace',
+      up: 'ArrowUp',
+      down: 'ArrowDown',
+      left: 'ArrowLeft',
+      right: 'ArrowRight',
+      arrowup: 'ArrowUp',
+      arrowdown: 'ArrowDown',
+      arrowleft: 'ArrowLeft',
+      arrowright: 'ArrowRight',
+      plus: 'Equal',
+      minus: 'Minus',
+      comma: 'Comma',
+      period: 'Period',
+      slash: 'Slash',
+      home: 'Home',
+      end: 'End',
+      pageup: 'PageUp',
+      pagedown: 'PageDown',
+      printscreen: 'PrintScreen',
+      pause: 'Pause',
+      capslock: 'CapsLock',
+      numlock: 'NumLock',
+      scrolllock: 'ScrollLock',
+    };
+
+    /**
+     * Parse a typed key chord such as `Ctrl+Alt+Del` or `F2` into HID key codes.
+     * @param text - keys separated by `+`, whitespace, or commas.
+     * @returns the codes in press order, or `undefined` when nothing usable was typed.
+     */
+    function parseShortcutKeys(text: string): string[] | undefined {
+      const parts = (text ?? '').split(/[+\s,、]+/).map(part => part.trim()).filter(part => part !== '');
+      if (parts.length === 0 || parts.length > 4) return undefined;
+      const keys: string[] = [];
+      for (const part of parts) {
+        const lower = part.toLowerCase();
+        if (KEY_ALIASES[lower] !== undefined) {
+          keys.push(KEY_ALIASES[lower]);
+          continue;
+        }
+        if (/^f([1-9]|1[0-9]|2[0-4])$/.test(lower)) {
+          keys.push(`F${lower.slice(1)}`);
+          continue;
+        }
+        if (/^[a-z]$/.test(lower)) {
+          keys.push(`Key${lower.toUpperCase()}`);
+          continue;
+        }
+        if (/^[0-9]$/.test(part)) {
+          keys.push(`Digit${part}`);
+          continue;
+        }
+        // Already a KeyboardEvent.code ("KeyA", "ArrowUp", "F12").
+        if (/^[A-Za-z][A-Za-z0-9]*$/.test(part)) {
+          keys.push(part);
+          continue;
+        }
+        return undefined;
+      }
+      return keys.length === 0 ? undefined : keys;
+    }
+
+    /** Friendly label for a stored chord: modifiers keep their short names. */
+    function formatShortcutKeys(keys: string[]): string {
+      const short: Record<string, string> = {
+        ControlLeft: 'Ctrl', ControlRight: 'Ctrl', ShiftLeft: 'Shift', ShiftRight: 'Shift',
+        AltLeft: 'Alt', AltRight: 'Alt', MetaLeft: 'Win', MetaRight: 'Win',
+        Escape: 'Esc', Delete: 'Del', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
+      };
+      return keys.map(key => short[key] ?? (key.startsWith('Key') ? key.slice(3) : key.startsWith('Digit') ? key.slice(5) : key)).join('+');
+    }
+
+    /** Canonical modifier codes, in the order a chord is described. */
+    const MODIFIER_ORDER = ['ControlLeft', 'ShiftLeft', 'AltLeft', 'MetaLeft'];
+
+    /** Canonical modifier a physical modifier key belongs to, or undefined for any other key. */
+    function canonicalModifier(code: string): string | undefined {
+      if (code.startsWith('Control')) return 'ControlLeft';
+      if (code.startsWith('Shift')) return 'ShiftLeft';
+      if (code.startsWith('Alt')) return 'AltLeft';
+      if (code.startsWith('Meta')) return 'MetaLeft';
+      return undefined;
+    }
+
+    /** Sort held modifiers into the canonical chord order. */
+    function orderModifiers(held: readonly string[]): string[] {
+      return MODIFIER_ORDER.filter(code => held.includes(code));
+    }
+
+    /** Built-in shortcut buttons; a user may hide any of them and restore them later. */
+    const DEFAULT_SHORTCUTS: Array<{ label: string; keys: string[] }> = [
+      { label: 'Ctrl+Alt+Del', keys: ['ControlLeft', 'AltLeft', 'Delete'] },
+      { label: 'Esc', keys: ['Escape'] },
+      { label: 'Enter', keys: ['Enter'] },
+      { label: 'F2', keys: ['F2'] },
+      { label: 'F12', keys: ['F12'] },
+      { label: 'Win', keys: ['MetaLeft'] },
+    ];
+
+    /** Hard ceiling for stored custom shortcuts; well above any practical number. */
+    const MAX_CUSTOM_SHORTCUTS = 200;
+
+    /** Labels of the built-in shortcuts this browser has hidden. */
+    function readHiddenPresets(): string[] {
+      try {
+        const raw = window.localStorage.getItem('kvmflow.shortcuts.hidden');
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter((label: unknown): label is string => typeof label === 'string' && DEFAULT_SHORTCUTS.some(entry => entry.label === label));
+      } catch {
+        return [];
+      }
+    }
+
+    /** Read the saved custom shortcut buttons. */
+    function readCustomShortcuts(): Array<{ label: string; keys: string[] }> {
+      try {
+        const raw = window.localStorage.getItem('kvmflow.shortcuts');
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .filter((entry: any) => entry !== null && typeof entry === 'object' && Array.isArray(entry.keys) && entry.keys.every((key: any) => typeof key === 'string') && entry.keys.length > 0)
+          .map((entry: any) => ({ label: typeof entry.label === 'string' && entry.label !== '' ? entry.label : formatShortcutKeys(entry.keys), keys: entry.keys }));
+      } catch {
+        return [];
       }
     }
 
@@ -521,14 +678,16 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 
     /** Lightweight modal dialog with Escape and backdrop dismissal. */
     function Modal(props: any): any {
+      // A capture dialog needs Escape for itself, so it can opt out of the close key.
+      const dismissOnEscape = props.dismissOnEscape !== false;
       useEffect(() => {
-        if (!props.open) return undefined;
+        if (!props.open || !dismissOnEscape) return undefined;
         const onKey = (event: KeyboardEvent): void => {
           if (event.key === 'Escape') props.onClose?.();
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-      }, [props.open, props.onClose]);
+      }, [props.open, props.onClose, dismissOnEscape]);
       if (!props.open) return null;
       const overlay = h('div', {
         className: 'kvmflow-modal-backdrop',
@@ -1208,6 +1367,88 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         const [textHistory, setTextHistory] = useState([]);
         const [historyCursor, setHistoryCursor] = useState(-1);
         const [historyOpen, setHistoryOpen] = useState(false);
+        const [customShortcuts, setCustomShortcuts] = useState(readCustomShortcuts);
+        const [hiddenPresets, setHiddenPresets] = useState(readHiddenPresets);
+        const saveHiddenPresets = useCallback((next: string[]) => {
+          setHiddenPresets(next);
+          try { window.localStorage.setItem('kvmflow.shortcuts.hidden', JSON.stringify(next)); } catch { /* ignore */ }
+        }, []);
+        const visiblePresets = DEFAULT_SHORTCUTS.filter(entry => !hiddenPresets.includes(entry.label));
+        const [shortcutOpen, setShortcutOpen] = useState(false);
+        const [shortcutLabel, setShortcutLabel] = useState('');
+        const [shortcutKeys, setShortcutKeys] = useState('');
+        const [shortcutError, setShortcutError] = useState('');
+        const [shortcutManual, setShortcutManual] = useState(false);
+        const [heldModifiers, setHeldModifiers] = useState([]);
+        const captureRef = useRef(null);
+        useEffect(() => {
+          if (!shortcutOpen || shortcutManual) return undefined;
+          // Focus the capture area once it exists so the next keystroke lands here
+          // instead of the page or the label field.
+          const timer = setTimeout(() => captureRef.current?.focus?.(), 30);
+          return () => clearTimeout(timer);
+        }, [shortcutOpen, shortcutManual]);
+        const saveCustomShortcuts = useCallback((next: Array<{ label: string; keys: string[] }>) => {
+          setCustomShortcuts(next);
+          try { window.localStorage.setItem('kvmflow.shortcuts', JSON.stringify(next)); } catch { /* ignore */ }
+        }, []);
+        /**
+         * Save one chord and close the dialog; a repeated label replaces that entry.
+         * Nothing is ever dropped behind the user's back: at the storage ceiling
+         * the dialog reports it and keeps every existing shortcut.
+         */
+        const commitShortcut = (keys: string[]): void => {
+          const label = shortcutLabel.trim() !== '' ? shortcutLabel.trim() : formatShortcutKeys(keys);
+          const replaced = customShortcuts.some(entry => entry.label === label);
+          if (!replaced && customShortcuts.length >= MAX_CUSTOM_SHORTCUTS) {
+            setShortcutError(t(`最多保存 ${MAX_CUSTOM_SHORTCUTS} 个自定义快捷键，已达上限；请先删除不用的。`, `At most ${MAX_CUSTOM_SHORTCUTS} custom shortcuts; delete one first.`));
+            return;
+          }
+          saveCustomShortcuts([...customShortcuts.filter(entry => entry.label !== label), { label, keys }]);
+          shared.notify(t(`已添加快捷键 ${label}`, `Shortcut ${label} added`), 'ok');
+          closeShortcutDialog();
+        };
+        const closeShortcutDialog = (): void => {
+          setShortcutOpen(false);
+          setShortcutLabel('');
+          setShortcutKeys('');
+          setShortcutError('');
+          setShortcutManual(false);
+          setHeldModifiers([]);
+        };
+        const addManualShortcut = (): void => {
+          const keys = parseShortcutKeys(shortcutKeys);
+          if (keys === undefined) {
+            setShortcutError(t('请填写有效按键，例如 Ctrl+Alt+Del、F2、Alt+Tab（最多 4 个键）。', 'Enter a valid chord, e.g. Ctrl+Alt+Del, F2, Alt+Tab (up to 4 keys).'));
+            return;
+          }
+          commitShortcut(keys);
+        };
+        /**
+         * Record real key presses: modifiers accumulate while held, and the first
+         * non-modifier key finishes the chord and saves it.
+         */
+        const captureKeyDown = (event: any): void => {
+          if (event.target !== event.currentTarget) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (event.repeat) return;
+          const code: string = typeof event.code === 'string' ? event.code : '';
+          if (code === '') return;
+          const modifier = canonicalModifier(code);
+          if (modifier !== undefined) {
+            setHeldModifiers((current: string[]) => (current.includes(modifier) ? current : [...current, modifier]));
+            return;
+          }
+          commitShortcut([...orderModifiers(heldModifiers), code]);
+        };
+        const captureKeyUp = (event: any): void => {
+          if (event.target !== event.currentTarget) return;
+          const modifier = canonicalModifier(typeof event.code === 'string' ? event.code : '');
+          if (modifier === undefined) return;
+          event.preventDefault();
+          setHeldModifiers((current: string[]) => current.filter(code => code !== modifier));
+        };
         useEffect(() => {
           let cancelled = false;
           void rpc('history.list').then(async (value: any) => {
@@ -1748,12 +1989,21 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                 focused ? h('span', { className: 'kvmflow-screen-focus' }, t('键盘已接管 · 按 Tab 退出', 'Keyboard captured · Tab to leave')) : null,
               ),
               deviceId === '' ? null : h('div', { className: 'kvmflow-actions', style: { marginTop: '10px' } },
-                h(Btn, { onClick: () => shortcut(['ControlLeft', 'AltLeft', 'Delete']) }, 'Ctrl+Alt+Del'),
-                h(Btn, { onClick: () => shortcut(['Escape']) }, 'Esc'),
-                h(Btn, { onClick: () => shortcut(['Enter']) }, 'Enter'),
-                h(Btn, { onClick: () => shortcut(['F2']) }, 'F2'),
-                h(Btn, { onClick: () => shortcut(['F12']) }, 'F12'),
-                h(Btn, { onClick: () => shortcut(['MetaLeft']) }, 'Win'),
+                ...visiblePresets.map(entry => h(Btn, {
+                  key: `preset-${entry.label}`,
+                  onClick: () => shortcut(entry.keys),
+                  title: t(`发送 ${entry.label}`, `Send ${entry.label}`),
+                }, entry.label)),
+                ...customShortcuts.map(entry => h(Btn, {
+                  key: `custom-${entry.label}`,
+                  onClick: () => shortcut(entry.keys),
+                  title: t(`发送 ${entry.label}`, `Send ${entry.label}`),
+                }, entry.label)),
+                h(Btn, {
+                  onClick: () => { setShortcutError(''); setShortcutOpen(true); },
+                  title: t('添加快捷键', 'Add a shortcut'),
+                  'aria-label': t('添加快捷键', 'Add a shortcut'),
+                }, '+'),
               ),
               frameError === '' ? null : h('div', { className: 'kvmflow-notice err', style: { marginTop: '10px', marginBottom: 0 } }, frameError),
               videoError === '' || videoLive ? null : h('div', { className: 'kvmflow-notice', style: { marginTop: '10px', marginBottom: 0 } },
@@ -1842,6 +2092,111 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                   }, t('删除', 'Delete')),
                 ))),
               ) : null,
+            ),
+            h(Modal, {
+              open: shortcutOpen,
+              title: t('自定义快捷键', 'Custom shortcuts'),
+              subtitle: t('按下一次要发送的按键（单个键或组合键）即保存；设置只保存在本机浏览器。', 'Press the key or chord once to send later; it is saved immediately. Settings stay in this browser.'),
+              onClose: closeShortcutDialog,
+              dismissOnEscape: false,
+              footer: h(Btn, { onClick: closeShortcutDialog }, t('关闭', 'Close')),
+            },
+              !shortcutManual ? h('div', { className: 'kvmflow-col' },
+                h('div', {
+                  ref: captureRef,
+                  className: 'kvmflow-capture',
+                  tabIndex: 0,
+                  role: 'button',
+                  autoFocus: true,
+                  'aria-label': t('按键捕获区，请按下要保存的按键', 'Key capture area: press the chord to save'),
+                  onKeyDown: captureKeyDown,
+                  onKeyUp: captureKeyUp,
+                  onBlur: () => setHeldModifiers([]),
+                },
+                  heldModifiers.length === 0
+                    ? h('span', { className: 'kvmflow-capture-hint' }, t('请按下按键…', 'Press the keys now…'))
+                    : h('span', { className: 'kvmflow-capture-keys' }, `${formatShortcutKeys(orderModifiers(heldModifiers))} + …`),
+                ),
+                h('div', { className: 'kvmflow-hint' },
+                  t('按住修饰键再按一个键即可保存，例如按住 Ctrl 和 Shift 再按 Esc。个别组合会被浏览器抢先（如 Cmd+W），可改用手动输入。',
+                    'Hold the modifiers, then press one key: hold Ctrl and Shift, then press Esc. A few chords are taken by the browser (e.g. Cmd+W); use manual entry for those.'),
+                ),
+                h('button', { type: 'button', className: 'kf-link', onClick: () => setShortcutManual(true) }, t('改用手动输入', 'Enter manually')),
+              ) : h('div', { className: 'kvmflow-col' },
+                h(Field, { label: t('按键组合', 'Key chord'), hint: t('用 + 连接：Ctrl、Shift、Alt、Win、Esc、Del、Enter、Tab、F1–F24、字母或数字。', 'Join with +: Ctrl, Shift, Alt, Win, Esc, Del, Enter, Tab, F1-F24, a letter or digit.') },
+                  h('input', {
+                    className: 'kvmflow-input',
+                    value: shortcutKeys,
+                    placeholder: 'Ctrl+Shift+Esc',
+                    autoFocus: true,
+                    onChange: (event: any) => { setShortcutKeys(event.target.value); setShortcutError(''); },
+                    onKeyDown: (event: any) => { if (event.key === 'Enter') addManualShortcut(); },
+                  }),
+                ),
+                h('div', { className: 'kvmflow-actions' },
+                  h(Btn, { onClick: () => { setShortcutManual(false); setShortcutError(''); } }, t('改为按键捕获', 'Capture keys')),
+                  h(Btn, { kind: 'primary', onClick: addManualShortcut, disabled: shortcutKeys.trim() === '' }, t('添加', 'Add')),
+                ),
+              ),
+              h(Field, { label: t('按钮名称（可选）', 'Button label (optional)'), hint: t('留空则用按键组合作为名称。', 'Empty uses the chord as the label.') },
+                h('input', {
+                  className: 'kvmflow-input',
+                  value: shortcutLabel,
+                  placeholder: parseShortcutKeys(shortcutKeys) === undefined ? '' : formatShortcutKeys(parseShortcutKeys(shortcutKeys) as string[]),
+                  onChange: (event: any) => setShortcutLabel(event.target.value),
+                }),
+              ),
+              shortcutError === '' ? null : h('div', { className: 'kvmflow-hint', style: { color: 'var(--dsw-alias-state-error-primary)' } }, shortcutError),
+              h('div', { className: 'kvmflow-split' }),
+              h('div', { className: 'kvmflow-row', style: { justifyContent: 'space-between' } },
+                h('span', { className: 'kvmflow-wf-list-title' }, t('预设快捷键', 'Preset shortcuts'), h('span', { className: 'kvmflow-hint' }, ` ${visiblePresets.length}/${DEFAULT_SHORTCUTS.length}`)),
+                h(Btn, {
+                  small: true,
+                  disabled: hiddenPresets.length === 0,
+                  title: t('把隐藏的预设快捷键全部恢复', 'Bring back every hidden preset'),
+                  onClick: () => {
+                    saveHiddenPresets([]);
+                    shared.notify(t('已恢复默认预设快捷键。', 'Default preset shortcuts restored.'), 'ok');
+                  },
+                }, t('恢复默认预设', 'Restore defaults')),
+              ),
+              h('div', { className: 'kvmflow-col' }, DEFAULT_SHORTCUTS.map(entry => {
+                const hidden = hiddenPresets.includes(entry.label);
+                return h('div', { key: `preset-${entry.label}`, className: 'kvmflow-preset-row' },
+                  h('span', { className: cn('kvmflow-mono', hidden ? 'kvmflow-muted' : '') }, `${entry.label}  ·  ${formatShortcutKeys(entry.keys)}`),
+                  hidden
+                    ? h('span', { className: 'kvmflow-hint' }, t('已隐藏', 'hidden'))
+                    : h(Btn, {
+                      small: true,
+                      kind: 'danger',
+                      'aria-label': t(`隐藏预设 ${entry.label}`, `Hide preset ${entry.label}`),
+                      onClick: () => saveHiddenPresets([...hiddenPresets, entry.label]),
+                    }, t('删除', 'Delete')),
+                );
+              })),
+              h('div', { className: 'kvmflow-row', style: { justifyContent: 'space-between' } },
+                h('span', { className: 'kvmflow-wf-list-title' }, t('自定义快捷键', 'Custom shortcuts'), h('span', { className: 'kvmflow-hint' }, ` ${customShortcuts.length}`)),
+                customShortcuts.length === 0 ? null : h(ConfirmButton, {
+                  small: true,
+                  kind: 'danger',
+                  confirmTitle: t('清空自定义快捷键', 'Clear custom shortcuts'),
+                  confirmLabel: t(`确定要删除全部 ${customShortcuts.length} 个自定义快捷键吗？`, `Delete all ${customShortcuts.length} custom shortcuts?`),
+                  confirmAction: t('清空', 'Clear'),
+                  cancelLabel: t('取消', 'Cancel'),
+                  onConfirm: () => saveCustomShortcuts([]),
+                }, t('清空', 'Clear')),
+              ),
+              customShortcuts.length === 0
+                ? h('div', { className: 'kvmflow-hint' }, t('还没有自定义快捷键。按下按键即可添加。', 'No custom shortcuts yet. Press a chord to add one.'))
+                : h('div', { className: 'kvmflow-col' }, customShortcuts.map(entry => h('div', { key: entry.label, className: 'kvmflow-custom-row' },
+                  h('span', { className: 'kvmflow-mono' }, `${entry.label}  ·  ${formatShortcutKeys(entry.keys)}`),
+                  h(Btn, {
+                    kind: 'danger',
+                    small: true,
+                    'aria-label': t(`删除自定义 ${entry.label}`, `Delete custom ${entry.label}`),
+                    onClick: () => saveCustomShortcuts(customShortcuts.filter(other => other.label !== entry.label)),
+                  }, t('删除', 'Delete')),
+                ))),
             ),
             h(Card, { title: t('键鼠操作日志', 'Input log') },
               h(CardActions, null,

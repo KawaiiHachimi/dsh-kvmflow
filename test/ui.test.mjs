@@ -51,6 +51,7 @@ const workflowId = created.document.id;
 const calls = [];
 let activeRun = null;
 let recentRuns = [];
+const hidEvents = [];
 const device = { id: 'dev-1', name: 'Linkr', driver: 'linkr', baseUrl: 'http://x', hasToken: true, hasWebCredentials: false, createdAt: 1, updatedAt: 1 };
 async function handle(method, params) {
   calls.push([method, params]);
@@ -76,6 +77,7 @@ async function handle(method, params) {
     case 'history.add': return { items: await store.addTextHistory(params.text) };
     case 'history.remove': return { items: await store.removeTextHistory(params.text) };
     case 'history.clear': return { items: await store.clearTextHistory() };
+    case 'screen.control': hidEvents.push(params.events); return { ok: true };
     case 'device.probe': return { probe: { reachable: false, authenticated: false, video: false } };
     case 'screen.snapshot': throw Object.assign(new Error('no signal'), { code: 'x' });
     default: return {};
@@ -333,6 +335,82 @@ test('runs tab shows the run graph, trace and decision buttons', async () => {
   await click(byText('.kvmflow-modal-foot button', '清理'));
   await settle(150);
   assert.equal(recentRuns.length, 0, 'finished run deleted');
+});
+
+test('live tab: the + button adds a custom shortcut, which sends its chord and can be deleted', async () => {
+  await click(byText('[role="tab"]', '实时画面'));
+  await settle(200);
+  const row = () => [...document.querySelectorAll('.kvmflow-card .kvmflow-actions button')].map(button => button.textContent.trim());
+  assert.ok(row().includes('+'), 'the row ends with a + button');
+
+  // `Ctrl+Alt+Del` also contains a '+', so match the add button exactly.
+  await click([...document.querySelectorAll('.kvmflow-actions button')].find(button => button.textContent.trim() === '+'));
+  await settle(80);
+  const dialog = document.querySelector('[role="dialog"]');
+  assert.ok(dialog && dialog.textContent.includes('自定义快捷键'), 'shortcut dialog opened');
+
+  // The dialog captures real key presses: hold Ctrl+Shift, then press Escape.
+  const capture = dialog.querySelector('.kvmflow-capture');
+  assert.ok(capture, 'key capture area rendered');
+  const press = async (code, key) => {
+    await act(async () => {
+      capture.dispatchEvent(new dom.window.KeyboardEvent('keydown', { code, key, bubbles: true, cancelable: true }));
+    });
+  };
+  await press('ControlLeft', 'Control');
+  await press('ShiftLeft', 'Shift');
+  await settle(60);
+  assert.match(document.querySelector('.kvmflow-capture-keys').textContent, /Ctrl\+Shift/, 'held modifiers preview while pressing');
+  await press('Escape', 'Escape');
+  await settle(80);
+  assert.equal(document.querySelector('[role="dialog"]'), null, 'dialog closes as soon as the chord is pressed');
+  assert.ok(row().includes('Ctrl+Shift+Esc'), 'new shortcut button rendered with the derived label');
+  assert.equal(JSON.parse(dom.window.localStorage.getItem('kvmflow.shortcuts'))[0].label, 'Ctrl+Shift+Esc');
+
+  // Clicking the new button sends the chord to the target.
+  hidEvents.length = 0;
+  await click([...document.querySelectorAll('.kvmflow-card .kvmflow-actions button')].find(button => button.textContent.trim() === 'Ctrl+Shift+Esc'));
+  await settle(120);
+  const sent = hidEvents.flat().filter(event => event[0] === 'keyboard');
+  assert.deepEqual(sent.filter(event => event[2] === true).map(event => event[1]), ['ControlLeft', 'ShiftLeft', 'Escape']);
+
+  // Deleting it removes both the button and the stored entry.
+  await click([...document.querySelectorAll('.kvmflow-actions button')].find(button => button.textContent.trim() === '+'));
+  await settle(80);
+  await click(document.querySelector('button[aria-label="删除自定义 Ctrl+Shift+Esc"]'));
+  await settle(80);
+  assert.equal(row().includes('Ctrl+Shift+Esc'), false, 'shortcut button removed');
+  assert.deepEqual(JSON.parse(dom.window.localStorage.getItem('kvmflow.shortcuts')), []);
+
+  // Presets are listed and can be hidden, then restored in one click.
+  assert.ok(row().includes('Ctrl+Alt+Del'), 'built-in preset starts visible');
+  await click(document.querySelector('button[aria-label="隐藏预设 Ctrl+Alt+Del"]'));
+  await settle(80);
+  assert.equal(row().includes('Ctrl+Alt+Del'), false, 'hidden preset leaves the row');
+  assert.deepEqual(JSON.parse(dom.window.localStorage.getItem('kvmflow.shortcuts.hidden')), ['Ctrl+Alt+Del']);
+  assert.ok(document.querySelector('.kvmflow-preset-row.kvmflow-muted, .kvmflow-modal').textContent.includes('已隐藏'), 'hidden preset is marked in the dialog');
+
+  // Adding beyond the old 12-item limit keeps every earlier shortcut.
+  for (let index = 1; index <= 13; index += 1) {
+    await click([...document.querySelectorAll('.kvmflow-actions button')].find(button => button.textContent.trim() === '+'));
+    await settle(40);
+    const area = document.querySelector('.kvmflow-capture');
+    await act(async () => {
+      area.dispatchEvent(new dom.window.KeyboardEvent('keydown', { code: `F${index + 12}`, key: `F${index + 12}`, bubbles: true, cancelable: true }));
+    });
+    await settle(50);
+  }
+  const stored = JSON.parse(dom.window.localStorage.getItem('kvmflow.shortcuts'));
+  assert.equal(stored.length, 13, 'all thirteen shortcuts kept');
+  assert.equal(stored[0].label, 'F13', 'the first one is still there, nothing was squeezed out');
+  assert.ok(row().includes('F13') && row().includes('F25'), 'every shortcut is rendered in the row');
+
+  await click([...document.querySelectorAll('.kvmflow-actions button')].find(button => button.textContent.trim() === '+'));
+  await settle(40);
+  await click(byText('.kvmflow-modal button', '恢复默认预设'));
+  await settle(80);
+  assert.ok(row().includes('Ctrl+Alt+Del'), 'restore defaults brings the preset back');
+  assert.deepEqual(JSON.parse(dom.window.localStorage.getItem('kvmflow.shortcuts.hidden')), []);
 });
 
 test('no React errors were logged', () => {
