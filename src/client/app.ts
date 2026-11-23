@@ -291,6 +291,25 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 
 `;
 
+    /**
+     * Coerce a typed device origin into an absolute http(s) URL, mirroring the
+     * Host's rule: a bare IP or host defaults to http:// and a trailing slash is
+     * dropped, while a path prefix is kept.
+     */
+    function normalizeBaseUrlInput(raw: string): string {
+      const text = (raw ?? '').trim();
+      if (text === '') return '';
+      const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `http://${text}`;
+      try {
+        const url = new URL(withScheme);
+        if (url.hostname === '') return text;
+        const path = url.pathname === '/' ? '' : url.pathname.replace(/\/+$/, '');
+        return `${url.protocol}//${url.host}${path}`;
+      } catch {
+        return text;
+      }
+    }
+
     function cn(...values: any[]): string {
       return values.filter(Boolean).join(' ');
     }
@@ -1140,8 +1159,14 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
               h(Field, { label: t('名称', 'Name'), className: 'wide' },
                 h('input', { className: 'kvmflow-input', value: form.name, placeholder: 'Lab Linkr', onChange: (event: any) => setForm({ ...form, name: event.target.value }) }),
               ),
-              h(Field, { label: t('地址', 'Origin'), className: 'wide' },
-                h('input', { className: 'kvmflow-input', value: form.baseUrl, placeholder: 'http://192.168.1.100', onChange: (event: any) => setForm({ ...form, baseUrl: event.target.value }) }),
+              h(Field, { label: t('地址', 'Origin'), className: 'wide', hint: t('填 IP 或主机名即可，保存时会自动补全 http://。', 'An IP or host name is enough; http:// is added on save.') },
+                h('input', {
+                  className: 'kvmflow-input',
+                  value: form.baseUrl,
+                  placeholder: '192.168.1.100',
+                  onChange: (event: any) => setForm({ ...form, baseUrl: event.target.value }),
+                  onBlur: () => setForm((current: any) => ({ ...current, baseUrl: normalizeBaseUrlInput(current.baseUrl) })),
+                }),
               ),
               h(Field, { label: t('访问令牌', 'Access token'), className: 'wide', hint: editingId === '' ? t('在 Linkr Web 控制台的“系统设置 → 访问令牌”中生成后粘贴到这里；保存为 devices.json（权限 0600）。', 'Generate one in the Linkr web console under System settings → Access tokens, then paste it here. Stored in devices.json with mode 0600.') : t('留空表示保留现有令牌。', 'Leave blank to keep the current token.') },
                 h('input', { className: 'kvmflow-input', type: 'password', value: form.token, placeholder: editingId === '' ? 'radxa_linkr_…' : '••••••••', onChange: (event: any) => setForm({ ...form, token: event.target.value }) }),

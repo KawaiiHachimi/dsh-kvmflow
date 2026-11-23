@@ -61,6 +61,31 @@ function asBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+/**
+ * Coerce a typed device origin into an absolute http(s) base URL.
+ *
+ * An IP-KVM on a LAN is reached by bare address in practice ("192.168.1.100",
+ * "kvm.lan:8080"), and a scheme-less value cannot be used as a URL base, so a
+ * missing scheme defaults to http://. A path prefix is preserved because a
+ * reverse proxy may serve the device under one.
+ * @param raw - value typed by a human or an agent.
+ * @returns the normalized origin, or '' when there is no host to keep.
+ */
+export function normalizeBaseUrl(raw: unknown): string {
+  const text = asString(raw, '').trim();
+  if (text === '') return '';
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `http://${text}`;
+  try {
+    const url = new URL(withScheme);
+    if (url.hostname === '') return text;
+    const path = url.pathname === '/' ? '' : url.pathname.replace(/\/+$/, '');
+    return `${url.protocol}//${url.host}${path}`;
+  } catch {
+    // Let an unusable value reach the store unchanged so the error names it.
+    return text;
+  }
+}
+
 function publicDevice(device: DeviceRecord): PublicDevice {
   const { token: _token, password: _password, ...rest } = device;
   return {
@@ -306,7 +331,7 @@ export class Store {
             id: asString(entry.id, '') || newId('dev'),
             name: asString(entry.name, 'IP-KVM'),
             driver: 'linkr',
-            baseUrl: asString(entry.baseUrl, ''),
+            baseUrl: normalizeBaseUrl(entry.baseUrl),
             token: asString(entry.token, ''),
             ...(typeof entry.username === 'string' ? { username: entry.username } : {}),
         ...(typeof entry.password === 'string' ? { password: entry.password } : {}),
@@ -375,7 +400,7 @@ export class Store {
         id: asString(entry.id, '') || newId('dev'),
         name: asString(entry.name, 'IP-KVM'),
         driver: 'linkr',
-        baseUrl: asString(entry.baseUrl, ''),
+        baseUrl: normalizeBaseUrl(entry.baseUrl),
         token: asString(entry.token, ''),
         ...(typeof entry.username === 'string' ? { username: entry.username } : {}),
         ...(typeof entry.password === 'string' ? { password: entry.password } : {}),
@@ -422,7 +447,7 @@ export class Store {
   }
 
   async addDevice(input: Record<string, unknown>): Promise<PublicDevice> {
-    const baseUrl = asString(input.baseUrl, '').trim();
+    const baseUrl = normalizeBaseUrl(input.baseUrl);
     const token = asString(input.token, '').trim();
     if (baseUrl === '') throw new StoreError('INVALID_DEVICE', 'baseUrl is required');
     if (token === '') throw new StoreError('INVALID_DEVICE', 'access token is required');
@@ -449,7 +474,7 @@ export class Store {
     const device = this.devices.find(entry => entry.id === id);
     if (device === undefined) throw new StoreError('DEVICE_NOT_FOUND', `device ${JSON.stringify(id)} not found`);
     if (typeof patch.name === 'string' && patch.name.trim() !== '') device.name = patch.name.trim();
-    if (typeof patch.baseUrl === 'string' && patch.baseUrl.trim() !== '') device.baseUrl = patch.baseUrl.trim();
+    if (typeof patch.baseUrl === 'string' && patch.baseUrl.trim() !== '') device.baseUrl = normalizeBaseUrl(patch.baseUrl);
     if (typeof patch.token === 'string' && patch.token.trim() !== '') device.token = patch.token.trim();
     if (typeof patch.username === 'string') device.username = patch.username;
     if (typeof patch.password === 'string') device.password = patch.password;
