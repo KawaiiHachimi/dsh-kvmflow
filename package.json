@@ -13,6 +13,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "LICENSE",
     "dist",
     "src",
     "scripts",
@@ -69,5 +70,10 @@
     "webrtc",
     "automation",
     "bios"
-  ]
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "KawaiiHachimi",
+    "email": "bilibili@att.net"
+  }
 }

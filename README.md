@@ -169,6 +169,10 @@ nodes:
 - Linkr `text` 通道仅支持可打印 ASCII、Tab 与 Enter；中文请用目标机输入法或键盘事件。
 - 访问令牌与 Web 密码保存在 `devices.json`（权限 `0600`，已被 `.gitignore` 忽略），尚未接入 DSH 凭据存储；请勿提交到版本库。仓库内的 `192.168.1.100` 与 `radxa_linkr_...` 均为占位符。
 
+## 许可证
+
+MIT，见 [LICENSE](LICENSE)。
+
 ## 致谢
 
 KVMFlow 完全建立在 DeepSeek Harness 的插件体系之上（Host 服务 / Client Slots / 原生 Tool Registry）。
