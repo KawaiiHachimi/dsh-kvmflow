@@ -77,17 +77,32 @@ export function apply(ctx, config = {}) {
     ctx.effect(() => ctx.webServer.register({
         kind: 'prefix',
         path: '/kvmflow',
-        handler: async (req, res) => {
+        // DSH 0.2.3+ admits every matched route centrally from this declaration and
+        // passes the authenticated Peer to the handler. Older releases ignore the
+        // field, so the handler keeps the legacy credential check below as a guard.
+        auth: 'required',
+        handler: async (req, res, peer) => {
             const url = new URL(req.url ?? '/', 'http://localhost');
             if (req.method !== 'POST' || url.pathname !== '/kvmflow/rpc') {
                 res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
                 res.end('not found');
                 return;
             }
-            const rejection = ctx.connection.requestRejection({ headers: req.headers });
-            if (rejection !== undefined) {
-                res.writeHead(rejection, { 'Content-Type': 'text/plain; charset=utf-8' });
-                res.end(rejection === 401 ? 'unauthorized' : 'forbidden');
+            // `requestRejection` was removed in DSH 0.2.3; calling it unchecked made
+            // every RPC throw, which left the panel loading forever.
+            const legacy = ctx.connection?.requestRejection;
+            if (typeof legacy === 'function') {
+                const rejection = legacy.call(ctx.connection, { headers: req.headers });
+                if (rejection !== undefined) {
+                    res.writeHead(rejection, { 'Content-Type': 'text/plain; charset=utf-8' });
+                    res.end(rejection === 401 ? 'unauthorized' : 'forbidden');
+                    return;
+                }
+            }
+            else if (peer === undefined) {
+                // Neither the central admission nor the legacy guard admitted this request.
+                res.writeHead(401, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+                res.end('unauthorized');
                 return;
             }
             let body = '';

@@ -725,6 +725,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         const t = useT();
         const compact = props?.compact === true;
         const [state, setState] = useState(undefined);
+        const [loadError, setLoadError] = useState('');
         const [tab, setTab] = useState('live');
         const [deviceId, setDeviceIdState] = useState(() => {
           try { return window.localStorage.getItem('kvmflow.deviceId') ?? ''; } catch { return ''; }
@@ -778,6 +779,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         const refresh = useCallback(async () => {
           try {
             const next = await rpc('state');
+            setLoadError('');
             setState((previous: any) => {
               if (previous === undefined && (next.devices ?? []).length === 0) setTab('devices');
               return next;
@@ -787,7 +789,11 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
               setDeviceId(typeof next.defaultDeviceId === 'string' ? next.defaultDeviceId : '');
             }
           } catch (error: any) {
-            setNotice({ message: error.message ?? String(error), tone: 'err' });
+            // Keep the reason visible: the first `state` call decides whether the
+            // whole panel can render at all, and the polling retry below heals a
+            // transient failure without the user reloading the page.
+            setLoadError(error?.message ?? String(error));
+            setNotice({ message: error?.message ?? String(error), tone: 'err' });
           }
         }, [deviceId, setDeviceId]);
         useEffect(() => {
@@ -843,7 +849,22 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
           workflowDraft, setWorkflowDraft, recordDraft, setRecordDraft, handPrompt, probe, reportDeviceHealth, compact,
         }), [state, tab, deviceId, busy, notify, log, logs, refresh, runRpc, t, workflowDraft, recordDraft, handPrompt, probe, reportDeviceHealth, compact]);
         if (state === undefined) {
-          return h('div', { className: 'kvmflow-root' }, h('style', null, CSS), h('div', { className: 'kvmflow-empty' }, busy || t('正在加载 KVMFlow…', 'Loading KVMFlow…')));
+          return h('div', { className: 'kvmflow-root' },
+            h('style', null, CSS),
+            loadError === ''
+              ? h('div', { className: 'kvmflow-empty' }, busy || t('正在加载 KVMFlow…', 'Loading KVMFlow…'))
+              : h('div', { className: 'kvmflow-card' },
+                h('div', { className: 'kvmflow-card-title' }, t('无法连接 KVMFlow 后端', 'Cannot reach the KVMFlow backend')),
+                h('p', { className: 'kvmflow-hint', style: { marginTop: 0, wordBreak: 'break-word' } }, loadError),
+                h('p', { className: 'kvmflow-hint' },
+                  t('插件可能未启用、刚被 DSH 更新替换，或它在 Host 侧加载时出错。请在 DSH 的插件页确认 KVMFlow 已启用；改动过代码时请重新安装插件。此页面每 4 秒自动重试。',
+                    'The plugin may be disabled, replaced by a DSH update, or failed to load on the Host. Check that KVMFlow is enabled in the Plugins page; after changing code, reinstall the plugin. This page retries every 4 seconds.'),
+                ),
+                h('div', { className: 'kvmflow-actions' },
+                  h(Btn, { onClick: () => { void refresh(); }, disabled: busy !== '' }, t('立即重试', 'Retry now')),
+                ),
+              ),
+          );
         }
         const tabs: Array<{ id: string; zh: string; en: string }> = [
           { id: 'live', zh: '实时画面', en: 'Live screen' },
