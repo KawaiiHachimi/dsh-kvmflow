@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "KVMFlow",
-    "description": "通过 IP-KVM 控制真实计算机：人工录制带前后截图的 HID 操作，让 AI 把录制编排成带条件分支、等待、循环和人工确认的图工作流，在类似 Dify 的画布上可视化编辑，再由图解释器逐节点执行并做画面验证。左侧栏 KVMFlow 图标打开面板，也可在右侧栏新建标签页停靠同一面板。Agent 工具覆盖截图、键鼠、画面验证、录制、节点目录、图编辑（flow_patch）、单节点试运行与执行控制。BIOS 工作流会先注入热键，按下目标机电源、画面出现后自动开始。支持 Radxa Linkr（公开 HTTP API、WebRTC 实时视频、非 16:9 画面自动映射）；其他 KVM 型号通过驱动扩展点接入。数据保存在 DSH_HOME/kvmflow，可用 dataDir 修改。"
+    "description": "录制、编排和执行 IP-KVM 工作流。在 DeepSeek Harness 里录制 IP-KVM 操作，编排成带分支与画面验证的工作流，在画布上编辑、逐节点执行；多个工作流可组合，每个工作流可指定视觉模型。支持 Radxa Linkr，数据保存在 DSH_HOME/kvmflow。"
   }
 }

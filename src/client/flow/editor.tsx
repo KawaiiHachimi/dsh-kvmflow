@@ -367,7 +367,7 @@ function EditorInner(props: FlowEditorProps): ReactNode {
       try {
         const handle = await picker({
           suggestedName,
-          types: [{ description: 'KVMFlow YAML', accept: { 'text/yaml': ['.yaml', '.yml'] } }],
+          types: [{ description: t('KVMFlow YAML 工作流', 'KVMFlow YAML workflow'), accept: { 'text/yaml': ['.yaml', '.yml'] } }],
         });
         const writable = await handle.createWritable();
         await writable.write(content);

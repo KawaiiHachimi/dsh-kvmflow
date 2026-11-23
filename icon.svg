@@ -1,8 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" role="img" aria-label="KVMFlow" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- The artwork sits at 75% inside the 36 tile: at the sizes the Plugins page
+       and the right sidebar render it, full-bleed ink reads heavier than the
+       glyphs beside it. -->
+  <g transform="translate(18 18) scale(0.75) translate(-18 -18)">
   <g stroke="#000000" stroke-width="2">
     <rect x="4.5" y="6.3" width="27" height="18.4" rx="2.8"/>
     <path d="M18 24.7L18 28.5"/>
     <path d="M11.6 29.7L24.4 29.7"/>
   </g>
   <path d="M14.8 11.92L15.17 11.9L21.35 15.25L21.22 15.92L18.04 16.25L16.36 19.1L15.71 18.98L14.65 12.27Z" stroke="#ec4899" stroke-width="1.4"/>
+  </g>
 </svg>

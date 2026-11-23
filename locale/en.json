@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "KVMFlow",
-    "description": "Control a real computer through an IP-KVM: record HID actions with before/after screenshots, let the agent turn a recording into a graph workflow with branches, waits, loops and human checkpoints, edit it on a Dify-style canvas, and replay it node by node with screen verification. Open the panel from the left sidebar, or dock it as a right-sidebar tab. Agent tools cover snapshots, keyboard and mouse, visual checks, recording, the node catalog, graph patches, single-node tests and run control. BIOS workflows tap a hotkey before you press the target's power button and start once video appears. Supports Radxa Linkr (public HTTP API, WebRTC live video, automatic mapping for non-16:9 captures); other KVM models are a driver-extension point. Data lives under DSH_HOME/kvmflow (configurable with dataDir)."
+    "description": "Record, author and run IP-KVM workflows. Record IP-KVM actions in DeepSeek Harness, author them into branching workflows with screen checks, edit them on a canvas and run node by node; compose workflows together and pick a vision model per workflow. Supports Radxa Linkr; data lives in DSH_HOME/kvmflow."
   }
 }

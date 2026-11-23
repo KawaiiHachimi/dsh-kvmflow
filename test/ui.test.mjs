@@ -246,6 +246,10 @@ test('devices tab uses modals for add/edit and delete confirmation, and unifies 
   // Shared 28px control height across buttons and inline selects.
   const cssText = [...document.querySelectorAll('style')].map(el => el.textContent).join('\n');
   assert.match(cssText, /--kvmflow-control-h:\s*28px/);
+  // A notice is one vertically centred row: message on the left, actions on the right.
+  assert.match(cssText, /\.kvmflow-notice \{[^}]*align-items:\s*center/);
+  assert.match(cssText, /\.kvmflow-notice > :first-child \{[^}]*flex:\s*1 1 auto/);
+  assert.match(cssText, /\.kvmflow-notice > \.kvmflow-actions \{[^}]*flex:\s*none/);
   assert.match(cssText, /--dsh-frame-top-clearance/);
   assert.match(cssText, /\.kvmflow-inline-select\s*\{[^}]*height:\s*var\(--kvmflow-control-h\)/);
   assert.match(cssText, /\.kf-btn\s*\{[^}]*height:\s*28px/);

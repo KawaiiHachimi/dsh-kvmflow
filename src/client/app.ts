@@ -102,7 +102,11 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
 .kvmflow-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dsw-alias-state-idle-primary); display: inline-block; }
 .kvmflow-dot.on { background: var(--dsw-alias-state-success-primary); }
 .kvmflow-dot.err { background: var(--dsw-alias-state-error-primary); }
-.kvmflow-notice { border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; font-size: 12px; display: flex; justify-content: space-between; gap: 12px; }
+.kvmflow-notice { border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; font-size: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; line-height: 1.45; }
+/* The message keeps the row height and wraps; the actions stay one compact row,
+   vertically centred against it, so a one-line notice is not top-heavy. */
+.kvmflow-notice > :first-child { flex: 1 1 auto; min-width: 0; }
+.kvmflow-notice > .kvmflow-actions { flex: none; align-items: center; }
 .kvmflow-notice.err { color: var(--dsw-alias-state-error-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 45%, var(--dsw-alias-border-l1)); }
 .kvmflow-notice.ok { color: var(--dsw-alias-state-success-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 45%, var(--dsw-alias-border-l1)); }
 .kvmflow-screen-wrap { position: relative; background: #000; border-radius: 9px; overflow: hidden; border: 1px solid var(--dsw-alias-border-l1); outline: none; touch-action: none; overscroll-behavior: contain; }
@@ -467,6 +471,35 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
       }
     }
 
+    /**
+     * Live locale reader, installed by `apply()`.
+     *
+     * Most UI text goes through the `t(zh, en)` hook a component receives, but a
+     * few strings live outside any component: the module-scope defaults of Modal
+     * and ConfirmButton, an image alt, and the right sidebar's guide row, whose
+     * title and description are callbacks the shell invokes. Those read the same
+     * locale snapshot through this bridge so the whole panel follows the DSH
+     * language instead of falling back to English.
+     */
+    let readLocale: (() => any) | undefined;
+
+    /**
+     * Translate one string outside a component render.
+     * @param zh - Chinese text.
+     * @param en - English text.
+     * @returns the text for the locale DSH is currently showing.
+     */
+    function tr(zh: string, en: string): string {
+      let snapshot: any;
+      try {
+        snapshot = readLocale?.();
+      } catch {
+        snapshot = undefined;
+      }
+      const active = typeof snapshot?.active === 'string' ? snapshot.active : 'en';
+      return active.toLowerCase().startsWith('zh') ? zh : en;
+    }
+
     function cn(...values: any[]): string {
       return values.filter(Boolean).join(' ');
     }
@@ -671,7 +704,13 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
             className: 'kvmflow-btn small',
             onClick: () => { props.action.onClick(); props.onClose(); },
           }, props.action.label),
-          h('button', { type: 'button', className: 'kvmflow-btn small', 'aria-label': props.dismissLabel ?? 'Dismiss', title: props.dismissLabel ?? 'Dismiss', onClick: props.onClose }, '×'),
+          h('button', {
+            type: 'button',
+            className: 'kvmflow-btn small',
+            'aria-label': props.dismissLabel ?? tr('关闭提示', 'Dismiss'),
+            title: props.dismissLabel ?? tr('关闭提示', 'Dismiss'),
+            onClick: props.onClose,
+          }, '×'),
         ),
       );
     }
@@ -711,7 +750,8 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
             h('button', {
               type: 'button',
               className: 'kvmflow-icon-btn',
-              'aria-label': 'Close',
+              'aria-label': tr('关闭', 'Close'),
+              title: tr('关闭', 'Close'),
               onClick: () => props.onClose?.(),
             }, '×'),
           ),
@@ -740,10 +780,10 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         }, props.children),
         h(Modal, {
           open,
-          title: props.confirmTitle ?? props.confirmLabel ?? 'Confirm',
+          title: props.confirmTitle ?? props.confirmLabel ?? tr('请确认', 'Confirm'),
           onClose: () => setOpen(false),
           footer: h(React.Fragment, null,
-            h(Btn, { onClick: () => setOpen(false) }, props.cancelLabel ?? 'Cancel'),
+            h(Btn, { onClick: () => setOpen(false) }, props.cancelLabel ?? tr('取消', 'Cancel')),
             h(Btn, {
               kind: 'danger',
               disabled: props.disabled,
@@ -751,10 +791,10 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                 setOpen(false);
                 props.onConfirm();
               },
-            }, props.confirmAction ?? 'Delete'),
+            }, props.confirmAction ?? tr('删除', 'Delete')),
           ),
         },
-          h('p', { className: 'kvmflow-modal-msg' }, props.confirmLabel ?? 'Are you sure?'),
+          h('p', { className: 'kvmflow-modal-msg' }, props.confirmLabel ?? tr('确定要继续吗？', 'Are you sure?')),
           props.confirmDetail ? h('p', { className: 'kvmflow-hint', style: { margin: 0 } }, props.confirmDetail) : null,
         ),
       );
@@ -786,7 +826,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         );
       }
       if (source === undefined) return h('span', { className: 'kvmflow-hint' }, props.label ?? props.shared.t('载入中…', 'loading…'));
-      return h('img', { className: 'kvmflow-thumb', src: source, alt: props.label ?? 'screen capture' });
+      return h('img', { className: 'kvmflow-thumb', src: source, alt: props.label ?? tr('截图', 'screen capture') });
     }
 
     /** Human-readable run and step status through the active locale. */
@@ -810,9 +850,18 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
       return entry === undefined ? status : t(entry[0], entry[1]);
     }
 
-            /** Panel/tab glyph: the black monitor mark from icon.svg with its pink cursor. */
+            /**
+     * Panel/tab glyph: the black monitor mark from icon.svg with its pink cursor.
+     *
+     * The left panel list asks for 16-18px and prints the artwork edge to edge.
+     * The right sidebar's guide row and tab strip ask for 22-26px, where the same
+     * drawing reads noticeably heavier than the glyphs beside it, so the artwork
+     * shrinks to 75% inside the requested box while the box itself keeps the size
+     * the slot asked for (no layout shift).
+     */
     function Icon(props: any): any {
       const size = typeof props.size === 'number' ? props.size : 18;
+      const shrink = size >= 20;
       // label-primary is black on the light theme and white on the dark one, so a
       // black line drawing stays legible in both instead of vanishing on dark.
       const stroke = 'var(--dsw-alias-label-primary)';
@@ -826,17 +875,20 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         fill: 'none',
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
+        ...(props.className === undefined ? {} : { className: props.className }),
       },
-        h('g', { stroke, strokeWidth: 2 },
-          h('rect', { x: 4.5, y: 6.3, width: 27, height: 18.4, rx: 2.8 }),
-          h('path', { d: 'M18 24.7L18 28.5' }),
-          h('path', { d: 'M11.6 29.7L24.4 29.7' }),
+        h('g', { transform: shrink ? 'translate(18 18) scale(0.75) translate(-18 -18)' : undefined },
+          h('g', { stroke, strokeWidth: 2 },
+            h('rect', { x: 4.5, y: 6.3, width: 27, height: 18.4, rx: 2.8 }),
+            h('path', { d: 'M18 24.7L18 28.5' }),
+            h('path', { d: 'M11.6 29.7L24.4 29.7' }),
+          ),
+          h('path', {
+            d: 'M14.8 11.92L15.17 11.9L21.35 15.25L21.22 15.92L18.04 16.25L16.36 19.1L15.71 18.98L14.65 12.27Z',
+            stroke: '#ec4899',
+            strokeWidth: 1.4,
+          }),
         ),
-        h('path', {
-          d: 'M14.8 11.92L15.17 11.9L21.35 15.25L21.22 15.92L18.04 16.25L16.36 19.1L15.71 18.98L14.65 12.27Z',
-          stroke: '#ec4899',
-          strokeWidth: 1.4,
-        }),
       );
     }
 
@@ -866,10 +918,11 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
       // One subscription thunk and one snapshot reader for every panel instance:
       // a fresh arrow per render would resubscribe the whole page each time.
       const subscribeLocale = (listener: () => void) => ctx.locale.subscribe(listener);
-      const readLocale = () => ctx.locale.getSnapshot();
+      const localeSnapshot = () => ctx.locale.getSnapshot();
+      readLocale = localeSnapshot;
 
       function useT(): (zh: string, en: string) => string {
-        const snapshot = React.useSyncExternalStore(subscribeLocale, readLocale, readLocale);
+        const snapshot = React.useSyncExternalStore(subscribeLocale, localeSnapshot, localeSnapshot);
         const active = typeof snapshot?.active === 'string' ? snapshot.active : 'en';
         // Stable identity while the locale is unchanged: an effect that lists the
         // translator would otherwise re-run on every render.
@@ -1073,7 +1126,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                 }, h('span', { className: 'kvmflow-dot err kvmflow-rec-dot' }), t(`录制中 · ${state.activeRecording.eventCount} 事件`, `Recording · ${state.activeRecording.eventCount} events`)),
               ),
               h('p', { className: 'kvmflow-sub' },
-                t('IP-KVM 控制、人工录制、AI 编排的分支工作流与逐节点验证执行。', 'IP-KVM control, manual recording, AI-authored branching workflows, and verified playback.'),
+                t('录制、编排和执行 IP-KVM 工作流', 'Record, author and run IP-KVM workflows'),
               ),
             ),
             h('div', { className: 'kvmflow-head-right' },
@@ -1956,7 +2009,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
                     h('img', {
                       className: 'kvmflow-screen',
                       src: `data:${frame.mediaType};base64,${frame.data}`,
-                      alt: 'KVM screen',
+                      alt: tr('KVM 画面', 'KVM screen'),
                       draggable: false,
                       onLoad: (event: any) => { void applyDetected(event.currentTarget); },
                     }),
@@ -3157,7 +3210,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
           id: 'kvmflow.live',
           order: 40,
           title: (): string => 'KVMFlow',
-          description: (): string => 'Watch and drive the KVM target beside the chat.',
+          description: (): string => tr('录制、编排和执行 IP-KVM 工作流', 'Record, author and run IP-KVM workflows'),
           icon: Icon,
         }],
       }), 'kvmflow: right tab type');
