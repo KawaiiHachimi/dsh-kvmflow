@@ -658,6 +658,7 @@ function RunGraphInner(props: RunGraphProps): ReactNode {
         {...(overlay === undefined ? {} : { overlay })}
         {...(props.selectedNodeId === undefined ? {} : { selectedId: props.selectedNodeId })}
         readOnly
+        followable
         t={t}
         fitToken={fitToken}
         onSelect={id => props.onSelectNode?.(id)}

@@ -10,6 +10,7 @@ import {
   Background,
   BackgroundVariant,
   BaseEdge,
+  ControlButton,
   Controls,
   EdgeLabelRenderer,
   Handle,
@@ -176,6 +177,8 @@ export interface CanvasProps {
   selectedId?: string;
   readOnly?: boolean;
   t: Translate;
+  /** Offer the "follow the running node" control (run view). */
+  followable?: boolean;
   /** Bumped by the owner to ask the canvas to fit the whole graph. */
   fitToken?: number;
   onSelect?: (id: string | undefined) => void;
@@ -320,6 +323,25 @@ export function FlowCanvas(props: CanvasProps): any {
     return () => clearTimeout(timer);
   }, [readOnly, selectedId, flow]);
 
+  // Follow mode: keep the node the run is on in view. A manual pan or zoom
+  // turns it off; the eye control turns it back on.
+  const [follow, setFollow] = useState(true);
+  const followId = props.followable === true ? (overlay?.awaitingNode ?? overlay?.current) : undefined;
+  useEffect(() => {
+    if (!follow || followId === undefined || followId === '') return undefined;
+    const timer = setTimeout(() => {
+      const node = flow.getNode(followId);
+      if (node === undefined) return;
+      const width = node.measured?.width ?? 220;
+      const height = node.measured?.height ?? 100;
+      void flow.setCenter(node.position.x + width / 2, node.position.y + height / 2, {
+        zoom: Math.max(flow.getZoom(), 0.85),
+        duration: 300,
+      });
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [follow, followId, flow]);
+
   const onDragOver = useCallback((event: DragEvent) => {
     if (readOnly) return;
     if (!event.dataTransfer.types.includes(DRAG_MIME)) return;
@@ -360,9 +382,25 @@ export function FlowCanvas(props: CanvasProps): any {
         proOptions={{ hideAttribution: true }}
         snapToGrid
         snapGrid={[10, 10]}
+        onMoveStart={event => { if (event !== null && props.followable === true) setFollow(false); }}
       >
         <Background variant={BackgroundVariant.Dots} gap={18} size={1} />
-        <Controls showInteractive={false} position="bottom-left" />
+        <Controls showInteractive={false} position="bottom-left">
+          {props.followable === true ? (
+            <ControlButton
+              className={`kf-follow${follow ? ' kf-follow-on' : ''}`}
+              onClick={() => setFollow(value => !value)}
+              title={follow ? t('正在跟踪当前步骤（点击停止）', 'Following the current step (click to stop)') : t('跟踪当前步骤', 'Follow the current step')}
+              aria-label={t('跟踪当前步骤', 'Follow the current step')}
+              aria-pressed={follow}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </ControlButton>
+          ) : null}
+        </Controls>
         <MiniMap pannable zoomable position="bottom-right" className="kf-minimap" nodeClassName={node => `kf-mini-${(node.data as CardData)?.spec?.category ?? 'flow'}`} />
       </ReactFlow>
     </div>

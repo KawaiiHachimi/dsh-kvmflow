@@ -325,6 +325,11 @@ test('runs tab shows the run graph, trace and decision buttons', async () => {
   await settle(400);
   assert.ok(document.querySelector('.kf-run-graph .react-flow'), 'run graph rendered');
   assert.ok(document.querySelector('.kf-card.kf-run-paused, .kf-card.kf-awaiting'), 'current node highlighted');
+  const follow = document.querySelector('.kf-run-graph .react-flow__controls .kf-follow');
+  assert.ok(follow, 'follow-current-step eye control rendered under the zoom controls');
+  assert.equal(follow.getAttribute('aria-pressed'), 'true', 'following is on by default');
+  await click(follow);
+  assert.equal(follow.getAttribute('aria-pressed'), 'false', 'clicking the eye stops following');
   assert.ok(byText('.kvmflow-trace-row', 'still loading'), 'trace row shown');
   assert.ok(byText('.kvmflow-awaiting-title', '需要你选择下一步'));
   await click(byText('.kvmflow-awaiting button', '停止'));

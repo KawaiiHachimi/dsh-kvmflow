@@ -135,6 +135,9 @@ export const FLOW_CSS = `
 .kf-canvas .kf-edge-latest path.react-flow__edge-path { stroke-width: 3.2; }
 .kf-canvas .kf-edge-idle { opacity: 0.45; }
 .kf-canvas .kf-edge-label { font-size: 10.5px; }
+.kf-canvas .react-flow__controls-button.kf-follow svg { max-width: none; max-height: none; fill: none; }
+.kf-canvas .react-flow__controls-button.kf-follow-on { color: var(--dsw-alias-brand-primary); }
+.kf-canvas .react-flow__controls-button.kf-follow-on svg { stroke: var(--dsw-alias-brand-primary); }
 .kf-edge-pill { position: absolute; pointer-events: none; font-size: 10.5px; line-height: 1.25; padding: 1px 6px; border-radius: 999px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l1); white-space: nowrap; }
 
 .kf-inspector { padding: 10px 12px 14px; }
