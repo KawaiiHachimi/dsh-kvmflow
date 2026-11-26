@@ -13,7 +13,7 @@ import type { ViewMapping } from '../view.js';
 import type { RunTraceEntry } from '../types.js';
 import { actionEvents, describeAction, releaseAllEvents } from './actions.js';
 import { deepRender, evaluateExpression, evaluateTruth, parseExpression, type ExprNode, type Scope } from './expr.js';
-import { portsForNode, type ActionConfig, type Condition, type FlowDocument, type FlowNode, type VerifySpec } from './schema.js';
+import { isActionType, portsForNode, type ActionConfig, type Condition, type FlowDocument, type FlowNode, type VerifySpec } from './schema.js';
 import { normalizeCondition } from './normalize.js';
 
 /** Conditions live in configs in their YAML shape; templates are already rendered. */
@@ -249,7 +249,7 @@ export class Interpreter {
       });
       this.recordVisit(node, outcome.port ?? '', Date.now(), elapsed, outcome);
 
-      const target = node.next[outcome.port ?? ''];
+      const target = outcome.jump ?? node.next[outcome.port ?? ''];
       if (target === undefined) {
         const routed = await this.pauseForRoute(node, outcome);
         if (routed.end !== undefined) return routed.end;
@@ -361,7 +361,7 @@ export class Interpreter {
     while (true) {
       attempt += 1;
       try {
-        const outcome = await this.runNode(node, previous);
+        const outcome = await this.runNode(node, previous, attempt);
         return attempt > 1 ? { ...outcome, retried: true } : outcome;
       } catch (error) {
         if ((error as Error).name === 'AbortError' || this.host.signal.aborted) throw aborted();
@@ -441,7 +441,7 @@ export class Interpreter {
     return deepRender(node.config, this.scope(extra)) as Record<string, unknown>;
   }
 
-  private async runNode(node: FlowNode, previous: string | undefined): Promise<NodeStep> {
+  private async runNode(node: FlowNode, previous: string | undefined, attempt = 1): Promise<NodeStep> {
     const config = this.renderConfig(node);
     switch (node.type) {
       case 'key':
@@ -452,7 +452,7 @@ export class Interpreter {
       case 'scroll':
       case 'delay':
       case 'sequence':
-        return this.runAction(node, { ...config, type: node.type } as ActionConfig, config);
+        return this.runAction(node, { ...config, type: node.type } as ActionConfig, config, previous, attempt);
       case 'if': {
         const result = await this.evaluateCondition(node, toCondition(config.condition, `${node.id}.condition`), {});
         return { port: result.passed ? 'true' : 'false', reason: result.reason, output: { result: result.passed } };
@@ -577,33 +577,232 @@ export class Interpreter {
     }
   }
 
-  private async runAction(node: FlowNode, action: ActionConfig, config: Record<string, unknown>): Promise<NodeStep> {
-    const looks = (node.verify?.mode ?? 'none') !== 'none' || (node.precondition?.mode ?? 'none') !== 'none';
+  private async runAction(node: FlowNode, action: ActionConfig, config: Record<string, unknown>, previous?: string, attempt = 1): Promise<NodeStep> {
+    const verifying = node.verify !== undefined && (node.verify.mode ?? 'none') !== 'none';
+    const describe = this.describeActionSafely(node, action);
+    // A retry must not repeat an action that already worked but was slow to
+    // show: look first, act only when the expected screen is not there yet.
+    if (attempt > 1 && verifying && (node.verify?.mode === 'vision' || node.verify?.mode === 'image')) {
+      const frame = await this.capture(`node-${node.id}-recheck`);
+      const verdict = await this.judgeSpec(node.verify as VerifySpec, frame, undefined);
+      if (verdict.passed) {
+        return { port: 'next', reason: `${describe}; already done before the retry: ${verdict.reason}`, after: frame.rel };
+      }
+    }
+    const looks = verifying || (node.precondition?.mode ?? 'none') !== 'none';
+    if (action.type !== 'delay') await this.waitForStableScreen(action.type === 'text' || action.type === 'key' ? 1000 : undefined);
     let before: FlowFrame | undefined;
     if (looks) before = await this.capture(`node-${node.id}-before`);
     if (node.precondition !== undefined && (node.precondition.mode ?? 'none') !== 'none') {
       const verdict = await this.pollVerify(node.precondition, before, `node-${node.id}-precondition`);
-      if (!verdict.passed) throw new NodeFailure(node.id, `precondition failed: ${verdict.reason}`);
+      if (!verdict.passed) {
+        const recovered = await this.recoverFromMismatch(node, previous, verdict.frame, 'precondition');
+        if (recovered !== undefined) return recovered;
+        throw new NodeFailure(node.id, `precondition failed: ${verdict.reason}`);
+      }
       before = verdict.frame ?? before;
     }
-    const actionForEvents: ActionConfig = { ...action };
-    if (action.type === 'delay') {
-      await this.host.sleep(Number((config as { ms?: unknown }).ms ?? 500));
-    } else {
-      const events = actionEvents(actionForEvents, this.host.device.viewMapping);
+    const send = async (): Promise<void> => {
+      if (action.type === 'delay') {
+        await this.host.sleep(Number((config as { ms?: unknown }).ms ?? 500));
+        return;
+      }
+      const events = actionEvents({ ...action }, this.host.device.viewMapping);
       if (events.length > 0) await this.host.device.control(events);
+    };
+    await send();
+    if (!verifying) {
+      return { port: 'next', reason: describe, ...(before === undefined ? {} : { before: before.rel }) };
     }
-    if (node.verify === undefined || (node.verify.mode ?? 'none') === 'none') {
-      return { port: 'next', reason: describeAction(action), ...(before === undefined ? {} : { before: before.rel }) };
+    let verdict = await this.pollVerify(node.verify as VerifySpec, before, `node-${node.id}-after`);
+    // Self-healing: the screen does not show what this node expected. Find out
+    // where it really is before bothering the operator.
+    let repeats = 0;
+    const maxRepeats = action.type === 'text' ? 1 : 2;
+    while (!verdict.passed && this.autoRecover && node.verify?.mode === 'vision') {
+      // An identical frame needs no model to tell: nothing happened at all.
+      const diagnosis = before !== undefined && verdict.frame !== undefined && verdict.frame.hash === before.hash
+        ? { kind: 'before' as const, reason: 'the screen did not change at all' }
+        : await this.diagnose(node, previous, verdict.frame);
+      if (diagnosis === undefined) break;
+      if (diagnosis.kind === 'expected') {
+        return {
+          port: 'next',
+          reason: `${describe}; auto-recovered: ${diagnosis.reason}`,
+          retried: true,
+          ...(before === undefined ? {} : { before: before.rel }),
+          ...(verdict.frame === undefined ? {} : { after: verdict.frame.rel }),
+        };
+      }
+      if (diagnosis.kind === 'ahead') {
+        this.host.log('warn', `node "${node.name}": the screen is already at "${diagnosis.nodeName}"; continuing from there (${diagnosis.reason})`);
+        return {
+          port: 'next',
+          jump: diagnosis.jump,
+          reason: `${describe}; auto-recovered: screen already past "${diagnosis.nodeName}" — ${diagnosis.reason}`,
+          retried: true,
+          ...(before === undefined ? {} : { before: before.rel }),
+          ...(verdict.frame === undefined ? {} : { after: verdict.frame.rel }),
+        };
+      }
+      // Still on the screen the action should have left: it did not take
+      // (clicked during an animation, focus elsewhere). Do it again.
+      if (repeats >= maxRepeats) break;
+      repeats += 1;
+      this.host.log('warn', `node "${node.name}": the action did not take effect (${diagnosis.reason}); repeating it (${repeats}/${maxRepeats})`);
+      await this.waitForStableScreen();
+      before = await this.capture(`node-${node.id}-before`);
+      await send();
+      verdict = await this.pollVerify(node.verify as VerifySpec, before, `node-${node.id}-after`);
     }
-    const verdict = await this.pollVerify(node.verify, before, `node-${node.id}-after`);
     if (!verdict.passed) throw new NodeFailure(node.id, `verification failed: ${verdict.reason}`);
     return {
       port: 'next',
-      reason: `${describeAction(action)}; ${verdict.reason}`,
+      reason: `${describe}; ${verdict.reason}${repeats > 0 ? ` (after ${repeats} automatic repeat${repeats > 1 ? 's' : ''})` : ''}`,
+      ...(repeats > 0 ? { retried: true } : {}),
       ...(before === undefined ? {} : { before: before.rel }),
       ...(verdict.frame === undefined ? {} : { after: verdict.frame.rel }),
     };
+  }
+
+  private get autoRecover(): boolean {
+    return this.document.limits.autoRecover !== false;
+  }
+
+  /** Describe an action for the log without leaking a secret input it types. */
+  private describeActionSafely(node: FlowNode, action: ActionConfig): string {
+    if (action.type === 'text' && this.secretInputs.length > 0) {
+      const raw = String(node.config.text ?? '');
+      if (this.secretInputs.some(name => raw.includes(`inputs.${name}`))) {
+        return `text (secret, ${String(action.text ?? '').length} chars)`;
+      }
+    }
+    return describeAction(action);
+  }
+
+  /**
+   * Wait until two consecutive frames are identical, so an action does not land
+   * while the target is still animating. Bounded; a blinking caret or a clock
+   * simply runs the budget out.
+   * @param capMs - optional tighter bound for keyboard actions.
+   */
+  private async waitForStableScreen(capMs?: number): Promise<void> {
+    const budget = Math.min(capMs ?? Number.POSITIVE_INFINITY, this.document.limits.actionSettleMs ?? 2000);
+    if (!(budget > 0)) return;
+    const deadline = Date.now() + budget;
+    let previous = this.state.lastFrameHash;
+    while (Date.now() < deadline) {
+      if (this.host.signal.aborted) throw aborted();
+      const snapshot = await this.host.device.snapshot();
+      const hash = sha256(snapshot.data);
+      if (hash === previous) {
+        this.state.lastFrameHash = hash;
+        return;
+      }
+      previous = hash;
+      if (Date.now() + 250 >= deadline) break;
+      await this.host.sleep(250);
+    }
+    if (previous !== undefined) this.state.lastFrameHash = previous;
+  }
+
+  /**
+   * Action nodes reachable along the main path, for recognizing a screen that
+   * is already a few steps ahead. Stops at the first non-action node so the
+   * jump never skips a branch, a variable assignment, or a read.
+   */
+  private lookahead(node: FlowNode, depth = 3): FlowNode[] {
+    const out: FlowNode[] = [];
+    const seen = new Set<string>([node.id]);
+    let cursor: FlowNode | undefined = node;
+    while (cursor !== undefined && out.length < depth) {
+      const port = this.forwardPort(cursor);
+      const nextId = port === undefined || port === 'error' ? undefined : cursor.next[port];
+      if (nextId === undefined || seen.has(nextId)) break;
+      seen.add(nextId);
+      const next: FlowNode | undefined = this.document.nodes[nextId];
+      if (next === undefined || !isActionType(next.type)) break;
+      out.push(next);
+      cursor = next;
+    }
+    return out;
+  }
+
+  /**
+   * Ask the vision model which state the screen is really in when it does not
+   * match a node's expectation.
+   * @returns what to do, or undefined when the model cannot place the screen.
+   */
+  private async diagnose(node: FlowNode, previous: string | undefined, frame: FlowFrame | undefined): Promise<
+    | { kind: 'expected'; reason: string }
+    | { kind: 'before'; reason: string }
+    | { kind: 'ahead'; jump: string; nodeName: string; reason: string }
+    | undefined
+  > {
+    const expected = node.verify?.mode === 'vision' ? node.verify.prompt?.trim() : undefined;
+    if (expected === undefined || expected === '') return undefined;
+    const labels: Record<string, string> = { expected };
+    const beforeText = this.beforeDescription(node, previous);
+    if (beforeText !== undefined) labels.before = beforeText;
+    const ahead = this.lookahead(node).filter(candidate => candidate.verify?.mode === 'vision' && (candidate.verify.prompt ?? '').trim() !== '');
+    ahead.forEach((candidate, index) => { labels[`ahead${index + 1}`] = String(candidate.verify?.prompt).trim(); });
+    if (labels.before === undefined && ahead.length === 0) return undefined;
+    const shot = frame ?? await this.capture(`node-${node.id}-diagnose`);
+    let verdict: { label: string; reason: string };
+    try {
+      verdict = await this.visionClassify(shot, labels, `The workflow step "${node.name}" just ran. Decide which description the CURRENT screen matches best. Pick "unknown" when none clearly matches (a different page, an unexpected dialog, an error).`);
+    } catch (error) {
+      this.host.log('warn', `automatic diagnosis failed: ${error instanceof Error ? error.message : String(error)}`);
+      return undefined;
+    }
+    this.host.log('info', `diagnosis for "${node.name}": ${verdict.label} — ${verdict.reason}`);
+    if (verdict.label === 'expected') return { kind: 'expected', reason: verdict.reason };
+    if (verdict.label === 'before') return { kind: 'before', reason: verdict.reason };
+    const match = /^ahead(\d+)$/.exec(verdict.label);
+    if (match !== null) {
+      const reached = ahead[Number(match[1]) - 1];
+      const port = reached === undefined ? undefined : this.forwardPort(reached);
+      const jump = reached === undefined || port === undefined ? undefined : reached.next[port];
+      if (reached !== undefined && jump !== undefined) {
+        // Nodes the target already passed count as visited, so the run panel
+        // and `nodes.<id>` expressions reflect the skip.
+        for (const skipped of [node, ...ahead.slice(0, Number(match[1]))]) {
+          if (skipped.id !== node.id) this.bumpResult(skipped.id, { status: 'passed', port: 'next' });
+        }
+        return { kind: 'ahead', jump, nodeName: reached.name, reason: verdict.reason };
+      }
+    }
+    return undefined;
+  }
+
+  /** What the screen looked like before this node acted, when the graph says. */
+  private beforeDescription(node: FlowNode, previous: string | undefined): string | undefined {
+    if (node.precondition?.mode === 'vision' && (node.precondition.prompt ?? '').trim() !== '') return node.precondition.prompt?.trim();
+    const prior = previous === undefined ? undefined : this.document.nodes[previous];
+    if (prior === undefined) return undefined;
+    if (prior.verify?.mode === 'vision' && (prior.verify.prompt ?? '').trim() !== '') return prior.verify.prompt?.trim();
+    if (prior.type !== 'wait_until') return undefined;
+    try {
+      const condition = toCondition(prior.config.condition, `${prior.id}.condition`);
+      return condition.kind === 'vision' ? condition.prompt : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** A failed precondition may mean the target is ahead; jump when it clearly is. */
+  private async recoverFromMismatch(node: FlowNode, previous: string | undefined, frame: FlowFrame | undefined, _what: string): Promise<NodeStep | undefined> {
+    if (!this.autoRecover) return undefined;
+    const diagnosis = await this.diagnose(node, previous, frame);
+    if (diagnosis?.kind === 'expected') {
+      // The node's own effect is already on screen: it was done earlier.
+      return { port: 'next', reason: `auto-recovered: ${diagnosis.reason}`, retried: true };
+    }
+    if (diagnosis?.kind === 'ahead') {
+      this.host.log('warn', `node "${node.name}": the screen is already at "${diagnosis.nodeName}"; continuing from there`);
+      return { port: 'next', jump: diagnosis.jump, reason: `auto-recovered: screen already past "${diagnosis.nodeName}" — ${diagnosis.reason}`, retried: true };
+    }
+    return undefined;
   }
 
   private async runWaitUntil(node: FlowNode, config: { condition: Condition; timeoutSec: number; pollMs: number }): Promise<NodeStep> {
@@ -745,7 +944,7 @@ export class Interpreter {
   }
 
   private async visionClassify(frame: FlowFrame, labels: Record<string, string>, prompt: string | undefined): Promise<{ label: string; reason: string }> {
-    const key = `${frame.hash}|${Object.keys(labels).join(',')}|${prompt ?? ''}`;
+    const key = `${frame.hash}|${JSON.stringify(labels)}|${prompt ?? ''}`;
     const cached = this.classifyCache.get(key);
     if (cached !== undefined) return cached;
     this.takeVisionBudget();
@@ -874,6 +1073,8 @@ interface NodeStep {
   before?: string;
   after?: string;
   retried?: boolean;
+  /** Automatic recovery: continue at this node instead of the port's target. */
+  jump?: string;
   /** Present when the node ended the run. */
   end?: RunOutcome;
 }

@@ -99,10 +99,12 @@ export function keyChord(keys, holdMs = 80) {
 export function clickEvents(x, y, button = 1, count = 1) {
     const clampX = Math.min(1, Math.max(0, x));
     const clampY = Math.min(1, Math.max(0, y));
-    const events = [['mouse_abs', 0, clampX, clampY, 0, 0]];
+    // Hover briefly before pressing: some UIs (macOS Setup Assistant among them)
+    // ignore a press that arrives in the same instant the pointer lands.
+    const events = [['mouse_abs', 0, clampX, clampY, 0, 0], ['delay', 60]];
     for (let index = 0; index < count; index += 1) {
         events.push(['mouse_abs', button, clampX, clampY, 0, 0]);
-        events.push(['delay', 40]);
+        events.push(['delay', 60]);
         events.push(['mouse_abs', 0, clampX, clampY, 0, 0]);
         if (index < count - 1)
             events.push(['delay', 80]);

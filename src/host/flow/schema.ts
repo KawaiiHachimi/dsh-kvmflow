@@ -18,6 +18,19 @@ export interface FlowLimits {
   maxNodeVisits: number;
   timeoutSec: number;
   maxVisionCalls: number;
+  /**
+   * When an action's verification fails, ask the vision model where the screen
+   * really is (still before the action, at the expected state, or already a few
+   * steps ahead) and repeat the action or jump forward instead of pausing.
+   * Defaults to true.
+   */
+  autoRecover?: boolean;
+  /**
+   * Before an action, wait up to this long for two identical consecutive frames
+   * so a click does not land while a page is still animating in. 0 disables.
+   * Defaults to 2000.
+   */
+  actionSettleMs?: number;
 }
 
 export interface FlowInputSpec {
@@ -48,13 +61,20 @@ export interface VerifySpec {
   maxByteDelta?: number;
 }
 
+/**
+ * `frame` (default): 0..1 of the captured image, converted through the
+ * device's view mapping. `target`: 0..1 of the target's own screen, the space
+ * recorded `mouse_abs` events use; sent unchanged.
+ */
+export type CoordinateSpace = 'frame' | 'target';
+
 export type ActionConfig =
   | { type: 'key'; key: string; holdMs?: number; repeat?: number; intervalMs?: number }
   | { type: 'shortcut'; keys: string[]; holdMs?: number }
   | { type: 'text'; text: string; submit?: boolean; chunkSize?: number }
-  | { type: 'click'; x: number; y: number; button?: 'left' | 'right' | 'middle'; count?: number }
-  | { type: 'move'; x: number; y: number }
-  | { type: 'scroll'; x?: number; y?: number; wheelY: number; wheelX?: number }
+  | { type: 'click'; x: number; y: number; button?: 'left' | 'right' | 'middle'; count?: number; space?: CoordinateSpace }
+  | { type: 'move'; x: number; y: number; space?: CoordinateSpace }
+  | { type: 'scroll'; x?: number; y?: number; wheelY: number; wheelX?: number; space?: CoordinateSpace }
   | { type: 'delay'; ms: number }
   | { type: 'sequence'; events: LinkrEvent[] };
 

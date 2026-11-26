@@ -205,7 +205,9 @@ export class Runner {
     this.lastRunId = run.id;
     this.log(runtime, 'info', `Starting workflow "${document.name}" on ${device.name} (${Object.keys(document.nodes).length} nodes)${visionModel === undefined ? '' : ` · vision model ${visionModel.provider}/${visionModel.model}`}`);
     await this.persist(runtime);
-    void this.worker(runtime, { armBios: options.armBios, inputs }).catch(error => {
+    // The interpreter reads `inputs.<name>` directly, so hand it the values map
+    // itself, not the `{ values }` wrapper `collectInputs` returns.
+    void this.worker(runtime, { armBios: options.armBios, inputs: inputs.values }).catch(error => {
       console.error('[kvmflow] run worker crashed:', error);
     });
     return run;
@@ -231,8 +233,7 @@ export class Runner {
     if (missing.length > 0) {
       throw new StoreError('MISSING_INPUT', `workflow ${document.id} needs inputs: ${missing.join(', ')}`);
     }
-    const unknown = Object.keys(provided).filter(name => !Object.hasOwn(document.inputs, name));
-    return { values: { ...values, ...(unknown.length === 0 ? {} : {}) } };
+    return { values };
   }
 
   /**

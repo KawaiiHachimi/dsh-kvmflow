@@ -36,7 +36,12 @@ function num(value, label) {
  * @returns events to send in one batch.
  */
 export function actionEvents(action, mapping) {
-    const point = (x, y) => frameToTarget(mapping, num(x, 'x'), num(y, 'y'));
+    // Recorded coordinates are already in the target's space; only frame points
+    // measured on a captured image go through the view mapping.
+    const space = action.space === 'target' ? 'target' : 'frame';
+    const point = (x, y) => space === 'target'
+        ? frameToTarget(undefined, num(x, 'x'), num(y, 'y'))
+        : frameToTarget(mapping, num(x, 'x'), num(y, 'y'));
     switch (action.type) {
         case 'key': {
             const events = [];
@@ -99,7 +104,7 @@ export function describeAction(action) {
         case 'text':
             return `text ${JSON.stringify(String(action.text ?? '').slice(0, 60))}`;
         case 'click':
-            return `click ${action.button ?? 'left'} (${String(action.x)}, ${String(action.y)})`;
+            return `click ${action.button ?? 'left'} (${String(action.x)}, ${String(action.y)})${action.space === 'target' ? ' target' : ''}`;
         case 'move':
             return `move (${String(action.x)}, ${String(action.y)})`;
         case 'scroll':

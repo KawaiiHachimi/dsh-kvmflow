@@ -262,6 +262,12 @@ function ActionFields(props: { node: FlowNodeDoc; set: (patch: Record<string, an
             </>
           ) : null}
           {node.type === 'scroll' ? <Row label={t('滚动量（正数向下）', 'Wheel (positive = down)')}><NumberInput value={c.wheelY} onCommit={wheelY => set({ wheelY })} /></Row> : null}
+          <Row label={t('坐标系', 'Space')}>
+            <select className="kf-input kf-select" value={c.space === 'target' ? 'target' : 'frame'} onChange={event => set({ space: event.target.value === 'target' ? 'target' : undefined })}>
+              <option value="frame">{t('画面', 'frame')}</option>
+              <option value="target">{t('目标屏幕', 'target')}</option>
+            </select>
+          </Row>
         </div>
       );
     case 'delay':
@@ -608,7 +614,9 @@ export function DocumentInspector(props: {
           <Row label={t('节点访问总数', 'Node visits')}><NumberInput value={doc.limits.maxNodeVisits} onCommit={value => props.onChange({ ...doc, limits: { ...doc.limits, maxNodeVisits: Number(value ?? 1000) } })} /></Row>
           <Row label={t('视觉调用次数', 'Vision calls')}><NumberInput value={doc.limits.maxVisionCalls} onCommit={value => props.onChange({ ...doc, limits: { ...doc.limits, maxVisionCalls: Number(value ?? 400) } })} /></Row>
           <Row label={t('总时长（秒）', 'Timeout (s)')}><NumberInput value={doc.limits.timeoutSec} onCommit={value => props.onChange({ ...doc, limits: { ...doc.limits, timeoutSec: Number(value ?? 7200) } })} /></Row>
+          <Row label={t('动作前稳定等待（毫秒）', 'Settle before action (ms)')}><NumberInput value={doc.limits.actionSettleMs ?? 2000} onCommit={value => props.onChange({ ...doc, limits: { ...doc.limits, actionSettleMs: Number(value ?? 2000) } })} /></Row>
         </div>
+        <label className="kf-check"><input type="checkbox" checked={doc.limits.autoRecover !== false} onChange={event => props.onChange({ ...doc, limits: { ...doc.limits, autoRecover: event.target.checked } })} />{t('校验不符时自动判断并恢复', 'Diagnose and recover when a check fails')}</label>
       </Section>
     </div>
   );

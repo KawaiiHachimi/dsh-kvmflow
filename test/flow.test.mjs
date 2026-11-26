@@ -808,3 +808,112 @@ test('store: text history persists line-by-line to text-history.txt like bash hi
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ---------- self-healing ----------
+
+const chain = (extra = {}) => ({
+  version: 2,
+  name: 'chain',
+  start: 'a',
+  ...extra,
+  nodes: {
+    a: { type: 'click', config: { x: 0.5, y: 0.5 }, verify: { mode: 'vision', prompt: 'shows B', timeoutSec: 1 }, next: { next: 'b' } },
+    b: { type: 'click', config: { x: 0.5, y: 0.5 }, verify: { mode: 'vision', prompt: 'shows C', timeoutSec: 1 }, next: { next: 'c' } },
+    c: { type: 'click', config: { x: 0.5, y: 0.5 }, verify: { mode: 'vision', prompt: 'shows D', timeoutSec: 1 }, next: { next: 'done' } },
+    done: { type: 'end', config: { result: 'success' } },
+  },
+});
+
+/** A device whose screen is A, B, C, D; `script` decides how far each click moves it. */
+function pagedHost(script) {
+  const pages = ['A', 'B', 'C', 'D'];
+  let index = 0;
+  let clicks = 0;
+  const fake = fakeHost({
+    screens: pages,
+    advanceOnInput: false,
+    check: request => ({ passed: request.condition === `shows ${pages[index]}`, reason: `on ${pages[index]}`, raw: '' }),
+    classify: (_current, request) => {
+      const label = Object.entries(request.labels).find(([, text]) => text === `shows ${pages[index]}`)?.[0];
+      return { label: label ?? 'unknown', reason: `screen shows ${pages[index]}` };
+    },
+  });
+  const control = fake.host.device.control;
+  fake.host.device.control = async events => {
+    await control(events);
+    clicks += 1;
+    index = Math.min(pages.length - 1, index + script(clicks));
+    fake.setScreen(index);
+  };
+  return { fake, clicks: () => clicks, goTo: next => { index = next; fake.setScreen(next); } };
+}
+
+test('self-healing: an action that did not take effect is repeated, not paused', async () => {
+  // The first click lands during an animation and is ignored.
+  const { fake, clicks } = pagedHost(n => (n === 1 ? 0 : 1));
+  const { state, promise } = run(chain(), fake);
+  const outcome = await promise;
+  assert.equal(outcome.result, 'success');
+  assert.equal(clicks(), 4, 'one automatic repeat plus the three steps');
+  assert.equal(fake.asked.length, 0, 'the operator was never asked');
+  assert.equal(state.trace[0].status, 'retried');
+});
+
+test('self-healing: a screen already ahead jumps forward instead of clicking again', async () => {
+  // The first click advances two pages (a slow page swallowed the next click).
+  const { fake, clicks } = pagedHost(n => (n === 1 ? 2 : 1));
+  const { state, promise } = run(chain(), fake);
+  const outcome = await promise;
+  assert.equal(outcome.result, 'success');
+  assert.deepEqual(state.trace.map(entry => entry.nodeId), ['a', 'c', 'done']);
+  assert.equal(clicks(), 2, 'b was not clicked again');
+  assert.equal(fake.asked.length, 0);
+});
+
+test('self-healing: autoRecover false keeps the old pause, and a retry looks before acting again', async () => {
+  const { fake, clicks } = pagedHost(n => (n === 1 ? 0 : 1));
+  fake.host.decide = async () => ({ action: 'abort' });
+  const { promise } = run(chain({ limits: { autoRecover: false } }), fake);
+  await assert.rejects(promise, error => error.name === 'AbortError');
+  assert.equal(clicks(), 1);
+
+  // A late screen: the click worked, the page shows up only after the verify budget.
+  const pages = pagedHost(n => (n === 1 ? 0 : 1));
+  const doc = chain({ limits: { autoRecover: false } });
+  doc.nodes.a.retry = { times: 1 };
+  pages.fake.host.log = (_level, message) => { if (message.includes('retrying')) pages.goTo(1); };
+  const result = await run(doc, pages.fake).promise;
+  assert.equal(result.result, 'success');
+  assert.equal(pages.clicks(), 3, 'the retry saw the page had arrived and did not click a again');
+});
+
+test('secret text is not written to the trace', async () => {
+  const fake = fakeHost({});
+  const { state, promise } = run({
+    version: 2, name: 's', start: 't',
+    inputs: { password: { type: 'secret' } },
+    nodes: {
+      t: { type: 'text', config: { text: '{{inputs.password}}' }, next: { next: 'done' } },
+      done: { type: 'end', config: { result: 'success' } },
+    },
+  }, fake, { inputs: { password: 'hunter22' }, secretInputs: ['password'] });
+  assert.equal((await promise).result, 'success');
+  assert.ok(!JSON.stringify(state.trace).includes('hunter22'));
+  assert.ok(JSON.stringify(fake.sent).includes('hunter22'), 'the secret is still typed');
+});
+
+test('click space target bypasses the view mapping', async () => {
+  const fake = fakeHost({ viewMapping: { left: 0.05, top: 0, right: 0.95, bottom: 1 } });
+  const { promise } = run({
+    version: 2, name: 'c', start: 'a',
+    nodes: {
+      a: { type: 'click', config: { x: 0.68, y: 0.74, space: 'target' }, next: { next: 'b' } },
+      b: { type: 'click', config: { x: 0.68, y: 0.74 }, next: { next: 'done' } },
+      done: { type: 'end', config: { result: 'success' } },
+    },
+  }, fake);
+  await promise;
+  const press = batch => batch.find(event => event[0] === 'mouse_abs' && event[1] === 1);
+  assert.equal(press(fake.sent[0])[2], 0.68);
+  assert.ok(Math.abs(press(fake.sent[1])[2] - (0.68 - 0.05) / 0.9) < 1e-9);
+});

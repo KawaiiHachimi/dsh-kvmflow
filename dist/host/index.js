@@ -19,6 +19,7 @@ const PROMPT_TEXT = [
     'Edit an existing workflow with kvmflow_flow_patch (small, validated operations) instead of rewriting the YAML. Check a single node against the live screen with kvmflow_node_test before relying on it.',
     'BIOS: a workflow with a bios prelude taps the hotkey before power-on, waits for the first video signal, and then starts the graph. Ask the human to press the target power button only after the run reports armed/waiting for power.',
     'Runs pause for a human when a node fails without an error port, reaches an unconnected port, or is a human node. Read kvmflow_run_status (awaiting.actions, routes, options) and answer with kvmflow_run_control. Do not start a second run while one is active.',
+    'Self-healing: runs repeat an action that did not take, accept a late screen, and jump forward when the target is already ahead (limits.autoRecover). It only works when every action has a vision verify naming the page that must appear. Recorded mouse_abs values are target space: use the `frame` point kvmflow_record_get lists for click nodes, or space: target.',
     'The KVM token is a credential: do not print it in messages, logs, or workflow files. Pass passwords as secret inputs, never as literal text in a workflow.',
 ].join('\n');
 function clientKey(device, minIntervalMs) {

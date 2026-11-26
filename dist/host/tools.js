@@ -4,7 +4,7 @@ import { imageFacts } from './image.js';
 import { linearFlow } from './flow/convert.js';
 import { flowToYaml } from './flow/normalize.js';
 import { PATCH_OPS_HELP } from './flow/patch.js';
-import { frameToTarget, isFullFrame, mappingExtent } from './view.js';
+import { frameToTarget, isFullFrame, mappingExtent, targetToFrame } from './view.js';
 import { verifyWithVision } from './model.js';
 const IMAGE_VALUE_SCHEMA = {
     type: 'object',
@@ -549,6 +549,14 @@ export function registerTools(deps) {
                 throw new Error('no recording id and no active recording');
             const recording = await store.getRecording(id);
             const images = [];
+            let mapping;
+            try {
+                mapping = store.getDevice(recording.deviceId).viewMapping;
+            }
+            catch {
+                mapping = undefined;
+            }
+            const round4 = (value) => Math.round(value * 10_000) / 10_000;
             const summary = {
                 id: recording.id,
                 name: recording.name,
@@ -558,6 +566,7 @@ export function registerTools(deps) {
                 // Recorded mouse events are already in the target's absolute space, so a
                 // replay must not convert them again.
                 eventCoordinateSpace: 'target',
+                coordinateNote: 'Event arrays are in target space. A mouse_abs event also lists `frame` [x, y], the same point on the screenshots. Write click/move nodes with config {x, y} from `frame`, or copy the raw event values and add space: target. Never mix the two.',
                 steps: recording.steps.map(step => ({
                     id: step.id,
                     name: step.name,
@@ -571,6 +580,9 @@ export function registerTools(deps) {
                     seq: event.seq,
                     at: event.at,
                     event: event.event,
+                    ...(event.event[0] === 'mouse_abs' && typeof event.event[2] === 'number' && typeof event.event[3] === 'number'
+                        ? (() => { const point = targetToFrame(mapping, event.event[2], event.event[3]); return { frame: [round4(point.x), round4(point.y)] }; })()
+                        : {}),
                     before: event.before === undefined ? null : `recordings/${recording.id}/${event.before}`,
                     after: event.after === undefined ? null : `recordings/${recording.id}/${event.after}`,
                 })),
@@ -675,14 +687,16 @@ export function registerTools(deps) {
                 ...lines,
                 '',
                 'Action node config fields:',
-                'key {key, holdMs?, repeat?, intervalMs?}; shortcut {keys[]}; text {text, submit?}; click {x, y, button?, count?}; move {x, y}; scroll {x?, y?, wheelY, wheelX?}; delay {ms}; sequence {events[]}.',
-                'Coordinates are 0..1 of the captured frame and may be templates such as "{{nodes.find.output.x}}". Action nodes also take precondition and verify ({mode: change|image|vision|none, prompt, timeoutSec}), retry {times, delayMs}, maxVisits.',
+                'key {key, holdMs?, repeat?, intervalMs?}; shortcut {keys[]}; text {text, submit?}; click {x, y, button?, count?, space?}; move {x, y, space?}; scroll {x?, y?, wheelY, wheelX?, space?}; delay {ms}; sequence {events[]}.',
+                'Coordinates are 0..1 of the captured frame (what screenshots show) and may be templates such as "{{nodes.find.output.x}}". space: target means raw 0..1 of the target screen, the space of recorded mouse_abs events; kvmflow_record_get lists each mouse event\'s `frame` point too. Action nodes also take precondition and verify ({mode: change|image|vision|none, prompt, timeoutSec}), retry {times, delayMs}, maxVisits.',
+                '',
+                'Self-healing (limits.autoRecover, default true): when an action\'s vision verify fails, the runner classifies the screen against (a) the node\'s own verify prompt, (b) the state before it (the node precondition, or the previous action\'s verify prompt), and (c) the verify prompts of the next three action nodes. It passes a late screen, repeats an action that did not take, and jumps forward when the target is already ahead. So give EVERY action a vision verify whose prompt names the unique title/text of the page that must appear, and keep the main path a chain of action nodes. limits.actionSettleMs (default 2000) waits for a still screen before each action.',
                 '',
                 'Conditions: {vision: "..."} | {image: "assets/x.jpg", maxByteDelta?} | {change: true} | {expr: "vars.n < 3"} | {all: [...]} | {any: [...]} | {not: {...}}.',
                 'Expressions read vars.*, inputs.*, nodes.<id>.output.*, nodes.<id>.visits, last.*, run.visits; functions: len contains startsWith endsWith lower upper trim number string round floor ceil abs min max coalesce.',
                 'Any config string may contain {{expression}} templates.',
                 '',
-                'Document: version: 2, name, start: <node id>, inputs?, vars?, limits? {maxNodeVisits, timeoutSec, maxVisionCalls}, bios?, nodes: {<id>: {type, name?, config, next: {<port>: <node id>}}}.',
+                'Document: version: 2, name, start: <node id>, inputs?, vars?, limits? {maxNodeVisits, timeoutSec, maxVisionCalls, autoRecover?, actionSettleMs?}, bios?, nodes: {<id>: {type, name?, config, next: {<port>: <node id>}}}.',
                 'Every path should reach an end node {type: end, config: {result: success|failure, reason?, outputs?}}. An unconnected port pauses the run for the operator.',
             ].join('\n');
             return { nodes, text };
@@ -814,7 +828,7 @@ export function registerTools(deps) {
     });
     register({
         name: 'kvmflow_workflow_generate',
-        description: 'Create a linear workflow graph from a recording and the agent\'s step plan. Each step names an event range from the recording (eventRange: [firstSeq, lastSeq] or events: [seq...]) or an explicit action, plus optional precondition and verify. The tool copies recording screenshots into the workflow assets. Add branches afterwards with kvmflow_flow_patch.',
+        description: 'Create a linear workflow graph from a recording and the agent\'s step plan. Each step names an event range from the recording (eventRange: [firstSeq, lastSeq] or events: [seq...]) or an explicit action, plus optional precondition and verify. The tool copies recording screenshots into the workflow assets. Add branches afterwards with kvmflow_flow_patch. Guidance: one step per screen transition; give each step verify {mode: vision, prompt: "<unique title or text of the page that must appear>", timeoutSec: 20-180 for slow pages}; avoid mode change (any pointer motion passes it). Explicit click actions use frame coordinates (the `frame` value kvmflow_record_get lists), or raw event values with space: target. Type user-specific values with text actions templated from inputs ("{{inputs.name}}", secrets as type secret) instead of replaying recorded keystrokes.',
         parameters: objectSchema({
             recordingId: { type: 'string' },
             name: { type: 'string' },

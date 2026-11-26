@@ -2447,16 +2447,27 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
         const askAi = async (recording: any): Promise<void> => {
           const recordingId = recording.id;
           const prompt = [
-            `请使用 KVMFlow 工具把录制 ${recordingId} 转换成一份可执行的图工作流。`,
-            '先调用 kvmflow_flow_catalog 了解节点类型，再调用 kvmflow_record_get 查看事件序列、人工步骤边界和截图（必要时读取截图）。',
-            '用 kvmflow_workflow_generate 按人工步骤生成主干：每步写明 name、description，引用录制事件的 eventRange，并补充 verify（视觉判断写具体 prompt，确定会变化的画面用 change）。',
-            '然后用 kvmflow_flow_patch 补上条件分支：画面可能不同的地方用 vision_classify 或 if 分支处理，需要等待的地方用 wait_until，可能失败的步骤接 error 出口或 human 节点，所有路径最终到达 end 节点。',
-            '关键节点可用 kvmflow_node_test 在目标机上先单独验证。最后告诉我工作流 id 和分支设计。',
+            `请使用 KVMFlow 工具把录制 ${recordingId} 转换成一份能无人值守跑完的图工作流。`,
+            '',
+            '步骤：',
+            '1. 调用 kvmflow_flow_catalog 了解节点类型和自愈机制；调用 kvmflow_record_get 查看事件、人工步骤边界和截图。',
+            '2. 用 kvmflow_workflow_generate 生成主干：每次画面跳转一个节点，写清 name、description，引用 eventRange。',
+            '3. 用 kvmflow_flow_patch 补充分支、输入和容错，必要时用 kvmflow_node_test 在目标机上验证关键节点。',
+            '',
+            '要求（减少人工干预）：',
+            '- 每个动作节点都要有 verify: {mode: vision, prompt: 新页面独有的标题/文字}，不要用 change；慢页面（建账户、加载、重启）把 timeoutSec 设到 60–180。运行器会据此自动判断“已到达 / 没点上 / 已超前”，自动重做或跳步，不再暂停。',
+            '- 主干保持动作节点串联，不要在两个动作之间插入 if/set，否则跳步识别会在此停下。',
+            '- 点击坐标：录制的 mouse_abs 是目标屏幕坐标；写 click 节点时用 record_get 给出的 frame 坐标，或原值加 space: target。',
+            '- 录制里输入的用户名、密码、主机名等可变值，改成 inputs（密码用 type: secret）并用 text 节点 "{{inputs.xxx}}" 输入；输入前先点击聚焦输入框，并确认输入法为英文。不要回放录制里的逐键事件。',
+            '- 可选弹窗或分叉页面（如登录、跳过确认、键盘助理）用 vision_classify 判断后分支处理；需要等待的地方用 wait_until。',
+            '- human 节点只留给确实无法自动判断的情况，且所有路径最终到达 end 节点。',
+            '',
+            '完成后告诉我工作流 id、需要的输入，以及分支与容错设计。',
             '',
             `录制名称：${recording.name}`,
-            recording.description ? `录制说明：${recording.description}` : '',
+            recording.description ? `录制说明：${recording.description}` : null,
             '我的目标与注意事项（请让用户补充）：',
-          ].filter(Boolean).join('\n');
+          ].filter(line => line !== null).join('\n');
           await shared.handPrompt(
             prompt,
             t('已在新会话中启动 AI 工作流生成，请补充目标描述。', 'Started a new session for AI workflow generation; add your goal there.'),
@@ -2725,6 +2736,7 @@ export function createPlugin(requireModule: (id: string) => any, flowUi: FlowUi)
             '先调用 kvmflow_flow_catalog 了解节点类型，再用 kvmflow_workflow_get 读取当前图和问题列表。',
             '用 kvmflow_flow_patch 做小步修改（add_node / update_node / connect / remove_node），不要整篇重写；画面不确定的地方用 vision_classify 或 if 分支，等待用 wait_until，失败要有 error 出口或 human 节点，所有路径都要到达 end。',
             '必要时用 kvmflow_node_test 在目标机上单独验证关键节点。完成后总结你改了哪些节点和连线。',
+            '如果最近的运行卡住过，先用 kvmflow_run_status 看 trace 和日志定位原因；确保每个动作节点都有写明新页面独有标题的 vision verify（运行器据此自动重做、跳步），点击坐标与录制的坐标系一致（frame 或 space: target），可变值改为 inputs。',
             '',
             '我的修改目标：',
           ].join('\n');

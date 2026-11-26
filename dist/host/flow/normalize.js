@@ -249,6 +249,10 @@ function normalizeStringMap(value, path) {
     }
     return out;
 }
+/** Keep `space` only when it differs from the default frame space. */
+function spaceOf(value) {
+    return value === 'target' ? { space: 'target' } : {};
+}
 /**
  * Coerce one node's config for its type.
  * @param type - node type.
@@ -289,15 +293,17 @@ export function normalizeConfig(type, input, path) {
                 y: coord(raw.y, `${path}.y`),
                 button: raw.button === 'right' ? 'right' : raw.button === 'middle' ? 'middle' : 'left',
                 count: clampInt(raw.count, 1, 1, 10),
+                ...spaceOf(raw.space),
             };
         case 'move':
-            return { x: coord(raw.x, `${path}.x`), y: coord(raw.y, `${path}.y`) };
+            return { x: coord(raw.x, `${path}.x`), y: coord(raw.y, `${path}.y`), ...spaceOf(raw.space) };
         case 'scroll':
             return {
                 x: coord(raw.x ?? 0.5, `${path}.x`),
                 y: coord(raw.y ?? 0.5, `${path}.y`),
                 wheelY: Math.max(-20, Math.min(20, asNumber(raw.wheelY, 0))),
                 wheelX: Math.max(-20, Math.min(20, asNumber(raw.wheelX, 0))),
+                ...spaceOf(raw.space),
             };
         case 'delay':
             return { ms: numberOrTemplate(raw.ms, `${path}.ms`, 500) };
@@ -506,6 +512,8 @@ function normalizeLimits(input) {
         maxNodeVisits: clampInt(raw.maxNodeVisits, 1000, 1, 100_000),
         timeoutSec: clampInt(raw.timeoutSec, 7200, 10, 86_400),
         maxVisionCalls: clampInt(raw.maxVisionCalls, 400, 1, 5000),
+        ...(raw.autoRecover === false ? { autoRecover: false } : {}),
+        ...(raw.actionSettleMs === undefined ? {} : { actionSettleMs: clampInt(raw.actionSettleMs, 2000, 0, 10_000) }),
     };
 }
 function normalizeBios(input) {

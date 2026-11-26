@@ -117,10 +117,12 @@ export function keyChord(keys: string[], holdMs = 80): LinkrEvent[] {
 export function clickEvents(x: number, y: number, button: 1 | 2 | 4 = 1, count = 1): LinkrEvent[] {
   const clampX = Math.min(1, Math.max(0, x));
   const clampY = Math.min(1, Math.max(0, y));
-  const events: LinkrEvent[] = [['mouse_abs', 0, clampX, clampY, 0, 0]];
+  // Hover briefly before pressing: some UIs (macOS Setup Assistant among them)
+  // ignore a press that arrives in the same instant the pointer lands.
+  const events: LinkrEvent[] = [['mouse_abs', 0, clampX, clampY, 0, 0], ['delay', 60]];
   for (let index = 0; index < count; index += 1) {
     events.push(['mouse_abs', button, clampX, clampY, 0, 0]);
-    events.push(['delay', 40]);
+    events.push(['delay', 60]);
     events.push(['mouse_abs', 0, clampX, clampY, 0, 0]);
     if (index < count - 1) events.push(['delay', 80]);
   }

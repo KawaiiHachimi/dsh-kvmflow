@@ -81,6 +81,22 @@ export function frameToTarget(mapping, x, y) {
         y: clamp01((y - resolved.top) / spanY),
     };
 }
+/**
+ * Convert a target-space HID point back to the frame the user or model sees.
+ * @param mapping - target area inside the frame.
+ * @param x - target-normalized X.
+ * @param y - target-normalized Y.
+ * @returns frame-normalized coordinates.
+ */
+export function targetToFrame(mapping, x, y) {
+    if (isFullFrame(mapping))
+        return { x: clamp01(x), y: clamp01(y) };
+    const resolved = mapping;
+    return {
+        x: clamp01(resolved.left + x * (resolved.right - resolved.left)),
+        y: clamp01(resolved.top + y * (resolved.bottom - resolved.top)),
+    };
+}
 function clamp01(value) {
     if (!Number.isFinite(value))
         return 0;

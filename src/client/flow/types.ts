@@ -87,7 +87,7 @@ export interface FlowDoc {
   start: string;
   inputs: Record<string, FlowInputSpec>;
   vars: Record<string, unknown>;
-  limits: { maxNodeVisits: number; timeoutSec: number; maxVisionCalls: number };
+  limits: { maxNodeVisits: number; timeoutSec: number; maxVisionCalls: number; autoRecover?: boolean; actionSettleMs?: number };
   bios?: { hotkey: string; intervalMs: number; timeoutSec: number; requireConfirm: boolean; settleSec: number };
   visionModel?: { provider: string; model: string };
   nodes: Record<string, FlowNodeDoc>;
