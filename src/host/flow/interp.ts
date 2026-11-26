@@ -978,7 +978,16 @@ export class Interpreter {
     while (Date.now() <= deadline) {
       if (this.host.signal.aborted) throw aborted();
       const frame = await this.capture(tag);
-      last = { ...(await this.judgeSpec(spec, frame, before)), frame };
+      try {
+        last = { ...(await this.judgeSpec(spec, frame, before)), frame };
+      } catch (error) {
+        if ((error as Error).name === 'AbortError' || this.host.signal.aborted) throw aborted();
+        // One failed model call (timeout, truncated reply) is one failed poll,
+        // not a failed node: keep polling until the check's own budget ends.
+        const message = error instanceof Error ? error.message : String(error);
+        this.host.log('warn', `${tag}: ${message}; checking again`);
+        last = { passed: false, reason: message, frame };
+      }
       if (last.passed) return last;
       if (Date.now() + pollMs > deadline) break;
       await this.host.sleep(pollMs);

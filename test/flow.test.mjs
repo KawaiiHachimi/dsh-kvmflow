@@ -917,3 +917,24 @@ test('click space target bypasses the view mapping', async () => {
   assert.equal(press(fake.sent[0])[2], 0.68);
   assert.ok(Math.abs(press(fake.sent[1])[2] - (0.68 - 0.05) / 0.9) < 1e-9);
 });
+
+test('a failed vision call inside a verify is one failed poll, not a failed node', async () => {
+  let calls = 0;
+  const fake = fakeHost({
+    check: () => {
+      calls += 1;
+      if (calls === 1) throw new Error('vision call failed: model reply hit the token limit');
+      return { passed: true, reason: 'field filled', raw: 'PASS' };
+    },
+  });
+  const { promise } = run({
+    version: 2, name: 'v', start: 'a',
+    nodes: {
+      a: { type: 'click', config: { x: 0.5, y: 0.5 }, verify: { mode: 'vision', prompt: 'field filled', timeoutSec: 5 }, next: { next: 'done' } },
+      done: { type: 'end', config: { result: 'success' } },
+    },
+  }, fake);
+  assert.equal((await promise).result, 'success');
+  assert.equal(calls, 2);
+  assert.equal(fake.asked.length, 0);
+});

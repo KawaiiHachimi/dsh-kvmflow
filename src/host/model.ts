@@ -111,6 +111,11 @@ export async function listAvailableModels(ctx: any): Promise<{ models: Available
  * @param request - image bytes, the full instruction, optional model override, and a token budget.
  * @returns the model's reply text.
  */
+/** Output budget for one vision call; covers a reasoning model's thinking. */
+const VISION_MIN_TOKENS = 4096;
+/** Budget for the single retry after an empty, truncated reply. */
+const VISION_RETRY_TOKENS = 12_288;
+
 export async function askVision(
   ctx: any,
   request: { data: Uint8Array; prompt: string; maxTokens?: number; model?: ModelChoice; signal?: AbortSignal },
@@ -134,33 +139,46 @@ export async function askVision(
     mediaType: 'image/jpeg',
     name: 'kvmflow-screen.jpg',
   });
-  const chunks = llm.stream({
-    provider: selection.provider,
-    model: selection.model,
-    ...(typeof selection.reasoningEffort === 'string' ? { reasoningEffort: selection.reasoningEffort } : {}),
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'text', text: request.prompt },
-        { type: 'image', attachment },
-      ],
-    }],
-    temperature: 0,
-    maxTokens: request.maxTokens ?? 400,
-    ...(request.signal === undefined ? {} : { signal: request.signal }),
-  });
+  // Reasoning models spend output tokens on thinking before the answer, so a
+  // budget sized for the reply alone ends with nothing written. Start well
+  // above that and grow once when the reply is still empty.
+  const budgets = [Math.max(VISION_MIN_TOKENS, request.maxTokens ?? 0), VISION_RETRY_TOKENS];
   let text = '';
   let failure: string | undefined;
-  for await (const chunk of chunks) {
-    if (!isRecord(chunk)) continue;
-    if (chunk.type === 'text-delta' && typeof chunk.text === 'string') text += chunk.text;
-    if (chunk.type === 'finish' && isRecord(chunk.reason)) {
-      if (chunk.reason.kind === 'error' && isRecord(chunk.reason.failure)) {
-        failure = typeof chunk.reason.failure.message === 'string' ? chunk.reason.failure.message : 'model call failed';
+  for (const maxTokens of budgets) {
+    text = '';
+    failure = undefined;
+    const chunks = llm.stream({
+      provider: selection.provider,
+      model: selection.model,
+      ...(typeof selection.reasoningEffort === 'string' ? { reasoningEffort: selection.reasoningEffort } : {}),
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: request.prompt },
+          { type: 'image', attachment },
+        ],
+      }],
+      temperature: 0,
+      maxTokens,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    });
+    let truncated = false;
+    for await (const chunk of chunks) {
+      if (!isRecord(chunk)) continue;
+      if (chunk.type === 'text-delta' && typeof chunk.text === 'string') text += chunk.text;
+      if (chunk.type === 'finish' && isRecord(chunk.reason)) {
+        if (chunk.reason.kind === 'error' && isRecord(chunk.reason.failure)) {
+          failure = typeof chunk.reason.failure.message === 'string' ? chunk.reason.failure.message : 'model call failed';
+        }
+        if (chunk.reason.kind === 'aborted') failure = 'model call aborted';
+        if (chunk.reason.kind === 'max-tokens' && text.trim() === '') {
+          truncated = true;
+          failure = `model reply hit the token limit (${maxTokens} tokens)`;
+        }
       }
-      if (chunk.reason.kind === 'aborted') failure = 'model call aborted';
-      if (chunk.reason.kind === 'max-tokens' && text.trim() === '') failure = 'model reply hit the token limit';
     }
+    if (!truncated || request.signal?.aborted === true) break;
   }
   if (failure !== undefined) throw new Error(`vision call failed: ${failure}`);
   if (text.trim() === '') throw new Error('vision call returned an empty reply');
